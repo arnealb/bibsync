@@ -3,8 +3,9 @@ import Link from "next/link";
 import { RoomSwitcher } from "@/components/app/room-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getAuthContext, getInitials } from "@/lib/auth";
+import { getAuthContext } from "@/lib/auth";
 import { copy } from "@/lib/copy";
+import { getInitials } from "@/lib/initials";
 import { getMyRooms } from "@/lib/rooms/queries";
 
 export async function AppHeader() {

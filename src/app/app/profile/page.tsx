@@ -9,8 +9,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getAuthContext, getInitials } from "@/lib/auth";
+import { getAuthContext } from "@/lib/auth";
 import { copy } from "@/lib/copy";
+import { getInitials } from "@/lib/initials";
 import { formatDateTime } from "@/lib/time";
 
 export const metadata: Metadata = { title: copy.profile.title };

@@ -125,6 +125,10 @@ export const copy = {
     created: "Room aangemaakt.",
     joined: "Je bent toegevoegd aan de room.",
     left: "Je hebt de room verlaten.",
+    leave: "Room verlaten",
+    leaveConfirmTitle: "Room verlaten?",
+    leaveConfirmBody:
+      "Je kan later opnieuw joinen met de join code.",
     ownerCannotLeave:
       "Als eigenaar kan je de room niet verlaten. Verwijder ze in plaats daarvan.",
     settings: {
