@@ -20,20 +20,26 @@ import {
   unsubscribeFromPush,
 } from "@/lib/push/client";
 
+export type PrefKey = "proposals" | "food" | "chat" | "comments" | "votes";
+export type NotificationPrefState = Record<PrefKey, boolean>;
+
+const PREF_ITEMS: { key: PrefKey; label: string }[] = [
+  { key: "proposals", label: copy.push.prefProposals },
+  { key: "food", label: copy.push.prefFood },
+  { key: "chat", label: copy.push.prefChat },
+  { key: "comments", label: copy.push.prefComments },
+  { key: "votes", label: copy.push.prefVotes },
+];
+
 export function NotificationSettings({
-  notifyProposals: initialProposals,
-  notifyFood: initialFood,
+  prefs: initialPrefs,
 }: {
-  notifyProposals: boolean;
-  notifyFood: boolean;
+  prefs: NotificationPrefState;
 }) {
   const [supported, setSupported] = useState(true);
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [prefs, setPrefs] = useState({
-    proposals: initialProposals,
-    food: initialFood,
-  });
+  const [prefs, setPrefs] = useState(initialPrefs);
 
   useEffect(() => {
     let active = true;
@@ -86,12 +92,15 @@ export function NotificationSettings({
     }
   }
 
-  function togglePref(key: "proposals" | "food", value: boolean) {
+  function togglePref(key: PrefKey, value: boolean) {
     const next = { ...prefs, [key]: value };
     setPrefs(next);
     updateNotificationPrefs({
       notifyProposals: next.proposals,
       notifyFood: next.food,
+      notifyChat: next.chat,
+      notifyComments: next.comments,
+      notifyVotes: next.votes,
     }).then((result) => {
       if (!result.ok) {
         setPrefs(prefs);
@@ -106,9 +115,7 @@ export function NotificationSettings({
         <Bell className="size-4 text-muted-foreground" />
         <h2 className="font-medium">{copy.push.title}</h2>
       </div>
-      <p className="-mt-2 text-sm text-muted-foreground">
-        {copy.push.subtitle}
-      </p>
+      <p className="-mt-2 text-sm text-muted-foreground">{copy.push.subtitle}</p>
 
       {!supported ? (
         <p className="text-sm text-muted-foreground">{copy.push.unsupported}</p>
@@ -133,26 +140,21 @@ export function NotificationSettings({
       )}
 
       <div className="space-y-3 border-t pt-3">
-        <div className="flex items-center justify-between gap-3">
-          <Label htmlFor="pref-proposals" className="font-normal">
-            {copy.push.prefProposals}
-          </Label>
-          <Switch
-            id="pref-proposals"
-            checked={prefs.proposals}
-            onCheckedChange={(v) => togglePref("proposals", v)}
-          />
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <Label htmlFor="pref-food" className="font-normal">
-            {copy.push.prefFood}
-          </Label>
-          <Switch
-            id="pref-food"
-            checked={prefs.food}
-            onCheckedChange={(v) => togglePref("food", v)}
-          />
-        </div>
+        {PREF_ITEMS.map((item) => (
+          <div
+            key={item.key}
+            className="flex items-center justify-between gap-3"
+          >
+            <Label htmlFor={`pref-${item.key}`} className="font-normal">
+              {item.label}
+            </Label>
+            <Switch
+              id={`pref-${item.key}`}
+              checked={prefs[item.key]}
+              onCheckedChange={(v) => togglePref(item.key, v)}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

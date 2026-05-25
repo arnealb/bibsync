@@ -52,10 +52,17 @@ export async function removePushSubscription(
   return { ok: true };
 }
 
-export async function updateNotificationPrefs(prefs: {
+export interface NotificationPrefs {
   notifyProposals: boolean;
   notifyFood: boolean;
-}): Promise<ActionResult> {
+  notifyChat: boolean;
+  notifyComments: boolean;
+  notifyVotes: boolean;
+}
+
+export async function updateNotificationPrefs(
+  prefs: NotificationPrefs,
+): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -67,6 +74,9 @@ export async function updateNotificationPrefs(prefs: {
     .update({
       notify_proposals: prefs.notifyProposals,
       notify_food: prefs.notifyFood,
+      notify_chat: prefs.notifyChat,
+      notify_comments: prefs.notifyComments,
+      notify_votes: prefs.notifyVotes,
     })
     .eq("id", user.id);
   if (error) {

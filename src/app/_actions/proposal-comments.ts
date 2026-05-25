@@ -2,6 +2,7 @@
 
 import type { ActionResult } from "@/app/_actions/types";
 import { copy } from "@/lib/copy";
+import { sendUserPush } from "@/lib/push/send";
 import { createClient } from "@/lib/supabase/server";
 import { addCommentSchema, type AddCommentInput } from "@/lib/validation/comments";
 import type { ProposalComment } from "@/types/database";
@@ -24,10 +25,10 @@ export async function addProposalComment(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: copy.common.notAuthenticated };
 
-  // Derive room_id from the proposal (also enforces read access via RLS).
+  // Derive room_id + creator from the proposal (also enforces RLS read access).
   const { data: proposal } = await supabase
     .from("break_proposals")
-    .select("room_id")
+    .select("room_id, created_by")
     .eq("id", parsed.data.proposalId)
     .maybeSingle();
   if (!proposal) return { ok: false, error: copy.proposals.comments.error };
@@ -47,6 +48,13 @@ export async function addProposalComment(
     console.error("[addProposalComment]", error);
     return { ok: false, error: copy.proposals.comments.error };
   }
+
+  await sendUserPush(proposal.created_by, "comments", {
+    title: copy.push.newComment,
+    body: parsed.data.content.slice(0, 120),
+    url: `/app/rooms/${proposal.room_id}`,
+    tag: `comment-${parsed.data.proposalId}`,
+  });
 
   return { ok: true, comment: data };
 }

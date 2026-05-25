@@ -29,6 +29,9 @@ export interface Database {
           is_admin: boolean;
           notify_proposals: boolean;
           notify_food: boolean;
+          notify_chat: boolean;
+          notify_comments: boolean;
+          notify_votes: boolean;
           created_at: Timestamp;
         };
         Insert: {
@@ -38,6 +41,9 @@ export interface Database {
           is_admin?: boolean;
           notify_proposals?: boolean;
           notify_food?: boolean;
+          notify_chat?: boolean;
+          notify_comments?: boolean;
+          notify_votes?: boolean;
           created_at?: Timestamp;
         };
         Update: {
@@ -47,6 +53,9 @@ export interface Database {
           is_admin?: boolean;
           notify_proposals?: boolean;
           notify_food?: boolean;
+          notify_chat?: boolean;
+          notify_comments?: boolean;
+          notify_votes?: boolean;
           created_at?: Timestamp;
         };
         Relationships: [];
@@ -342,6 +351,10 @@ export interface Database {
       };
       get_push_targets: {
         Args: { _room_id: string; _pref: string };
+        Returns: { endpoint: string; p256dh: string; auth: string }[];
+      };
+      get_user_push_targets: {
+        Args: { _user_id: string; _pref: string };
         Returns: { endpoint: string; p256dh: string; auth: string }[];
       };
     };

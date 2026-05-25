@@ -1,6 +1,8 @@
 "use server";
 
+import { isGifUrl } from "@/lib/chat/gif";
 import { copy } from "@/lib/copy";
+import { sendRoomPush } from "@/lib/push/send";
 import { createClient } from "@/lib/supabase/server";
 import {
   MESSAGE_PAGE_SIZE,
@@ -41,6 +43,16 @@ export async function sendMessage(
     console.error("[sendMessage]", error);
     return { ok: false, error: copy.chat.error };
   }
+
+  const preview = isGifUrl(parsed.data.content)
+    ? copy.push.gifMessage
+    : parsed.data.content.slice(0, 120);
+  await sendRoomPush(parsed.data.roomId, "chat", {
+    title: copy.push.newMessage,
+    body: preview,
+    url: `/app/rooms/${parsed.data.roomId}`,
+    tag: `chat-${parsed.data.roomId}`,
+  });
 
   return { ok: true, message: data };
 }

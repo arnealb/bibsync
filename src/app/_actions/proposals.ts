@@ -2,7 +2,7 @@
 
 import type { ActionResult } from "@/app/_actions/types";
 import { copy } from "@/lib/copy";
-import { sendRoomPush } from "@/lib/push/send";
+import { sendRoomPush, sendUserPush } from "@/lib/push/send";
 import { createClient } from "@/lib/supabase/server";
 import { formatTime } from "@/lib/time";
 import {
@@ -101,6 +101,21 @@ export async function castVote(input: CastVoteInput): Promise<ActionResult> {
   if (error) {
     console.error("[castVote]", error);
     return { ok: false, error: copy.proposals.votes.error };
+  }
+
+  const { data: proposal } = await supabase
+    .from("break_proposals")
+    .select("room_id, created_by")
+    .eq("id", parsed.data.proposalId)
+    .maybeSingle();
+  if (proposal) {
+    const emoji = { yes: "👍", maybe: "🤔", no: "👎" }[parsed.data.vote];
+    await sendUserPush(proposal.created_by, "votes", {
+      title: copy.push.newVote,
+      body: `${emoji} ${copy.proposals.votes[parsed.data.vote]}`,
+      url: `/app/rooms/${proposal.room_id}`,
+      tag: `vote-${parsed.data.proposalId}`,
+    });
   }
 
   return { ok: true };

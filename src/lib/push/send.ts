@@ -25,25 +25,14 @@ export interface PushPayload {
   tag?: string;
 }
 
-/**
- * Sends a push to the room members (except the caller) who opted in to `pref`.
- * No-op when VAPID isn't configured. Failures are logged, not thrown, so a
- * notification problem never breaks the action that triggered it.
- */
-export async function sendRoomPush(
-  roomId: string,
-  pref: "proposals" | "food",
-  payload: PushPayload,
-): Promise<void> {
-  if (!ensureConfigured()) return;
+interface Target {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}
 
-  const supabase = await createClient();
-  const { data: targets } = await supabase.rpc("get_push_targets", {
-    _room_id: roomId,
-    _pref: pref,
-  });
-  if (!targets || targets.length === 0) return;
-
+async function sendToTargets(targets: Target[], payload: PushPayload) {
+  if (targets.length === 0) return;
   const body = JSON.stringify(payload);
   await Promise.allSettled(
     targets.map((target) =>
@@ -60,4 +49,38 @@ export async function sendRoomPush(
         }),
     ),
   );
+}
+
+/**
+ * Notifies the room members (except the caller) who opted in to `pref`.
+ * No-op when VAPID isn't configured. Failures are logged, not thrown, so a
+ * notification problem never breaks the action that triggered it.
+ */
+export async function sendRoomPush(
+  roomId: string,
+  pref: "proposals" | "food" | "chat",
+  payload: PushPayload,
+): Promise<void> {
+  if (!ensureConfigured()) return;
+  const supabase = await createClient();
+  const { data: targets } = await supabase.rpc("get_push_targets", {
+    _room_id: roomId,
+    _pref: pref,
+  });
+  await sendToTargets(targets ?? [], payload);
+}
+
+/** Notifies a single user (e.g. a proposal's creator) if they opted in. */
+export async function sendUserPush(
+  userId: string,
+  pref: "comments" | "votes",
+  payload: PushPayload,
+): Promise<void> {
+  if (!ensureConfigured()) return;
+  const supabase = await createClient();
+  const { data: targets } = await supabase.rpc("get_user_push_targets", {
+    _user_id: userId,
+    _pref: pref,
+  });
+  await sendToTargets(targets ?? [], payload);
 }

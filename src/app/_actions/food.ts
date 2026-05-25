@@ -2,7 +2,7 @@
 
 import type { ActionResult } from "@/app/_actions/types";
 import { copy } from "@/lib/copy";
-import { sendRoomPush } from "@/lib/push/send";
+import { sendRoomPush, sendUserPush } from "@/lib/push/send";
 import { createClient } from "@/lib/supabase/server";
 import { formatTime } from "@/lib/time";
 import {
@@ -96,6 +96,22 @@ export async function castFoodVote(
     console.error("[castFoodVote]", error);
     return { ok: false, error: copy.proposals.votes.error };
   }
+
+  const { data: proposal } = await supabase
+    .from("food_proposals")
+    .select("room_id, created_by")
+    .eq("id", parsed.data.foodProposalId)
+    .maybeSingle();
+  if (proposal) {
+    const emoji = { yes: "👍", maybe: "🤔", no: "👎" }[parsed.data.vote];
+    await sendUserPush(proposal.created_by, "votes", {
+      title: copy.push.newVote,
+      body: `${emoji} ${copy.proposals.votes[parsed.data.vote]}`,
+      url: `/app/rooms/${proposal.room_id}/eten`,
+      tag: `food-vote-${parsed.data.foodProposalId}`,
+    });
+  }
+
   return { ok: true };
 }
 
@@ -121,7 +137,7 @@ export async function addFoodComment(
 
   const { data: proposal } = await supabase
     .from("food_proposals")
-    .select("room_id")
+    .select("room_id, created_by")
     .eq("id", parsed.data.foodProposalId)
     .maybeSingle();
   if (!proposal) return { ok: false, error: copy.proposals.comments.error };
@@ -141,6 +157,14 @@ export async function addFoodComment(
     console.error("[addFoodComment]", error);
     return { ok: false, error: copy.proposals.comments.error };
   }
+
+  await sendUserPush(proposal.created_by, "comments", {
+    title: copy.push.newComment,
+    body: parsed.data.content.slice(0, 120),
+    url: `/app/rooms/${proposal.room_id}/eten`,
+    tag: `food-comment-${parsed.data.foodProposalId}`,
+  });
+
   return { ok: true, comment: data };
 }
 
