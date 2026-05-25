@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { ProposalComments } from "@/components/proposals/proposal-comments";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { copy } from "@/lib/copy";
@@ -51,6 +52,7 @@ interface ProposalCardProps {
   members: MemberMap;
   userId: string;
   canDelete: boolean;
+  isWinner?: boolean;
   onVote: (value: VoteValue) => void;
   onDelete: () => void;
   onAddComment: (proposalId: string, content: string) => void;
@@ -64,6 +66,7 @@ export function ProposalCard({
   members,
   userId,
   canDelete,
+  isWinner,
   onVote,
   onDelete,
   onAddComment,
@@ -75,15 +78,25 @@ export function ProposalCard({
   const creatorName = creator?.name ?? "—";
 
   return (
-    <article className="rounded-lg border p-4">
+    <article
+      className={cn(
+        "rounded-lg border p-4",
+        isWinner && "border-emerald-500/50 ring-1 ring-emerald-500/30",
+      )}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="flex size-9 items-center justify-center rounded-md bg-muted">
             <Icon className="size-4.5" />
           </span>
           <div>
-            <p className="font-medium">
+            <p className="flex items-center gap-1.5 font-medium">
               {copy.proposals.types[proposal.proposal_type]}
+              {isWinner && (
+                <Badge className="bg-emerald-600 text-white">
+                  🏆 {copy.proposals.winner}
+                </Badge>
+              )}
             </p>
             <p className="text-sm text-muted-foreground">
               {dateLabel(proposal.proposal_date)} ·{" "}

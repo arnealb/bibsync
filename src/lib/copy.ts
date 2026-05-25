@@ -227,6 +227,7 @@ export const copy = {
         : `${min} min`,
     today: "Vandaag",
     tomorrow: "Morgen",
+    winner: "Beslist",
     created: "Voorstel geplaatst.",
     deleted: "Voorstel verwijderd.",
     deleteConfirm: "Dit voorstel verwijderen?",

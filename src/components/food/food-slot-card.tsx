@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
+import { voteWeight } from "@/lib/proposals/joke";
+import { pickWinnerId } from "@/lib/proposals/winner";
 import type { FoodSlot } from "@/lib/slots";
 import type { FoodComment, FoodProposal, FoodVote, VoteValue } from "@/types/database";
 
@@ -58,6 +60,14 @@ export function FoodSlotCard({
     if (!value) return;
     onSetPreference(slot.key, date, value);
   }
+
+  const winnerId = pickWinnerId(
+    suggestions.map((s) => s.id),
+    (id) =>
+      votes
+        .filter((v) => v.food_proposal_id === id && v.vote === "yes")
+        .reduce((sum, v) => sum + voteWeight(members[v.user_id]?.name ?? ""), 0),
+  );
 
   return (
     <div className="space-y-3 rounded-lg border p-4">
@@ -137,6 +147,7 @@ export function FoodSlotCard({
               members={members}
               userId={userId}
               canDelete={suggestion.created_by === userId}
+              isWinner={suggestion.id === winnerId}
               onVote={(value) => onVote(suggestion.id, value)}
               onDelete={() => onDelete(suggestion.id)}
               onAddComment={onAddComment}

@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/select";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
+import { voteWeight } from "@/lib/proposals/joke";
+import { pickWinnerId } from "@/lib/proposals/winner";
 import { averageTime, type BreakSlot } from "@/lib/slots";
 import type {
   BreakProposal,
@@ -69,6 +71,14 @@ export function SlotCard({
 
   const ordered = [...suggestions].sort((a, b) =>
     a.start_time.localeCompare(b.start_time),
+  );
+
+  const winnerId = pickWinnerId(
+    ordered.map((s) => s.id),
+    (id) =>
+      votes
+        .filter((v) => v.proposal_id === id && v.vote === "yes")
+        .reduce((sum, v) => sum + voteWeight(members[v.user_id]?.name ?? ""), 0),
   );
 
   return (
@@ -150,6 +160,7 @@ export function SlotCard({
               members={members}
               userId={userId}
               canDelete={suggestion.created_by === userId}
+              isWinner={suggestion.id === winnerId}
               onVote={(value) => onVote(suggestion.id, value)}
               onDelete={() => onDelete(suggestion.id)}
               onAddComment={onAddComment}

@@ -10,11 +10,11 @@ unchecked item top-to-bottom.
       message-grouping) via `pnpm test`, + Playwright smoke-e2e voor de publieke
       routes + auth-gate via `pnpm test:e2e`. Diepere authed flows vragen een
       test-omgeving met seed-accounts.
+- [x] **"Winnaar"-badge** — meest-gestemde optie per slot + per dag-groep krijgt
+      een groene "🏆 Beslist"-badge (`pickWinnerId`, gewogen met de joke-stem).
 
 ## Now
 
-- [ ] **"Winnaar"-badge** — markeer per slot/dag de optie met de meeste 👍 (of
-      de bevestigde gemiddelde tijd) als beslist.
 - [ ] **Emoji-reacties op chatberichten** (👍❤️😂) — los van de gewone reacties,
       lichtgewicht.
 - [ ] **Chatbericht bewerken/verwijderen** — nu ontbreekt edit (en delete).

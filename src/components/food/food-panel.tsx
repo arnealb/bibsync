@@ -32,6 +32,8 @@ import {
   shiftAnchor,
   type CalendarView,
 } from "@/lib/proposals/calendar";
+import { voteWeight } from "@/lib/proposals/joke";
+import { pickWinnerId } from "@/lib/proposals/winner";
 import { FOOD_SLOTS } from "@/lib/slots";
 import { formatClock, formatDateLong, isoDatePlus } from "@/lib/time";
 import type {
@@ -357,34 +359,50 @@ export function FoodPanel({
           </p>
         ) : (
           <div className="space-y-5">
-            {groups.map((group) => (
-              <section key={group.date} className="space-y-2">
-                <h3 className="text-xs font-medium text-muted-foreground uppercase">
-                  {group.label}
-                </h3>
-                <div className="space-y-3">
-                  {group.items.map((proposal) => (
-                    <FoodCard
-                      key={proposal.id}
-                      proposal={proposal}
-                      votes={votes.filter(
-                        (v) => v.food_proposal_id === proposal.id,
-                      )}
-                      comments={comments.filter(
-                        (c) => c.food_proposal_id === proposal.id,
-                      )}
-                      members={members}
-                      userId={userId}
-                      canDelete={proposal.created_by === userId}
-                      onVote={(value) => handleVote(proposal.id, value)}
-                      onDelete={() => handleDelete(proposal.id)}
-                      onAddComment={handleAddComment}
-                      onDeleteComment={handleDeleteComment}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+            {groups.map((group) => {
+              const groupWinner = pickWinnerId(
+                group.items.map((p) => p.id),
+                (id) =>
+                  votes
+                    .filter(
+                      (v) => v.food_proposal_id === id && v.vote === "yes",
+                    )
+                    .reduce(
+                      (sum, v) =>
+                        sum + voteWeight(members[v.user_id]?.name ?? ""),
+                      0,
+                    ),
+              );
+              return (
+                <section key={group.date} className="space-y-2">
+                  <h3 className="text-xs font-medium text-muted-foreground uppercase">
+                    {group.label}
+                  </h3>
+                  <div className="space-y-3">
+                    {group.items.map((proposal) => (
+                      <FoodCard
+                        key={proposal.id}
+                        proposal={proposal}
+                        votes={votes.filter(
+                          (v) => v.food_proposal_id === proposal.id,
+                        )}
+                        comments={comments.filter(
+                          (c) => c.food_proposal_id === proposal.id,
+                        )}
+                        members={members}
+                        userId={userId}
+                        canDelete={proposal.created_by === userId}
+                        isWinner={proposal.id === groupWinner}
+                        onVote={(value) => handleVote(proposal.id, value)}
+                        onDelete={() => handleDelete(proposal.id)}
+                        onAddComment={handleAddComment}
+                        onDeleteComment={handleDeleteComment}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         )}
       </section>
