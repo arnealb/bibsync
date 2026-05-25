@@ -18,9 +18,9 @@ export const metadata: Metadata = { title: copy.auth.loginTitle };
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ redirectTo?: string }>;
+  searchParams: Promise<{ redirectTo?: string; error?: string }>;
 }) {
-  const { redirectTo } = await searchParams;
+  const { redirectTo, error } = await searchParams;
   const safeRedirect = redirectTo?.startsWith("/app") ? redirectTo : "/app";
 
   return (
@@ -30,6 +30,14 @@ export default async function LoginPage({
         <CardDescription>{copy.auth.loginSubtitle}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {error === "confirm" && (
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {copy.auth.confirmFailed}
+          </p>
+        )}
         <Tabs defaultValue="password">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="password">{copy.auth.tabPassword}</TabsTrigger>
