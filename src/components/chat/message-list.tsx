@@ -1,9 +1,10 @@
 "use client";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { copy } from "@/lib/copy";
+import { isGifUrl } from "@/lib/chat/gif";
 import { getInitials } from "@/lib/initials";
 import type { MessageGroup } from "@/lib/messages/group";
-import { copy } from "@/lib/copy";
 import { formatMessageTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 
@@ -44,18 +45,33 @@ export function MessageList({
                 </span>
               </div>
               <div className="space-y-0.5">
-                {group.items.map((message) => (
-                  <p
-                    key={message.id}
-                    className={cn(
-                      "text-sm break-words whitespace-pre-wrap",
-                      message.pending && "text-muted-foreground italic",
-                    )}
-                  >
-                    {message.content}
-                    {message.pending && ` · ${copy.chat.sending}`}
-                  </p>
-                ))}
+                {group.items.map((message) =>
+                  isGifUrl(message.content) ? (
+                    <div
+                      key={message.id}
+                      className={cn(message.pending && "opacity-60")}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={message.content}
+                        alt="GIF"
+                        className="max-h-48 max-w-[220px] rounded-md"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <p
+                      key={message.id}
+                      className={cn(
+                        "text-sm break-words whitespace-pre-wrap",
+                        message.pending && "text-muted-foreground italic",
+                      )}
+                    >
+                      {message.content}
+                      {message.pending && ` · ${copy.chat.sending}`}
+                    </p>
+                  ),
+                )}
               </div>
             </div>
           </div>

@@ -273,6 +273,13 @@ export const copy = {
     newMessages: (n: number) =>
       `${n} ${n === 1 ? "nieuw bericht" : "nieuwe berichten"} ↓`,
     error: "Bericht niet verzonden. Probeer opnieuw.",
+    gif: {
+      button: "GIF kiezen",
+      title: "Kies een GIF",
+      search: "Zoek een GIF…",
+      empty: "Geen GIFs gevonden.",
+      poweredBy: "Powered by GIPHY",
+    },
   },
   food: {
     title: "Wat eten we?",

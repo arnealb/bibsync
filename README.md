@@ -24,7 +24,8 @@ en chat met je groep. Alles live via Supabase Realtime.
   stemmen op een eetplek (Brug/Panda/Okay of zelf invullen), met reacties +
   realtime, dezelfde functionaliteit als de pauzevoorstellen
 - **Presence** — status (📚☕🍽️🚪🏠) + "terug om", realtime "Wie is er?"-lijst
-- **Chat** — realtime berichten per room, met optimistic verzenden en paginatie
+- **Chat** — realtime berichten per room, met optimistic verzenden, paginatie en
+  een **GIF-picker** (Giphy; optionele gratis API-key)
 - **Admin** — een admin-rol die alle rooms kan zien en beheren (`/app/admin`)
 - Dark mode, mobile-first, Nederlandse UI
 
@@ -79,6 +80,8 @@ NEXT_PUBLIC_SUPABASE_URL=https://<jouw-project>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 # Enkel voor `pnpm seed` — niet voor de app:
 SUPABASE_SECRET_KEY=sb_secret_...
+# Optioneel: GIF-knop in de chat (gratis key via developers.giphy.com):
+NEXT_PUBLIC_GIPHY_API_KEY=
 ```
 
 > **Nieuwe key naming:** BibSync gebruikt de nieuwe Supabase API keys

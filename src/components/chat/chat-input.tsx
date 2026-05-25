@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
 
+import { GifPicker } from "@/components/chat/gif-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { copy } from "@/lib/copy";
@@ -35,6 +36,7 @@ export function ChatInput({
       }}
       className="flex items-end gap-2 border-t bg-background p-2"
     >
+      <GifPicker onSelect={(url) => onSend(url)} />
       <div className="relative flex-1">
         <Textarea
           value={value}
