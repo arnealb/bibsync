@@ -8,6 +8,9 @@ Guidance for Claude Code (and humans) working in this repo.
 the library. Create a room, propose breaks and vote on them, see who's
 studying/on a break in realtime, and chat per room. Dutch UI.
 
+> **Roadmap:** see [`todo.md`](todo.md) for the prioritised feature list — work
+> the item marked _in progress_, then take the next unchecked item in order.
+
 ## Stack & environment
 
 - **Next.js 16** (App Router, TypeScript `strict`, Server Actions, React 19).
