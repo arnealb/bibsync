@@ -1,16 +1,22 @@
-import { getAuthContext } from "@/lib/auth";
-import { copy } from "@/lib/copy";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default async function AppHomePage() {
-  const ctx = await getAuthContext();
-  const name = ctx?.profile?.display_name ?? "student";
+import { LAST_ROOM_COOKIE } from "@/lib/rooms/constants";
+import { getMyRooms } from "@/lib/rooms/queries";
 
-  return (
-    <div className="mx-auto max-w-5xl space-y-3 px-4 py-12">
-      <h1 className="text-2xl font-bold tracking-tight">
-        {copy.appHome.welcome(name)}
-      </h1>
-      <p className="text-muted-foreground">{copy.appHome.placeholder}</p>
-    </div>
-  );
+/**
+ * Entry point for the app: route to the last visited room when known,
+ * otherwise to the rooms overview.
+ */
+export default async function AppIndexPage() {
+  const rooms = await getMyRooms();
+  if (rooms.length === 0) redirect("/app/rooms");
+
+  const cookieStore = await cookies();
+  const lastRoom = cookieStore.get(LAST_ROOM_COOKIE)?.value;
+  if (lastRoom && rooms.some((room) => room.id === lastRoom)) {
+    redirect(`/app/rooms/${lastRoom}`);
+  }
+
+  redirect("/app/rooms");
 }
