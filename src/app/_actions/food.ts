@@ -2,7 +2,9 @@
 
 import type { ActionResult } from "@/app/_actions/types";
 import { copy } from "@/lib/copy";
+import { sendRoomPush } from "@/lib/push/send";
 import { createClient } from "@/lib/supabase/server";
+import { formatTime } from "@/lib/time";
 import {
   addFoodCommentSchema,
   castFoodVoteSchema,
@@ -61,6 +63,14 @@ export async function createFoodProposal(
     console.error("[createFoodProposal]", error);
     return { ok: false, error: copy.common.genericError };
   }
+
+  await sendRoomPush(parsed.data.roomId, "food", {
+    title: copy.push.newFood,
+    body: `${parsed.data.choice} om ${formatTime(parsed.data.foodTime)}`,
+    url: `/app/rooms/${parsed.data.roomId}/eten`,
+    tag: `food-${data.id}`,
+  });
+
   return { ok: true, proposal: data };
 }
 

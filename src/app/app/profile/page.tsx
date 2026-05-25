@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { InstallAppCard } from "@/components/install-app-card";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
+import { NotificationSettings } from "@/components/profile/notification-settings";
 import {
   Card,
   CardContent,
@@ -55,6 +56,10 @@ export default async function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+      <NotificationSettings
+        notifyProposals={ctx.profile?.notify_proposals ?? true}
+        notifyFood={ctx.profile?.notify_food ?? true}
+      />
       <InstallAppCard />
       <LogoutButton />
     </div>

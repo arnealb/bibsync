@@ -328,4 +328,21 @@ export const copy = {
     genericHint:
       'Open deze site op je telefoon in Chrome of Safari en kies "Toevoegen aan beginscherm".',
   },
+  push: {
+    title: "Meldingen",
+    subtitle: "Krijg een melding op dit toestel bij nieuwe voorstellen.",
+    enable: "Meldingen aanzetten",
+    disable: "Meldingen uitzetten op dit toestel",
+    enabledToast: "Meldingen aangezet 🔔",
+    disabledToast: "Meldingen uitgezet.",
+    denied:
+      "Meldingen zijn geblokkeerd. Zet ze aan in je browser-/systeeminstellingen.",
+    unsupported:
+      "Meldingen worden hier niet ondersteund. Op iPhone: installeer eerst de app (Zet op beginscherm).",
+    error: "Kon meldingen niet instellen. Probeer opnieuw.",
+    prefProposals: "Nieuwe pauzevoorstellen",
+    prefFood: "Nieuwe eetvoorstellen",
+    newProposal: "Nieuw pauzevoorstel",
+    newFood: "Nieuw eetvoorstel",
+  },
 } as const;

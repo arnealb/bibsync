@@ -27,6 +27,8 @@ export interface Database {
           display_name: string;
           avatar_url: string | null;
           is_admin: boolean;
+          notify_proposals: boolean;
+          notify_food: boolean;
           created_at: Timestamp;
         };
         Insert: {
@@ -34,6 +36,8 @@ export interface Database {
           display_name: string;
           avatar_url?: string | null;
           is_admin?: boolean;
+          notify_proposals?: boolean;
+          notify_food?: boolean;
           created_at?: Timestamp;
         };
         Update: {
@@ -41,6 +45,8 @@ export interface Database {
           display_name?: string;
           avatar_url?: string | null;
           is_admin?: boolean;
+          notify_proposals?: boolean;
+          notify_food?: boolean;
           created_at?: Timestamp;
         };
         Relationships: [];
@@ -303,12 +309,40 @@ export interface Database {
         };
         Relationships: [];
       };
+      push_subscriptions: {
+        Row: {
+          endpoint: string;
+          user_id: string;
+          p256dh: string;
+          auth: string;
+          created_at: Timestamp;
+        };
+        Insert: {
+          endpoint: string;
+          user_id: string;
+          p256dh: string;
+          auth: string;
+          created_at?: Timestamp;
+        };
+        Update: {
+          endpoint?: string;
+          user_id?: string;
+          p256dh?: string;
+          auth?: string;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
       join_room: {
         Args: { _code: string };
         Returns: string | null;
+      };
+      get_push_targets: {
+        Args: { _room_id: string; _pref: string };
+        Returns: { endpoint: string; p256dh: string; auth: string }[];
       };
     };
     Enums: Record<never, never>;

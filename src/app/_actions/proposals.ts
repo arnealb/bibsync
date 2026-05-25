@@ -2,7 +2,9 @@
 
 import type { ActionResult } from "@/app/_actions/types";
 import { copy } from "@/lib/copy";
+import { sendRoomPush } from "@/lib/push/send";
 import { createClient } from "@/lib/supabase/server";
+import { formatTime } from "@/lib/time";
 import {
   castVoteSchema,
   createProposalSchema,
@@ -62,6 +64,15 @@ export async function createProposal(
     console.error("[createProposal]", error);
     return { ok: false, error: copy.common.genericError };
   }
+
+  await sendRoomPush(parsed.data.roomId, "proposals", {
+    title: copy.push.newProposal,
+    body: `${copy.proposals.types[parsed.data.proposalType]} om ${formatTime(
+      parsed.data.startTime,
+    )}`,
+    url: `/app/rooms/${parsed.data.roomId}`,
+    tag: `proposal-${data.id}`,
+  });
 
   return { ok: true, proposal: data };
 }

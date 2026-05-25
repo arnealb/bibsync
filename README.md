@@ -31,6 +31,8 @@ en chat met je groep. Alles live via Supabase Realtime.
   leden, voorstellen, chat en presence
 - **PWA** — installeerbaar op je telefoon ("Toevoegen aan beginscherm"),
   full-screen met eigen icoon
+- **Push-meldingen** — Web Push bij nieuwe pauze-/eetvoorstellen, met aan/uit per
+  type in je profiel (vereist VAPID-keys; iPhone: geïnstalleerde PWA + iOS 16.4+)
 - Dark mode, mobile-first, Nederlandse UI
 
 ## Setup
@@ -72,6 +74,9 @@ Open in het Supabase dashboard de **SQL Editor** en run beide migrations
    — publieke `avatars` Storage-bucket + policies voor profielfoto's.
 7. [`supabase/migrations/0007_food_time.sql`](supabase/migrations/0007_food_time.sql)
    — voegt een tijd (`food_time`) toe aan eetvoorstellen.
+8. [`supabase/migrations/0008_push.sql`](supabase/migrations/0008_push.sql)
+   — Web Push: `push_subscriptions`-tabel, notificatie-voorkeuren op `profiles`,
+   en de `get_push_targets`-functie.
 
 > Verifieer in de **Table Editor** dat de tabellen bestaan (`profiles`, `rooms`,
 > `room_members`, `break_proposals`, `votes`, `presence`, `messages`). Realtime
