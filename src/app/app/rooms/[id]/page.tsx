@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
 import { copy } from "@/lib/copy";
+import { getRoomProposals } from "@/lib/proposals/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
 interface RoomPageProps {
@@ -22,7 +24,17 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const members = await getRoomMembers(id);
+  const [members, proposalsData] = await Promise.all([
+    getRoomMembers(id),
+    getRoomProposals(id),
+  ]);
+
+  const memberNames: Record<string, string> = Object.fromEntries(
+    members.map((member) => [
+      member.user_id,
+      member.profile?.display_name ?? "—",
+    ]),
+  );
 
   return (
     <RoomDashboard
@@ -34,7 +46,13 @@ export default async function RoomPage({ params }: RoomPageProps) {
       memberCount={members.length}
       statusSlot={null}
       breaksSlot={
-        <p className="text-sm text-muted-foreground">{copy.proposals.empty}</p>
+        <ProposalsPanel
+          roomId={access.room.id}
+          userId={access.userId}
+          members={memberNames}
+          initialProposals={proposalsData.proposals}
+          initialVotes={proposalsData.votes}
+        />
       }
       presenceSlot={
         <p className="text-sm text-muted-foreground">{copy.presence.empty}</p>

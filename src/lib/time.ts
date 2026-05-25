@@ -1,5 +1,5 @@
 import { TZDate } from "@date-fns/tz";
-import { format, formatDistanceToNow } from "date-fns";
+import { addDays, format, formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
 
 /**
@@ -16,6 +16,20 @@ export function nowInBrussels(): TZDate {
 /** ISO date string (YYYY-MM-DD) for "today" in Brussels. */
 export function todayInBrussels(): string {
   return format(nowInBrussels(), "yyyy-MM-dd");
+}
+
+/** ISO date (YYYY-MM-DD) `days` from today in Brussels (e.g. +7). */
+export function isoDatePlus(days: number): string {
+  return format(addDays(nowInBrussels(), days), "yyyy-MM-dd");
+}
+
+/** End time `HH:MM` for a start time + duration, wrapping past midnight. */
+export function endTime(start: string, durationMinutes: number): string {
+  const [hours, minutes] = start.split(":").map(Number);
+  const total = (hours * 60 + minutes + durationMinutes) % (24 * 60);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 /** Format a timestamp as `dd MMM yyyy HH:mm` in Brussels time. */
