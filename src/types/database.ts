@@ -423,6 +423,54 @@ export interface Database {
         };
         Relationships: [];
       };
+      poker_tables: {
+        Row: {
+          room_id: string;
+          state: Record<string, unknown>;
+          version: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          room_id: string;
+          state: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          room_id?: string;
+          state?: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      poker_private: {
+        Row: { room_id: string; hand_no: number; deck: string[] };
+        Insert: { room_id: string; hand_no: number; deck: string[] };
+        Update: { room_id?: string; hand_no?: number; deck?: string[] };
+        Relationships: [];
+      };
+      poker_hole_cards: {
+        Row: {
+          room_id: string;
+          hand_no: number;
+          user_id: string;
+          cards: string[];
+        };
+        Insert: {
+          room_id: string;
+          hand_no: number;
+          user_id: string;
+          cards: string[];
+        };
+        Update: {
+          room_id?: string;
+          hand_no?: number;
+          user_id?: string;
+          cards?: string[];
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -467,3 +515,5 @@ export type InstantBreakPush =
   Database["public"]["Tables"]["instant_break_pushes"]["Row"];
 export type InstantBreak =
   Database["public"]["Tables"]["instant_breaks"]["Row"];
+export type PokerTableRow =
+  Database["public"]["Tables"]["poker_tables"]["Row"];

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, Copy, LogOut, Settings, UtensilsCrossed } from "lucide-react";
+import { Check, Copy, LogOut, Settings, Spade, UtensilsCrossed } from "lucide-react";
 
 import { leaveRoom } from "@/app/_actions/rooms";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,16 @@ export function RoomActions({ roomId, joinCode, isOwner }: RoomActionsProps) {
       >
         <UtensilsCrossed className="size-4" />
         {copy.food.nav}
+      </Button>
+      <Button
+        render={<Link href={`/app/rooms/${roomId}/poker`} />}
+        nativeButton={false}
+        variant="outline"
+        size="sm"
+        className="gap-1.5"
+      >
+        <Spade className="size-4" />
+        {copy.poker.nav}
       </Button>
       <Button
         variant="outline"
