@@ -18,6 +18,9 @@ export interface RoomAccess {
   room: Room;
   userId: string;
   isOwner: boolean;
+  isAdmin: boolean;
+  /** Owner or admin — may rename / delete / manage the room. */
+  canManage: boolean;
 }
 
 /** Rooms the current user owns or is a member of, with member counts. */
@@ -65,10 +68,13 @@ export const requireRoomAccess = cache(
     if (!ctx) return null;
     const room = await getRoom(roomId);
     if (!room) return null;
+    const isOwner = room.owner_id === ctx.user.id;
     return {
       room,
       userId: ctx.user.id,
-      isOwner: room.owner_id === ctx.user.id,
+      isOwner,
+      isAdmin: ctx.isAdmin,
+      canManage: isOwner || ctx.isAdmin,
     };
   },
 );

@@ -26,18 +26,21 @@ export interface Database {
           id: string;
           display_name: string;
           avatar_url: string | null;
+          is_admin: boolean;
           created_at: Timestamp;
         };
         Insert: {
           id: string;
           display_name: string;
           avatar_url?: string | null;
+          is_admin?: boolean;
           created_at?: Timestamp;
         };
         Update: {
           id?: string;
           display_name?: string;
           avatar_url?: string | null;
+          is_admin?: boolean;
           created_at?: Timestamp;
         };
         Relationships: [];

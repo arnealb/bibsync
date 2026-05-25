@@ -21,6 +21,7 @@ en chat met je groep. Alles live via Supabase Realtime.
   (👍/🤔/👎) met optimistic updates
 - **Presence** — status (📚☕🍽️🚪🏠) + "terug om", realtime "Wie is er?"-lijst
 - **Chat** — realtime berichten per room, met optimistic verzenden en paginatie
+- **Admin** — een admin-rol die alle rooms kan zien en beheren (`/app/admin`)
 - Dark mode, mobile-first, Nederlandse UI
 
 ## Setup
@@ -50,6 +51,9 @@ Open in het Supabase dashboard de **SQL Editor** en run beide migrations
    alle tabellen, RLS-policies, profiel-trigger, indexes en realtime-publicatie.
 2. [`supabase/migrations/0002_join_room.sql`](supabase/migrations/0002_join_room.sql)
    — de `join_room`-functie (nodig om via code te joinen).
+3. [`supabase/migrations/0003_admin.sql`](supabase/migrations/0003_admin.sql)
+   — admin-rol (`is_admin`-vlag + admin RLS-policies). Promoot een gebruiker met
+   `update profiles set is_admin = true where id = …` (zie onderaan het bestand).
 
 > Verifieer in de **Table Editor** dat de tabellen bestaan (`profiles`, `rooms`,
 > `room_members`, `break_proposals`, `votes`, `presence`, `messages`). Realtime
@@ -95,8 +99,10 @@ pnpm seed
 
 Vereist `SUPABASE_SECRET_KEY` in `.env.local`. Maakt 3 testgebruikers
 (`alice@bibsync.test`, `bob@…`, `charlie@…`, wachtwoord `test1234`) aan met een
-demo-room (join code `DEMO42`), voorstellen, stemmen, presence en berichten.
-Zonder secret key stopt het script netjes met een melding.
+demo-room (join code `DEMO42`), voorstellen, stemmen, presence en berichten —
+plus een **admin-account** (`beheerder@bibsync.test` / `Bib$ync-Beheer-2026`).
+Zonder secret key stopt het script netjes met een melding. (Vereist dat
+migration `0003_admin.sql` gedraaid is voor het admin-vlaggetje.)
 
 ## Deploy naar Vercel
 

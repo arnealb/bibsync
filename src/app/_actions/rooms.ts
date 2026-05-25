@@ -35,6 +35,21 @@ async function isRoomOwner(roomId: string, userId: string): Promise<boolean> {
   return data?.owner_id === userId;
 }
 
+async function isUserAdmin(userId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", userId)
+    .maybeSingle();
+  return data?.is_admin === true;
+}
+
+/** Owners and admins may manage a room. */
+async function canManageRoom(roomId: string, userId: string): Promise<boolean> {
+  return (await isRoomOwner(roomId, userId)) || (await isUserAdmin(userId));
+}
+
 export async function createRoom(
   _prev: ActionResult | null,
   formData: FormData,
@@ -147,7 +162,7 @@ export async function kickMember(
   const me = await currentUserId();
   if (!me) return { ok: false, error: copy.common.notAuthenticated };
   if (userId === me) return { ok: false, error: copy.common.genericError };
-  if (!(await isRoomOwner(roomId, me))) {
+  if (!(await canManageRoom(roomId, me))) {
     return { ok: false, error: copy.rooms.onlyOwner };
   }
 
@@ -169,7 +184,7 @@ export async function kickMember(
 export async function regenerateJoinCode(roomId: string): Promise<ActionResult> {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: copy.common.notAuthenticated };
-  if (!(await isRoomOwner(roomId, userId))) {
+  if (!(await canManageRoom(roomId, userId))) {
     return { ok: false, error: copy.rooms.onlyOwner };
   }
 
@@ -210,7 +225,7 @@ export async function renameRoom(
 
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: copy.common.notAuthenticated };
-  if (!(await isRoomOwner(parsed.data.roomId, userId))) {
+  if (!(await canManageRoom(parsed.data.roomId, userId))) {
     return { ok: false, error: copy.rooms.onlyOwner };
   }
 
@@ -235,7 +250,7 @@ export async function renameRoom(
 export async function deleteRoom(roomId: string): Promise<ActionResult> {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: copy.common.notAuthenticated };
-  if (!(await isRoomOwner(roomId, userId))) {
+  if (!(await canManageRoom(roomId, userId))) {
     return { ok: false, error: copy.rooms.onlyOwner };
   }
 

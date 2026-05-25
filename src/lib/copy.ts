@@ -15,6 +15,15 @@ export const copy = {
     logout: "Uitloggen",
     profile: "Profiel",
     toApp: "Naar de app",
+    admin: "Admin",
+  },
+  admin: {
+    title: "Admin",
+    subtitle: "Beheer alle rooms in BibSync.",
+    badge: "Admin",
+    owner: "Eigenaar",
+    manage: "Beheren",
+    empty: "Er zijn nog geen rooms.",
   },
   landing: {
     heroTitle: "Studeer samen, pauzeer samen.",

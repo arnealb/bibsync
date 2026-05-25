@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { Shield } from "lucide-react";
 
 import { RoomSwitcher } from "@/components/app/room-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { getAuthContext } from "@/lib/auth";
 import { copy } from "@/lib/copy";
 import { getInitials } from "@/lib/initials";
@@ -25,6 +27,17 @@ export async function AppHeader() {
           />
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {ctx?.isAdmin && (
+            <Button
+              render={<Link href="/app/admin" />}
+              nativeButton={false}
+              variant="ghost"
+              size="icon"
+              aria-label={copy.nav.admin}
+            >
+              <Shield />
+            </Button>
+          )}
           <ThemeToggle />
           <Link
             href="/app/profile"

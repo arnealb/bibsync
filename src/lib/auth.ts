@@ -6,6 +6,7 @@ import type { Profile } from "@/types/database";
 interface AuthContext {
   user: { id: string; email: string | null };
   profile: Profile | null;
+  isAdmin: boolean;
 }
 
 /**
@@ -31,6 +32,7 @@ export const getAuthContext = cache(
     return {
       user: { id: user.id, email: user.email ?? null },
       profile,
+      isAdmin: profile?.is_admin ?? false,
     };
   },
 );

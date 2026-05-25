@@ -33,6 +33,13 @@ const USERS = [
   { email: "charlie@bibsync.test", name: "Charlie" },
 ];
 
+// Admin account — deliberately NOT admin/admin.
+const ADMIN = {
+  email: "beheerder@bibsync.test",
+  name: "Beheerder",
+  password: "Bib$ync-Beheer-2026",
+};
+
 function isoDatePlus(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -42,10 +49,11 @@ function isoDatePlus(days: number): string {
 async function ensureUser(
   email: string,
   name: string,
+  password: string = PASSWORD,
 ): Promise<string> {
   const created = await admin.auth.admin.createUser({
     email,
-    password: PASSWORD,
+    password,
     email_confirm: true,
     user_metadata: { display_name: name },
   });
@@ -170,13 +178,27 @@ async function main() {
   await reset("messages", roomId, admin);
   await admin.from("messages").insert([
     { room_id: roomId, author_id: alice, content: "Hey allemaal! 👋" },
-    { room_id: roomId, author_id: bob, content: "Ik ben er, koffie om 15u?" },
+    { room_id: roomId, author_id: bob, content: "Ik ben er, pauze om 15u?" },
     { room_id: roomId, author_id: charlie, content: "Top, ik join na de lunch." },
   ]);
   console.log("  ✓ berichten");
 
+  const adminId = await ensureUser(ADMIN.email, ADMIN.name, ADMIN.password);
+  const { error: adminError } = await admin
+    .from("profiles")
+    .update({ is_admin: true })
+    .eq("id", adminId);
+  if (adminError) {
+    console.log(
+      "  ⚠  Kon is_admin niet zetten — heb je migration 0003_admin.sql gedraaid?",
+    );
+  } else {
+    console.log("  ✓ admin-account");
+  }
+
   console.log(
     `\n✅ Klaar! Log in met ${USERS[0].email} / ${PASSWORD} (of bob/charlie).` +
+      `\n   Admin: ${ADMIN.email} / ${ADMIN.password}` +
       `\n   Join code van de demo-room: ${JOIN_CODE}`,
   );
 }

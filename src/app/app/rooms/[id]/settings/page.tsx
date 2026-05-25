@@ -32,7 +32,7 @@ export async function generateMetadata({
 export default async function RoomSettingsPage({ params }: SettingsPageProps) {
   const { id } = await params;
   const access = await requireRoomAccess(id);
-  if (!access || !access.isOwner) notFound();
+  if (!access || !access.canManage) notFound();
 
   const members = await getRoomMembers(id);
   const memberItems = members.map((member) => ({
