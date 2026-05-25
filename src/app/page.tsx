@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarClock, Users, Vote } from "lucide-react";
 
+import { InstallAppCard } from "@/components/install-app-card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
@@ -70,6 +71,10 @@ export default function LandingPage() {
             </li>
           ))}
         </ul>
+
+        <div className="mx-auto mt-8 w-full max-w-md text-left">
+          <InstallAppCard />
+        </div>
       </main>
 
       <footer className="px-6 py-6 text-center text-sm text-muted-foreground">

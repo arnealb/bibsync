@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { LogoutButton } from "@/components/auth/logout-button";
+import { InstallAppCard } from "@/components/install-app-card";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
 import {
   Card,
@@ -54,6 +55,7 @@ export default async function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+      <InstallAppCard />
       <LogoutButton />
     </div>
   );

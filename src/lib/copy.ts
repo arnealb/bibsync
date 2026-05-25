@@ -317,4 +317,14 @@ export const copy = {
     },
     slotTaken: "Deze keuze staat al voor die dag.",
   },
+  pwa: {
+    title: "Installeer als app",
+    subtitle:
+      "Voeg BibSync toe aan je beginscherm voor snelle, full-screen toegang.",
+    install: "Installeren",
+    iosHint:
+      'Tik op het Deel-icoon (vierkant met pijl) en kies "Zet op beginscherm".',
+    genericHint:
+      'Open deze site op je telefoon in Chrome of Safari en kies "Toevoegen aan beginscherm".',
+  },
 } as const;
