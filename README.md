@@ -29,6 +29,8 @@ en chat met je groep. Alles live via Supabase Realtime.
 - **Admin** — een admin-rol die alle rooms kan zien en beheren (`/app/admin`)
 - **Profielfoto's** — upload via Supabase Storage; getoond in header, profiel,
   leden, voorstellen, chat en presence
+- **PWA** — installeerbaar op je telefoon ("Toevoegen aan beginscherm"),
+  full-screen met eigen icoon
 - Dark mode, mobile-first, Nederlandse UI
 
 ## Setup

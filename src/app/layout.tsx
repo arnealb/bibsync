@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { PwaRegister } from "@/components/pwa-register";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { copy } from "@/lib/copy";
@@ -22,6 +23,20 @@ export const metadata: Metadata = {
     template: `%s · ${copy.app.name}`,
   },
   description: copy.app.description,
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: copy.app.name,
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/apple-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
 };
 
 export default function RootLayout({
@@ -45,6 +60,7 @@ export default function RootLayout({
           {children}
           <Toaster richColors position="top-center" />
         </ThemeProvider>
+        <PwaRegister />
       </body>
     </html>
   );
