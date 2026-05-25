@@ -70,6 +70,8 @@ Open in het Supabase dashboard de **SQL Editor** en run beide migrations
    realtime.
 6. [`supabase/migrations/0006_avatars.sql`](supabase/migrations/0006_avatars.sql)
    — publieke `avatars` Storage-bucket + policies voor profielfoto's.
+7. [`supabase/migrations/0007_food_time.sql`](supabase/migrations/0007_food_time.sql)
+   — voegt een tijd (`food_time`) toe aan eetvoorstellen.
 
 > Verifieer in de **Table Editor** dat de tabellen bestaan (`profiles`, `rooms`,
 > `room_members`, `break_proposals`, `votes`, `presence`, `messages`). Realtime

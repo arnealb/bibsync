@@ -306,6 +306,7 @@ export const copy = {
       customLabel: "Andere (zelf invullen)",
       customPlaceholder: "bv. frituur",
       dateLabel: "Datum",
+      timeLabel: "Hoe laat",
       noteLabel: "Notitie (optioneel)",
       notePlaceholder: "bv. vertrek om 12u",
       submit: "Voorstel plaatsen",

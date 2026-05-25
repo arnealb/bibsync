@@ -4,6 +4,8 @@ import { copy } from "@/lib/copy";
 import { isoDatePlus } from "@/lib/time";
 import { MAX_DAYS_AHEAD, VOTE_VALUES } from "@/lib/validation/proposals";
 
+const QUARTER_HOUR = /^([01]\d|2[0-3]):(00|15|30|45)$/;
+
 export const createFoodProposalSchema = z
   .object({
     roomId: z.string().uuid(),
@@ -13,6 +15,9 @@ export const createFoodProposalSchema = z
       .min(1, copy.food.validation.choiceRequired)
       .max(60, copy.food.validation.choiceTooLong),
     foodDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    foodTime: z
+      .string()
+      .regex(QUARTER_HOUR, copy.proposals.validation.timeQuarter),
     note: z.string().trim().max(200).optional(),
   })
   .superRefine((value, ctx) => {

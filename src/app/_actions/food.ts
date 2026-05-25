@@ -50,6 +50,7 @@ export async function createFoodProposal(
       room_id: parsed.data.roomId,
       created_by: uid,
       food_date: parsed.data.foodDate,
+      food_time: parsed.data.foodTime,
       choice: parsed.data.choice,
       note: parsed.data.note ?? null,
     })

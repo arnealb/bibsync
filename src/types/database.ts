@@ -228,6 +228,7 @@ export interface Database {
           room_id: string;
           created_by: string;
           food_date: DateString;
+          food_time: TimeString | null;
           choice: string;
           note: string | null;
           created_at: Timestamp;
@@ -237,6 +238,7 @@ export interface Database {
           room_id: string;
           created_by: string;
           food_date: DateString;
+          food_time?: TimeString | null;
           choice: string;
           note?: string | null;
           created_at?: Timestamp;
@@ -246,6 +248,7 @@ export interface Database {
           room_id?: string;
           created_by?: string;
           food_date?: DateString;
+          food_time?: TimeString | null;
           choice?: string;
           note?: string | null;
           created_at?: Timestamp;

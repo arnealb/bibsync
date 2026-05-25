@@ -8,7 +8,7 @@ import { UserAvatar } from "@/components/user-avatar";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
 import { formatTally, voteWeight } from "@/lib/proposals/joke";
-import { formatDateLong, isoDatePlus } from "@/lib/time";
+import { formatDateLong, formatTime, isoDatePlus } from "@/lib/time";
 import { VOTE_VALUES } from "@/lib/validation/proposals";
 import type { FoodComment, FoodProposal, FoodVote, VoteValue } from "@/types/database";
 
@@ -64,6 +64,7 @@ export function FoodCard({
             <p className="font-medium">{proposal.choice}</p>
             <p className="text-sm text-muted-foreground">
               {dateLabel(proposal.food_date)}
+              {proposal.food_time && ` · ${formatTime(proposal.food_time)}`}
             </p>
           </div>
         </div>

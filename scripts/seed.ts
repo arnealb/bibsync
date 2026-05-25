@@ -206,8 +206,20 @@ async function main() {
   const { data: foods } = await admin
     .from("food_proposals")
     .insert([
-      { room_id: roomId, created_by: alice, food_date: isoDatePlus(0), choice: "Brug" },
-      { room_id: roomId, created_by: bob, food_date: isoDatePlus(0), choice: "Panda" },
+      {
+        room_id: roomId,
+        created_by: alice,
+        food_date: isoDatePlus(0),
+        food_time: "12:00",
+        choice: "Brug",
+      },
+      {
+        room_id: roomId,
+        created_by: bob,
+        food_date: isoDatePlus(0),
+        food_time: "12:30",
+        choice: "Panda",
+      },
     ])
     .select("id");
   if (foods && foods.length > 0) {
