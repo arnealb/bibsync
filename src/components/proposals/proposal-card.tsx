@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
 import { getInitials } from "@/lib/initials";
-import { voterDisplayName } from "@/lib/proposals/joke";
+import { formatTally, voteWeight } from "@/lib/proposals/joke";
 import { endTime, formatDateLong, formatTime, isoDatePlus } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { VOTE_VALUES } from "@/lib/validation/proposals";
@@ -103,7 +103,12 @@ export function ProposalCard({
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         {VOTE_VALUES.map((value) => {
-          const count = votes.filter((vote) => vote.vote === value).length;
+          const count = votes
+            .filter((vote) => vote.vote === value)
+            .reduce(
+              (sum, vote) => sum + voteWeight(members[vote.user_id] ?? ""),
+              0,
+            );
           return (
             <Button
               key={value}
@@ -115,7 +120,7 @@ export function ProposalCard({
             >
               <span aria-hidden>{VOTE_EMOJI[value]}</span>
               {copy.proposals.votes[value]}
-              <span className="tabular-nums">{count}</span>
+              <span className="tabular-nums">{formatTally(count)}</span>
             </Button>
           );
         })}
@@ -145,7 +150,7 @@ function Voters({
       {VOTE_VALUES.map((value) => {
         const names = votes
           .filter((vote) => vote.vote === value)
-          .map((vote) => voterDisplayName(members[vote.user_id] ?? "—"));
+          .map((vote) => members[vote.user_id] ?? "—");
         if (names.length === 0) return null;
         return (
           <li key={value} className={cn("flex gap-1.5")}>
