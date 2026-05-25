@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import type { AuthState } from "@/app/_actions/auth-types";
 import { copy } from "@/lib/copy";
 import { createClient } from "@/lib/supabase/server";
 import { getOrigin } from "@/lib/url";
@@ -11,14 +12,6 @@ import {
   magicLinkSchema,
   registerSchema,
 } from "@/lib/validation/auth";
-
-/** Result returned to a form via `useActionState`. */
-export type AuthState =
-  | { status: "idle" }
-  | { status: "error"; message: string }
-  | { status: "success"; message: string };
-
-export const initialAuthState: AuthState = { status: "idle" };
 
 /** Only allow in-app relative redirect targets to avoid open redirects. */
 function safeRedirectTarget(value: FormDataEntryValue | null): string {

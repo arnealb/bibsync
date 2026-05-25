@@ -1,4 +1,4 @@
-import type { AuthState } from "@/app/_actions/auth";
+import type { AuthState } from "@/app/_actions/auth-types";
 import { cn } from "@/lib/utils";
 
 /** Inline status message under a form (error or success). */

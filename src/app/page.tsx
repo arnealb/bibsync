@@ -20,7 +20,11 @@ export default function LandingPage() {
         </span>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button render={<Link href="/login" />} variant="ghost">
+          <Button
+            render={<Link href="/login" />}
+            nativeButton={false}
+            variant="ghost"
+          >
             {copy.nav.login}
           </Button>
         </div>
@@ -37,6 +41,7 @@ export default function LandingPage() {
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
               render={<Link href="/register" />}
+              nativeButton={false}
               size="lg"
               className="w-full sm:w-auto"
             >
@@ -44,6 +49,7 @@ export default function LandingPage() {
             </Button>
             <Button
               render={<Link href="/login" />}
+              nativeButton={false}
               size="lg"
               variant="outline"
               className="w-full sm:w-auto"

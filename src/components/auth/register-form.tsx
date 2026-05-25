@@ -3,7 +3,8 @@
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
 
-import { initialAuthState, registerAction } from "@/app/_actions/auth";
+import { registerAction } from "@/app/_actions/auth";
+import { initialAuthState } from "@/app/_actions/auth-types";
 import { FormMessage } from "@/components/auth/form-message";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Input } from "@/components/ui/input";
