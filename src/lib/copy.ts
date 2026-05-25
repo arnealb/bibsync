@@ -215,6 +215,8 @@ export const copy = {
     seated: "Je zit aan tafel",
     deal: "Deel hand",
     rebuy: "Bijkopen",
+    leave: "Tafel verlaten",
+    leaveMidHand: "Je zit in een hand — verlaten betekent folden.",
     fold: "Fold",
     check: "Check",
     call: "Call",

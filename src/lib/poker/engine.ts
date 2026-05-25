@@ -18,6 +18,7 @@ export interface EnginePlayer {
   handCommitted: number; // committed across the whole hand
   status: PlayerStatus;
   hasActed: boolean; // has acted since the last raise this street
+  leaving?: boolean; // asked to leave; seat is removed at the next hand
 }
 
 export interface HandResult {
@@ -148,7 +149,50 @@ export function addPlayer(
     handCommitted: 0,
     status: "out",
     hasActed: false,
+    leaving: false,
   });
+  return s;
+}
+
+/** Removes a seat outright and keeps the button index valid. */
+function removeSeat(state: FullState, idx: number): void {
+  state.players.splice(idx, 1);
+  if (state.players.length === 0) {
+    state.buttonIndex = -1;
+    return;
+  }
+  if (idx < state.buttonIndex) state.buttonIndex -= 1;
+  if (state.buttonIndex >= state.players.length) {
+    state.buttonIndex = state.players.length - 1;
+  }
+}
+
+/**
+ * Leave the table. Between hands the seat is removed immediately; during a
+ * live hand the player is folded and flagged to be removed at the next deal,
+ * so the engine's seat indices stay valid.
+ */
+export function requestLeave(state: FullState, userId: string): FullState {
+  const idx = findIndex(state, userId);
+  if (idx === -1) return state;
+  const s = clone(state);
+
+  if (s.status === "betting") {
+    const p = s.players[idx];
+    p.leaving = true;
+    if (p.status === "active" || p.status === "allin") {
+      if (s.toActIndex === idx) return applyAction(s, userId, "fold");
+      p.status = "folded";
+      p.hasActed = true;
+      const contenders = s.players.filter(inHand);
+      if (contenders.length <= 1) settleSingle(s);
+    }
+    s.version += 1;
+    return s;
+  }
+
+  removeSeat(s, idx);
+  s.version += 1;
   return s;
 }
 
@@ -172,6 +216,12 @@ export function rebuy(
 
 export function startHand(state: FullState, shuffledDeck: Card[]): FullState {
   const s = clone(state);
+
+  // Drop anyone who asked to leave during the previous hand.
+  for (let i = s.players.length - 1; i >= 0; i--) {
+    if (s.players[i].leaving) removeSeat(s, i);
+  }
+
   const eligible = s.players.filter((p) => p.chips > 0);
   if (eligible.length < 2) {
     throw new Error("Niet genoeg spelers met fiches om te starten.");

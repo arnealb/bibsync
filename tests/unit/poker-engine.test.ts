@@ -7,6 +7,7 @@ import {
   buildSidePots,
   initialState,
   potTotal,
+  requestLeave,
   startHand,
   type ActionType,
   type EnginePlayer,
@@ -120,6 +121,40 @@ describe("side pots with unequal all-ins", () => {
     expect(chipsOf(s, "C")).toBe(2000);
     expect(chipsOf(s, "A")).toBe(0);
     expect(potTotal(s)).toBe(250);
+  });
+});
+
+describe("requestLeave", () => {
+  it("removes the seat immediately between hands", () => {
+    const s = requestLeave(
+      table([
+        ["A", 2000],
+        ["B", 2000],
+        ["C", 2000],
+      ]),
+      "B",
+    );
+    expect(s.players.map((p) => p.userId)).toEqual(["A", "C"]);
+  });
+
+  it("folds a leaver mid-hand and removes them on the next deal", () => {
+    let s = startHand(
+      table([
+        ["A", 2000],
+        ["B", 2000],
+      ]),
+      deck("As Ah Kd Kc 2c 7d 9s Js 3h"),
+    );
+    s = requestLeave(s, "A"); // A is to act -> folds and is flagged leaving
+    expect(s.status).toBe("showdown");
+    expect(chipsOf(s, "B")).toBe(2010);
+    expect(s.players.find((p) => p.userId === "A")?.leaving).toBe(true);
+    expect(s.players.some((p) => p.userId === "A")).toBe(true); // still seated
+
+    // C joins, next deal drops the leaver A.
+    s = addPlayer(s, "C", 2000);
+    s = startHand(s, deck("2c 3d 4h 5s 6c 7d 8s 9h Tc"));
+    expect(s.players.map((p) => p.userId).sort()).toEqual(["B", "C"]);
   });
 });
 

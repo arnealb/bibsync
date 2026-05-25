@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import {
   getMyPokerHand,
+  leavePokerTable,
   playPokerAction,
   rebuyPoker,
   sitDownPoker,
@@ -340,6 +341,25 @@ export function PokerPanel({
             {copy.poker.waitingFor(
               members[table.players[table.toActIndex].userId]?.name ?? "—",
             )}
+          </p>
+        )}
+
+        {seated && (
+          <div className="flex justify-center border-t pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              disabled={pending}
+              onClick={() => run(() => leavePokerTable(roomId))}
+            >
+              {copy.poker.leave}
+            </Button>
+          </div>
+        )}
+        {seated && inHand && seat?.status !== "folded" && (
+          <p className="text-center text-xs text-muted-foreground">
+            {copy.poker.leaveMidHand}
           </p>
         )}
       </div>

@@ -15,6 +15,7 @@ import {
   applyAction,
   initialState,
   rebuy as engineRebuy,
+  requestLeave,
   startHand as engineStartHand,
   toPublicState,
   type FullState,
@@ -233,6 +234,19 @@ export async function rebuyPoker(roomId: string): Promise<ActionResult> {
 
   const loaded = await loadOrCreate(auth.admin, roomId);
   const next = engineRebuy(loaded.full, auth.userId, POKER_START_CHIPS);
+  if (next === loaded.full) return { ok: true };
+
+  const ok = await persist(auth.admin, roomId, loaded.version, next);
+  return ok ? { ok: true } : { ok: false, error: copy.poker.busy };
+}
+
+/** Leave the table (folds first if a hand is live). */
+export async function leavePokerTable(roomId: string): Promise<ActionResult> {
+  const auth = await authorize(roomId);
+  if (!auth.ok) return auth;
+
+  const loaded = await loadOrCreate(auth.admin, roomId);
+  const next = requestLeave(loaded.full, auth.userId);
   if (next === loaded.full) return { ok: true };
 
   const ok = await persist(auth.admin, roomId, loaded.version, next);
