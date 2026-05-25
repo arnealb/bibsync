@@ -30,10 +30,7 @@ export const metadata: Metadata = {
     title: copy.app.name,
     statusBarStyle: "default",
   },
-  icons: {
-    icon: "/icon-192.png",
-    apple: "/apple-icon.png",
-  },
+  // Favicon + apple icon come from app/icon.png and app/apple-icon.png.
 };
 
 export const viewport: Viewport = {
