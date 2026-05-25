@@ -18,7 +18,8 @@ en chat met je groep. Alles live via Supabase Realtime.
 - **Rooms** — aanmaken, joinen via 6-cijferige code, owner-instellingen
   (hernoemen, code vernieuwen, leden kicken, verwijderen)
 - **Pauzevoorstellen** — type/datum/kwartier-tijd/duur/notitie, stemmen
-  (👍/🤔/👎) met optimistic updates
+  (👍/🤔/👎) met optimistic updates, **kalender-filter** (dag/week/maand) en
+  **reacties** per voorstel. Voorstellen verdwijnen 1u na hun einde.
 - **Presence** — status (📚☕🍽️🚪🏠) + "terug om", realtime "Wie is er?"-lijst
 - **Chat** — realtime berichten per room, met optimistic verzenden en paginatie
 - **Admin** — een admin-rol die alle rooms kan zien en beheren (`/app/admin`)
@@ -54,6 +55,8 @@ Open in het Supabase dashboard de **SQL Editor** en run beide migrations
 3. [`supabase/migrations/0003_admin.sql`](supabase/migrations/0003_admin.sql)
    — admin-rol (`is_admin`-vlag + admin RLS-policies). Promoot een gebruiker met
    `update profiles set is_admin = true where id = …` (zie onderaan het bestand).
+4. [`supabase/migrations/0004_proposal_comments.sql`](supabase/migrations/0004_proposal_comments.sql)
+   — reacties (comments) op voorstellen, met RLS + realtime.
 
 > Verifieer in de **Table Editor** dat de tabellen bestaan (`profiles`, `rooms`,
 > `room_members`, `break_proposals`, `votes`, `presence`, `messages`). Realtime

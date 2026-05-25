@@ -4,6 +4,10 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
+import {
+  addProposalComment,
+  deleteProposalComment,
+} from "@/app/_actions/proposal-comments";
 import { castVote, deleteProposal } from "@/app/_actions/proposals";
 import { ProposalCalendarBar } from "@/components/proposals/proposal-calendar-bar";
 import { ProposalCard } from "@/components/proposals/proposal-card";
@@ -16,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useProposalCommentsRealtime } from "@/hooks/use-proposal-comments-realtime";
 import { useProposalsRealtime } from "@/hooks/use-proposals-realtime";
 import { copy } from "@/lib/copy";
 import {
@@ -26,7 +31,12 @@ import {
 import { dateLabelGroups } from "@/lib/proposals/group";
 import { isProposalVisible } from "@/lib/proposals/visibility";
 import { isoDatePlus } from "@/lib/time";
-import type { BreakProposal, Vote, VoteValue } from "@/types/database";
+import type {
+  BreakProposal,
+  ProposalComment,
+  Vote,
+  VoteValue,
+} from "@/types/database";
 
 interface ProposalsPanelProps {
   roomId: string;
@@ -34,6 +44,7 @@ interface ProposalsPanelProps {
   members: Record<string, string>;
   initialProposals: BreakProposal[];
   initialVotes: Vote[];
+  initialComments: ProposalComment[];
 }
 
 export function ProposalsPanel({
@@ -42,9 +53,11 @@ export function ProposalsPanel({
   members,
   initialProposals,
   initialVotes,
+  initialComments,
 }: ProposalsPanelProps) {
   const [proposals, setProposals] = useState(initialProposals);
   const [votes, setVotes] = useState(initialVotes);
+  const [comments, setComments] = useState(initialComments);
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [view, setView] = useState<CalendarView>("week");
@@ -96,6 +109,17 @@ export function ProposalsPanel({
       ),
   });
 
+  useProposalCommentsRealtime(roomId, {
+    onInsert: (comment) =>
+      setComments((prev) =>
+        prev.some((item) => item.id === comment.id)
+          ? prev
+          : [...prev, comment],
+      ),
+    onDelete: (id) =>
+      setComments((prev) => prev.filter((item) => item.id !== id)),
+  });
+
   function handleVote(proposalId: string, value: VoteValue) {
     const snapshot = votes;
     setVotes((prev) => [
@@ -127,6 +151,44 @@ export function ProposalsPanel({
       if (result.ok) toast.success(copy.proposals.deleted);
       else {
         setProposals(snapshot);
+        toast.error(result.error);
+      }
+    });
+  }
+
+  function handleAddComment(proposalId: string, content: string) {
+    const tempId = `temp-${crypto.randomUUID()}`;
+    setComments((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        proposal_id: proposalId,
+        room_id: roomId,
+        author_id: userId,
+        content,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+    startTransition(async () => {
+      const result = await addProposalComment({ proposalId, content });
+      setComments((prev) => {
+        const withoutTemp = prev.filter((item) => item.id !== tempId);
+        if (!result.ok) return withoutTemp;
+        return withoutTemp.some((item) => item.id === result.comment.id)
+          ? withoutTemp
+          : [...withoutTemp, result.comment];
+      });
+      if (!result.ok) toast.error(result.error);
+    });
+  }
+
+  function handleDeleteComment(commentId: string) {
+    const snapshot = comments;
+    setComments((prev) => prev.filter((item) => item.id !== commentId));
+    startTransition(async () => {
+      const result = await deleteProposalComment(commentId);
+      if (!result.ok) {
+        setComments(snapshot);
         toast.error(result.error);
       }
     });
@@ -197,11 +259,16 @@ export function ProposalsPanel({
                     key={proposal.id}
                     proposal={proposal}
                     votes={votes.filter((v) => v.proposal_id === proposal.id)}
+                    comments={comments.filter(
+                      (c) => c.proposal_id === proposal.id,
+                    )}
                     members={members}
                     userId={userId}
                     canDelete={proposal.created_by === userId}
                     onVote={(value) => handleVote(proposal.id, value)}
                     onDelete={() => handleDelete(proposal.id)}
+                    onAddComment={handleAddComment}
+                    onDeleteComment={handleDeleteComment}
                   />
                 ))}
               </div>

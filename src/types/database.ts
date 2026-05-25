@@ -195,6 +195,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      proposal_comments: {
+        Row: {
+          id: string;
+          proposal_id: string;
+          room_id: string;
+          author_id: string;
+          content: string;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          proposal_id: string;
+          room_id: string;
+          author_id: string;
+          content: string;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          proposal_id?: string;
+          room_id?: string;
+          author_id?: string;
+          content?: string;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -218,3 +245,5 @@ export type BreakProposal =
 export type Vote = Database["public"]["Tables"]["votes"]["Row"];
 export type Presence = Database["public"]["Tables"]["presence"]["Row"];
 export type Message = Database["public"]["Tables"]["messages"]["Row"];
+export type ProposalComment =
+  Database["public"]["Tables"]["proposal_comments"]["Row"];

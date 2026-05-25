@@ -183,6 +183,25 @@ async function main() {
   ]);
   console.log("  ✓ berichten");
 
+  await reset("proposal_comments", roomId, admin);
+  if (proposals && proposals.length > 0) {
+    await admin.from("proposal_comments").insert([
+      {
+        proposal_id: proposals[0].id,
+        room_id: roomId,
+        author_id: bob,
+        content: "Top idee, ik ben erbij!",
+      },
+      {
+        proposal_id: proposals[0].id,
+        room_id: roomId,
+        author_id: charlie,
+        content: "Ik kom iets later.",
+      },
+    ]);
+    console.log("  ✓ reacties");
+  }
+
   const adminId = await ensureUser(ADMIN.email, ADMIN.name, ADMIN.password);
   const { error: adminError } = await admin
     .from("profiles")

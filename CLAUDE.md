@@ -72,6 +72,8 @@ Editor, in order:
 2. `0002_join_room.sql` — `join_room(code)` RPC (joining needs to look up a room
    you're not yet a member of, which RLS blocks).
 3. `0003_admin.sql` — `profiles.is_admin`, `is_admin()`, admin RLS policies.
+4. `0004_proposal_comments.sql` — comments on proposals (`proposal_comments`,
+   with `room_id` denormalised), RLS, realtime, `replica identity full`.
 
 **RLS recursion is avoided with `SECURITY DEFINER` helpers**
 (`is_room_member`, `is_room_owner`, `can_access_proposal`, `is_admin`): they

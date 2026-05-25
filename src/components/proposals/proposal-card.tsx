@@ -8,6 +8,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 
+import { ProposalComments } from "@/components/proposals/proposal-comments";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
@@ -16,7 +17,13 @@ import { formatTally, voteWeight } from "@/lib/proposals/joke";
 import { endTime, formatDateLong, formatTime, isoDatePlus } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { VOTE_VALUES } from "@/lib/validation/proposals";
-import type { BreakProposal, ProposalType, Vote, VoteValue } from "@/types/database";
+import type {
+  BreakProposal,
+  ProposalComment,
+  ProposalType,
+  Vote,
+  VoteValue,
+} from "@/types/database";
 
 const TYPE_ICON: Record<ProposalType, typeof Coffee> = {
   lunch: Sandwich,
@@ -40,21 +47,27 @@ function dateLabel(date: string): string {
 interface ProposalCardProps {
   proposal: BreakProposal;
   votes: Vote[];
+  comments: ProposalComment[];
   members: Record<string, string>;
   userId: string;
   canDelete: boolean;
   onVote: (value: VoteValue) => void;
   onDelete: () => void;
+  onAddComment: (proposalId: string, content: string) => void;
+  onDeleteComment: (commentId: string) => void;
 }
 
 export function ProposalCard({
   proposal,
   votes,
+  comments,
   members,
   userId,
   canDelete,
   onVote,
   onDelete,
+  onAddComment,
+  onDeleteComment,
 }: ProposalCardProps) {
   const Icon = TYPE_ICON[proposal.proposal_type];
   const ownVote = votes.find((vote) => vote.user_id === userId)?.vote;
@@ -127,6 +140,15 @@ export function ProposalCard({
       </div>
 
       <Voters votes={votes} members={members} />
+
+      <ProposalComments
+        proposalId={proposal.id}
+        comments={comments}
+        members={members}
+        userId={userId}
+        onAdd={onAddComment}
+        onDelete={onDeleteComment}
+      />
     </article>
   );
 }

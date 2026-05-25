@@ -8,6 +8,7 @@ import { RoomDashboard } from "@/components/rooms/room-dashboard";
 import { copy } from "@/lib/copy";
 import { getRoomMessages } from "@/lib/messages/queries";
 import { getRoomPresence } from "@/lib/presence/queries";
+import { getRoomComments } from "@/lib/proposals/comments-queries";
 import { getRoomProposals } from "@/lib/proposals/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
@@ -28,12 +29,13 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [members, proposalsData, presenceRows, messagesData] =
+  const [members, proposalsData, presenceRows, messagesData, comments] =
     await Promise.all([
       getRoomMembers(id),
       getRoomProposals(id),
       getRoomPresence(id),
       getRoomMessages(id),
+      getRoomComments(id),
     ]);
 
   const memberNames: Record<string, string> = Object.fromEntries(
@@ -64,6 +66,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
           members={memberNames}
           initialProposals={proposalsData.proposals}
           initialVotes={proposalsData.votes}
+          initialComments={comments}
         />
       }
       presenceSlot={
