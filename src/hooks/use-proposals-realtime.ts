@@ -29,8 +29,10 @@ export function useProposalsRealtime(
 
   useEffect(() => {
     const supabase = createClient();
+    // Unique topic per effect run so React Strict Mode's double-invoke can't
+    // re-add listeners to an already-subscribed channel.
     const channel = supabase
-      .channel(`room:${roomId}:proposals`)
+      .channel(`room:${roomId}:proposals:${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {

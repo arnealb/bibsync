@@ -23,7 +23,9 @@ export function usePresenceRealtime(
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
-      .channel(`room:${roomId}:presence`)
+      // Unique topic per effect run so React Strict Mode's double-invoke can't
+      // re-add listeners to an already-subscribed channel.
+      .channel(`room:${roomId}:presence:${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {
