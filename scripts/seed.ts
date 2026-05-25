@@ -202,6 +202,34 @@ async function main() {
     console.log("  ✓ reacties");
   }
 
+  await reset("food_proposals", roomId, admin);
+  const { data: foods } = await admin
+    .from("food_proposals")
+    .insert([
+      { room_id: roomId, created_by: alice, food_date: isoDatePlus(0), choice: "Brug" },
+      { room_id: roomId, created_by: bob, food_date: isoDatePlus(0), choice: "Panda" },
+    ])
+    .select("id");
+  if (foods && foods.length > 0) {
+    await admin.from("food_votes").upsert(
+      [
+        { food_proposal_id: foods[0].id, user_id: alice, vote: "yes" },
+        { food_proposal_id: foods[0].id, user_id: charlie, vote: "yes" },
+        { food_proposal_id: foods[1].id, user_id: bob, vote: "yes" },
+      ],
+      { onConflict: "food_proposal_id,user_id" },
+    );
+    await admin.from("food_comments").insert([
+      {
+        food_proposal_id: foods[0].id,
+        room_id: roomId,
+        author_id: bob,
+        content: "Brug is altijd goed 🍟",
+      },
+    ]);
+    console.log("  ✓ eetvoorstellen");
+  }
+
   const adminId = await ensureUser(ADMIN.email, ADMIN.name, ADMIN.password);
   const { error: adminError } = await admin
     .from("profiles")

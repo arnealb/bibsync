@@ -20,6 +20,9 @@ en chat met je groep. Alles live via Supabase Realtime.
 - **Pauzevoorstellen** — type/datum/kwartier-tijd/duur/notitie, stemmen
   (👍/🤔/👎) met optimistic updates, **kalender-filter** (dag/week/maand) en
   **reacties** per voorstel. Voorstellen verdwijnen 1u na hun einde.
+- **Wat eten we?** — aparte pagina (`/app/rooms/[id]/eten`) om per dag te
+  stemmen op een eetplek (Brug/Panda/Okay of zelf invullen), met reacties +
+  realtime, dezelfde functionaliteit als de pauzevoorstellen
 - **Presence** — status (📚☕🍽️🚪🏠) + "terug om", realtime "Wie is er?"-lijst
 - **Chat** — realtime berichten per room, met optimistic verzenden en paginatie
 - **Admin** — een admin-rol die alle rooms kan zien en beheren (`/app/admin`)
@@ -57,6 +60,9 @@ Open in het Supabase dashboard de **SQL Editor** en run beide migrations
    `update profiles set is_admin = true where id = …` (zie onderaan het bestand).
 4. [`supabase/migrations/0004_proposal_comments.sql`](supabase/migrations/0004_proposal_comments.sql)
    — reacties (comments) op voorstellen, met RLS + realtime.
+5. [`supabase/migrations/0005_food.sql`](supabase/migrations/0005_food.sql)
+   — eet-voorstellen (`food_proposals`/`food_votes`/`food_comments`), met RLS +
+   realtime.
 
 > Verifieer in de **Table Editor** dat de tabellen bestaan (`profiles`, `rooms`,
 > `room_members`, `break_proposals`, `votes`, `presence`, `messages`). Realtime

@@ -222,6 +222,84 @@ export interface Database {
         };
         Relationships: [];
       };
+      food_proposals: {
+        Row: {
+          id: string;
+          room_id: string;
+          created_by: string;
+          food_date: DateString;
+          choice: string;
+          note: string | null;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          created_by: string;
+          food_date: DateString;
+          choice: string;
+          note?: string | null;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          created_by?: string;
+          food_date?: DateString;
+          choice?: string;
+          note?: string | null;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      food_votes: {
+        Row: {
+          food_proposal_id: string;
+          user_id: string;
+          vote: VoteValue;
+          voted_at: Timestamp;
+        };
+        Insert: {
+          food_proposal_id: string;
+          user_id: string;
+          vote: VoteValue;
+          voted_at?: Timestamp;
+        };
+        Update: {
+          food_proposal_id?: string;
+          user_id?: string;
+          vote?: VoteValue;
+          voted_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      food_comments: {
+        Row: {
+          id: string;
+          food_proposal_id: string;
+          room_id: string;
+          author_id: string;
+          content: string;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          food_proposal_id: string;
+          room_id: string;
+          author_id: string;
+          content: string;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          food_proposal_id?: string;
+          room_id?: string;
+          author_id?: string;
+          content?: string;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -247,3 +325,8 @@ export type Presence = Database["public"]["Tables"]["presence"]["Row"];
 export type Message = Database["public"]["Tables"]["messages"]["Row"];
 export type ProposalComment =
   Database["public"]["Tables"]["proposal_comments"]["Row"];
+export type FoodProposal =
+  Database["public"]["Tables"]["food_proposals"]["Row"];
+export type FoodVote = Database["public"]["Tables"]["food_votes"]["Row"];
+export type FoodComment =
+  Database["public"]["Tables"]["food_comments"]["Row"];

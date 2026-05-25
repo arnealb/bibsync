@@ -74,6 +74,9 @@ Editor, in order:
 3. `0003_admin.sql` — `profiles.is_admin`, `is_admin()`, admin RLS policies.
 4. `0004_proposal_comments.sql` — comments on proposals (`proposal_comments`,
    with `room_id` denormalised), RLS, realtime, `replica identity full`.
+5. `0005_food.sql` — food voting (`food_proposals`/`food_votes`/`food_comments`
+   + `can_access_food()`), its own parallel stack on `/app/rooms/[id]/eten`.
+   Reuses the calendar bar, generic comments component and joke vote-weight.
 
 **RLS recursion is avoided with `SECURITY DEFINER` helpers**
 (`is_room_member`, `is_room_owner`, `can_access_proposal`, `is_admin`): they

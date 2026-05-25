@@ -9,11 +9,17 @@ import { Input } from "@/components/ui/input";
 import { copy } from "@/lib/copy";
 import { getInitials } from "@/lib/initials";
 import { COMMENT_MAX_LENGTH } from "@/lib/validation/comments";
-import type { ProposalComment } from "@/types/database";
+
+/** Minimal comment shape — works for both proposal and food comments. */
+export interface CommentLike {
+  id: string;
+  author_id: string;
+  content: string;
+}
 
 interface ProposalCommentsProps {
   proposalId: string;
-  comments: ProposalComment[];
+  comments: CommentLike[];
   members: Record<string, string>;
   userId: string;
   onAdd: (proposalId: string, content: string) => void;
