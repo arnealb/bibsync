@@ -3,11 +3,13 @@
 import type { ActionResult } from "@/app/_actions/types";
 import { copy } from "@/lib/copy";
 import { sendRoomPush, sendUserPush } from "@/lib/push/send";
+import { BREAK_SLOTS } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
 import { formatTime } from "@/lib/time";
 import {
   castVoteSchema,
   createProposalSchema,
+  setSlotPreferenceSchema,
   type CastVoteInput,
   type CreateProposalInput,
 } from "@/lib/validation/proposals";
@@ -34,13 +36,15 @@ export async function createProposal(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: copy.common.notAuthenticated };
 
-  // One proposal per time slot: reject a clash on the same date + start time.
+  // One free-form proposal per time slot: reject a clash on date + start time
+  // (slot suggestions are exempt — multiple people may prefer the same time).
   const { data: clash } = await supabase
     .from("break_proposals")
     .select("id")
     .eq("room_id", parsed.data.roomId)
     .eq("proposal_date", parsed.data.proposalDate)
     .eq("start_time", parsed.data.startTime)
+    .is("slot_key", null)
     .limit(1);
   if (clash && clash.length > 0) {
     return { ok: false, error: copy.proposals.validation.slotTaken };
@@ -135,5 +139,73 @@ export async function deleteProposal(
     return { ok: false, error: copy.common.genericError };
   }
 
+  return { ok: true };
+}
+
+/** Sets the caller's preferred time for a fixed slot (one per user/slot/day). */
+export async function setSlotPreference(input: {
+  roomId: string;
+  slotKey: string;
+  date: string;
+  time: string;
+}): Promise<ActionResult> {
+  const parsed = setSlotPreferenceSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: copy.common.genericError };
+  const slot = BREAK_SLOTS.find((s) => s.key === parsed.data.slotKey);
+  if (!slot) return { ok: false, error: copy.common.genericError };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: copy.common.notAuthenticated };
+
+  // Replace any existing preference of this user for this slot + day.
+  await supabase
+    .from("break_proposals")
+    .delete()
+    .eq("room_id", parsed.data.roomId)
+    .eq("proposal_date", parsed.data.date)
+    .eq("created_by", user.id)
+    .eq("slot_key", slot.key);
+
+  const { error } = await supabase.from("break_proposals").insert({
+    room_id: parsed.data.roomId,
+    created_by: user.id,
+    proposal_type: slot.type,
+    proposal_date: parsed.data.date,
+    start_time: parsed.data.time,
+    duration_minutes: 30,
+    slot_key: slot.key,
+  });
+  if (error) {
+    console.error("[setSlotPreference]", error);
+    return { ok: false, error: copy.common.genericError };
+  }
+  return { ok: true };
+}
+
+export async function removeSlotPreference(
+  roomId: string,
+  date: string,
+  slotKey: string,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: copy.common.notAuthenticated };
+
+  const { error } = await supabase
+    .from("break_proposals")
+    .delete()
+    .eq("room_id", roomId)
+    .eq("proposal_date", date)
+    .eq("created_by", user.id)
+    .eq("slot_key", slotKey);
+  if (error) {
+    console.error("[removeSlotPreference]", error);
+    return { ok: false, error: copy.common.genericError };
+  }
   return { ok: true };
 }

@@ -8,10 +8,16 @@ import {
   addProposalComment,
   deleteProposalComment,
 } from "@/app/_actions/proposal-comments";
-import { castVote, deleteProposal } from "@/app/_actions/proposals";
+import {
+  castVote,
+  deleteProposal,
+  removeSlotPreference,
+  setSlotPreference,
+} from "@/app/_actions/proposals";
 import { ProposalCalendarBar } from "@/components/proposals/proposal-calendar-bar";
 import { ProposalCard } from "@/components/proposals/proposal-card";
 import { ProposalForm } from "@/components/proposals/proposal-form";
+import { SlotCard } from "@/components/proposals/slot-card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,7 +37,8 @@ import {
 } from "@/lib/proposals/calendar";
 import { dateLabelGroups } from "@/lib/proposals/group";
 import { isProposalVisible } from "@/lib/proposals/visibility";
-import { isoDatePlus } from "@/lib/time";
+import { BREAK_SLOTS } from "@/lib/slots";
+import { formatDateLong, isoDatePlus } from "@/lib/time";
 import type {
   BreakProposal,
   ProposalComment,
@@ -195,42 +202,38 @@ export function ProposalsPanel({
     });
   }
 
+  function handleSetSlotPreference(
+    slotKey: string,
+    date: string,
+    time: string,
+  ) {
+    startTransition(async () => {
+      const result = await setSlotPreference({ roomId, slotKey, date, time });
+      if (result.ok) toast.success(copy.proposals.slots.saved);
+      else toast.error(result.error);
+    });
+  }
+
+  function handleClearSlotPreference(slotKey: string) {
+    startTransition(async () => {
+      const result = await removeSlotPreference(roomId, anchor, slotKey);
+      if (!result.ok) toast.error(result.error);
+    });
+  }
+
   const range = rangeFor(view, anchor);
-  const visible = proposals.filter((p) => isProposalVisible(p, now));
+  // Free-form proposals only (slot suggestions render in the slot cards).
+  const freeForm = proposals.filter(
+    (p) => !p.slot_key && isProposalVisible(p, now),
+  );
   const groups = dateLabelGroups(
-    visible.filter(
+    freeForm.filter(
       (p) => p.proposal_date >= range.start && p.proposal_date <= range.end,
     ),
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold">{copy.proposals.title}</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button size="sm" />}>
-            <Plus />
-            {copy.proposals.new}
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{copy.proposals.form.title}</DialogTitle>
-            </DialogHeader>
-            <ProposalForm
-              roomId={roomId}
-              onCreated={(proposal) => {
-                setProposals((prev) =>
-                  prev.some((item) => item.id === proposal.id)
-                    ? prev
-                    : [...prev, proposal],
-                );
-                setOpen(false);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
+    <div className="space-y-6">
       <ProposalCalendarBar
         view={view}
         anchor={anchor}
@@ -239,44 +242,101 @@ export function ProposalsPanel({
         onToday={() => setAnchor(isoDatePlus(0))}
       />
 
-      {visible.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-          {copy.proposals.empty}
-        </p>
-      ) : groups.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-          {copy.proposals.calendar.emptyRange}
-        </p>
-      ) : (
-        <div className="space-y-5">
-          {groups.map((group) => (
-            <section key={group.date} className="space-y-2">
-              <h3 className="text-xs font-medium text-muted-foreground uppercase">
-                {group.label}
-              </h3>
-              <div className="space-y-3">
-                {group.items.map((proposal) => (
-                  <ProposalCard
-                    key={proposal.id}
-                    proposal={proposal}
-                    votes={votes.filter((v) => v.proposal_id === proposal.id)}
-                    comments={comments.filter(
-                      (c) => c.proposal_id === proposal.id,
-                    )}
-                    members={members}
-                    userId={userId}
-                    canDelete={proposal.created_by === userId}
-                    onVote={(value) => handleVote(proposal.id, value)}
-                    onDelete={() => handleDelete(proposal.id)}
-                    onAddComment={handleAddComment}
-                    onDeleteComment={handleDeleteComment}
-                  />
-                ))}
-              </div>
-            </section>
+      <section className="space-y-3">
+        <h2 className="font-semibold">
+          {copy.proposals.slots.title}{" "}
+          <span className="font-normal text-muted-foreground capitalize">
+            · {formatDateLong(anchor)}
+          </span>
+        </h2>
+        <div className="space-y-3">
+          {BREAK_SLOTS.map((slot) => (
+            <SlotCard
+              key={slot.key}
+              slot={slot}
+              date={anchor}
+              suggestions={proposals.filter(
+                (p) => p.slot_key === slot.key && p.proposal_date === anchor,
+              )}
+              votes={votes}
+              comments={comments}
+              members={members}
+              userId={userId}
+              onSetPreference={handleSetSlotPreference}
+              onClearPreference={handleClearSlotPreference}
+              onVote={handleVote}
+              onDelete={handleDelete}
+              onAddComment={handleAddComment}
+              onDeleteComment={handleDeleteComment}
+            />
           ))}
         </div>
-      )}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">{copy.proposals.slots.free}</h2>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger render={<Button size="sm" variant="outline" />}>
+              <Plus />
+              {copy.proposals.new}
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{copy.proposals.form.title}</DialogTitle>
+              </DialogHeader>
+              <ProposalForm
+                roomId={roomId}
+                onCreated={(proposal) => {
+                  setProposals((prev) =>
+                    prev.some((item) => item.id === proposal.id)
+                      ? prev
+                      : [...prev, proposal],
+                  );
+                  setOpen(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {groups.length === 0 ? (
+          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            {freeForm.length === 0
+              ? copy.proposals.empty
+              : copy.proposals.calendar.emptyRange}
+          </p>
+        ) : (
+          <div className="space-y-5">
+            {groups.map((group) => (
+              <section key={group.date} className="space-y-2">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase">
+                  {group.label}
+                </h3>
+                <div className="space-y-3">
+                  {group.items.map((proposal) => (
+                    <ProposalCard
+                      key={proposal.id}
+                      proposal={proposal}
+                      votes={votes.filter((v) => v.proposal_id === proposal.id)}
+                      comments={comments.filter(
+                        (c) => c.proposal_id === proposal.id,
+                      )}
+                      members={members}
+                      userId={userId}
+                      canDelete={proposal.created_by === userId}
+                      onVote={(value) => handleVote(proposal.id, value)}
+                      onDelete={() => handleDelete(proposal.id)}
+                      onAddComment={handleAddComment}
+                      onDeleteComment={handleDeleteComment}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

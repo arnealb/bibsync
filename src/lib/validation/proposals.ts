@@ -47,5 +47,12 @@ export const castVoteSchema = z.object({
   vote: z.enum(VOTE_VALUES),
 });
 
+export const setSlotPreferenceSchema = z.object({
+  roomId: z.string().uuid(),
+  slotKey: z.string().min(1),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+});
+
 export type CreateProposalInput = z.infer<typeof createProposalSchema>;
 export type CastVoteInput = z.infer<typeof castVoteSchema>;

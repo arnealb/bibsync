@@ -27,8 +27,9 @@ export async function getRoomProposals(
     .order("proposal_date", { ascending: true })
     .order("start_time", { ascending: true });
 
-  const visible = (proposals ?? []).filter((proposal) =>
-    isProposalVisible(proposal),
+  // Slot suggestions always stay; free-form proposals expire 1h after they end.
+  const visible = (proposals ?? []).filter(
+    (proposal) => proposal.slot_key || isProposalVisible(proposal),
   );
   if (visible.length === 0) return { proposals: [], votes: [] };
 

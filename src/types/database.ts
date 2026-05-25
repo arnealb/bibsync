@@ -115,6 +115,7 @@ export interface Database {
           start_time: TimeString;
           duration_minutes: number;
           note: string | null;
+          slot_key: string | null;
           created_at: Timestamp;
         };
         Insert: {
@@ -126,6 +127,7 @@ export interface Database {
           start_time: TimeString;
           duration_minutes: number;
           note?: string | null;
+          slot_key?: string | null;
           created_at?: Timestamp;
         };
         Update: {
@@ -137,6 +139,7 @@ export interface Database {
           start_time?: TimeString;
           duration_minutes?: number;
           note?: string | null;
+          slot_key?: string | null;
           created_at?: Timestamp;
         };
         Relationships: [];
@@ -246,6 +249,7 @@ export interface Database {
           food_time: TimeString | null;
           choice: string;
           note: string | null;
+          slot_key: string | null;
           created_at: Timestamp;
         };
         Insert: {
@@ -256,6 +260,7 @@ export interface Database {
           food_time?: TimeString | null;
           choice: string;
           note?: string | null;
+          slot_key?: string | null;
           created_at?: Timestamp;
         };
         Update: {
@@ -266,6 +271,7 @@ export interface Database {
           food_time?: TimeString | null;
           choice?: string;
           note?: string | null;
+          slot_key?: string | null;
           created_at?: Timestamp;
         };
         Relationships: [];

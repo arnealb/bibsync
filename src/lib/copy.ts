@@ -190,6 +190,17 @@ export const copy = {
     title: "Pauzevoorstellen",
     new: "Nieuw voorstel",
     empty: "Nog geen pauzevoorstellen. Doe een voorstel 👇",
+    slots: {
+      title: "Vaste momenten",
+      free: "Vrije voorstellen",
+      average: "Gemiddeld",
+      defaultLabel: "standaard",
+      yourPref: "Jouw voorkeur",
+      save: "Opslaan",
+      clear: "Wissen",
+      saved: "Voorkeur opgeslagen.",
+      empty: "Nog geen voorkeuren — geef de jouwe of stem op de standaard.",
+    },
     form: {
       title: "Pauze voorstellen",
       typeLabel: "Type",
