@@ -17,6 +17,7 @@ interface RoomDashboardProps {
   statusSlot: React.ReactNode;
   breaksSlot: React.ReactNode;
   presenceSlot: React.ReactNode;
+  chatSlot: React.ReactNode;
 }
 
 function ChatPlaceholder() {
@@ -38,6 +39,7 @@ export function RoomDashboard({
   statusSlot,
   breaksSlot,
   presenceSlot,
+  chatSlot,
 }: RoomDashboardProps) {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6">
@@ -77,7 +79,7 @@ export function RoomDashboard({
             {presenceSlot}
           </TabsContent>
           <TabsContent value="chat" className="pt-4">
-            <ChatPlaceholder />
+            {chatSlot ?? <ChatPlaceholder />}
           </TabsContent>
         </Tabs>
       </div>
@@ -87,7 +89,7 @@ export function RoomDashboard({
         <section className="min-w-0">{breaksSlot}</section>
         <aside className="space-y-4">
           {presenceSlot}
-          <ChatPlaceholder />
+          {chatSlot ?? <ChatPlaceholder />}
         </aside>
       </div>
     </div>

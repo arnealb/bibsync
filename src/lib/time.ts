@@ -69,3 +69,14 @@ export function formatRelative(value: Date | string): string {
   const date = typeof value === "string" ? new Date(value) : value;
   return formatDistanceToNow(date, { addSuffix: true, locale: nl });
 }
+
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
+/** Chat timestamp: relative within the last hour, absolute clock time after. */
+export function formatMessageTime(value: Date | string): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Date.now() - date.getTime() < ONE_HOUR_MS) {
+    return formatDistanceToNow(date, { addSuffix: true, locale: nl });
+  }
+  return formatClock(date);
+}

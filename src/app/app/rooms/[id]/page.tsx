@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { ChatPanel } from "@/components/chat/chat-panel";
 import { PresenceSidebar } from "@/components/presence/presence-sidebar";
 import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
 import { copy } from "@/lib/copy";
+import { getRoomMessages } from "@/lib/messages/queries";
 import { getRoomPresence } from "@/lib/presence/queries";
 import { getRoomProposals } from "@/lib/proposals/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
@@ -26,11 +28,13 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [members, proposalsData, presenceRows] = await Promise.all([
-    getRoomMembers(id),
-    getRoomProposals(id),
-    getRoomPresence(id),
-  ]);
+  const [members, proposalsData, presenceRows, messagesData] =
+    await Promise.all([
+      getRoomMembers(id),
+      getRoomProposals(id),
+      getRoomPresence(id),
+      getRoomMessages(id),
+    ]);
 
   const memberNames: Record<string, string> = Object.fromEntries(
     members.map((member) => [
@@ -68,6 +72,15 @@ export default async function RoomPage({ params }: RoomPageProps) {
           userId={access.userId}
           members={memberOptions}
           initialPresence={presenceRows}
+        />
+      }
+      chatSlot={
+        <ChatPanel
+          roomId={access.room.id}
+          userId={access.userId}
+          members={memberNames}
+          initialMessages={messagesData.messages}
+          initialHasMore={messagesData.hasMore}
         />
       }
     />

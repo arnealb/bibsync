@@ -226,4 +226,15 @@ export const copy = {
       done: "Klaar voor vandaag",
     },
   },
+  chat: {
+    title: "Chat",
+    empty: "Nog geen berichten — zeg hallo 👋",
+    placeholder: "Schrijf een bericht…",
+    send: "Versturen",
+    sending: "Verzendt…",
+    loadMore: "Laad oudere berichten",
+    newMessages: (n: number) =>
+      `${n} ${n === 1 ? "nieuw bericht" : "nieuwe berichten"} ↓`,
+    error: "Bericht niet verzonden. Probeer opnieuw.",
+  },
 } as const;
