@@ -311,6 +311,16 @@ export const copy = {
     deleted: "Eetvoorstel verwijderd.",
     presets: ["Brug", "Panda", "Okay"],
     custom: "Andere…",
+    slots: {
+      title: "Vaste maaltijden",
+      free: "Vrije eetvoorstellen",
+      defaultLabel: "standaard",
+      yourChoice: "Jouw keuze",
+      save: "Opslaan",
+      clear: "Wissen",
+      saved: "Keuze opgeslagen.",
+      empty: "Nog geen keuzes — geef de jouwe of stem op de standaard.",
+    },
     form: {
       title: "Waar gaan we eten?",
       choiceLabel: "Keuze",

@@ -47,6 +47,17 @@ export const addFoodCommentSchema = z.object({
   content: z.string().trim().min(1).max(500),
 });
 
+export const setFoodSlotPreferenceSchema = z.object({
+  roomId: z.string().uuid(),
+  slotKey: z.string().min(1),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  choice: z
+    .string()
+    .trim()
+    .min(1, copy.food.validation.choiceRequired)
+    .max(60, copy.food.validation.choiceTooLong),
+});
+
 export type CreateFoodProposalInput = z.infer<typeof createFoodProposalSchema>;
 export type CastFoodVoteInput = z.infer<typeof castFoodVoteSchema>;
 export type AddFoodCommentInput = z.infer<typeof addFoodCommentSchema>;

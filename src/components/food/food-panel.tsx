@@ -9,9 +9,12 @@ import {
   castFoodVote,
   deleteFoodComment,
   deleteFoodProposal,
+  removeFoodSlotPreference,
+  setFoodSlotPreference,
 } from "@/app/_actions/food";
 import { FoodCard } from "@/components/food/food-card";
 import { FoodForm } from "@/components/food/food-form";
+import { FoodSlotCard } from "@/components/food/food-slot-card";
 import { ProposalCalendarBar } from "@/components/proposals/proposal-calendar-bar";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +32,7 @@ import {
   shiftAnchor,
   type CalendarView,
 } from "@/lib/proposals/calendar";
+import { FOOD_SLOTS } from "@/lib/slots";
 import { formatDateLong, isoDatePlus } from "@/lib/time";
 import type {
   FoodComment,
@@ -198,41 +202,41 @@ export function FoodPanel({
     });
   }
 
+  function handleSetSlotPreference(
+    slotKey: string,
+    date: string,
+    choice: string,
+  ) {
+    startTransition(async () => {
+      const result = await setFoodSlotPreference({
+        roomId,
+        slotKey,
+        date,
+        choice,
+      });
+      if (result.ok) toast.success(copy.food.slots.saved);
+      else toast.error(result.error);
+    });
+  }
+
+  function handleClearSlotPreference(slotKey: string) {
+    startTransition(async () => {
+      const result = await removeFoodSlotPreference(roomId, anchor, slotKey);
+      if (!result.ok) toast.error(result.error);
+    });
+  }
+
   const range = rangeFor(view, anchor);
+  // Free-form food proposals only (slot choices render in the slot cards).
+  const freeForm = proposals.filter((p) => !p.slot_key);
   const groups = groupByDate(
-    proposals.filter(
+    freeForm.filter(
       (p) => p.food_date >= range.start && p.food_date <= range.end,
     ),
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold">{copy.food.title}</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button size="sm" />}>
-            <Plus />
-            {copy.food.new}
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{copy.food.form.title}</DialogTitle>
-            </DialogHeader>
-            <FoodForm
-              roomId={roomId}
-              onCreated={(proposal) => {
-                setProposals((prev) =>
-                  prev.some((i) => i.id === proposal.id)
-                    ? prev
-                    : [...prev, proposal],
-                );
-                setOpen(false);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
+    <div className="space-y-6">
       <ProposalCalendarBar
         view={view}
         anchor={anchor}
@@ -241,46 +245,103 @@ export function FoodPanel({
         onToday={() => setAnchor(isoDatePlus(0))}
       />
 
-      {proposals.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-          {copy.food.empty}
-        </p>
-      ) : groups.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-          {copy.proposals.calendar.emptyRange}
-        </p>
-      ) : (
-        <div className="space-y-5">
-          {groups.map((group) => (
-            <section key={group.date} className="space-y-2">
-              <h3 className="text-xs font-medium text-muted-foreground uppercase">
-                {group.label}
-              </h3>
-              <div className="space-y-3">
-                {group.items.map((proposal) => (
-                  <FoodCard
-                    key={proposal.id}
-                    proposal={proposal}
-                    votes={votes.filter(
-                      (v) => v.food_proposal_id === proposal.id,
-                    )}
-                    comments={comments.filter(
-                      (c) => c.food_proposal_id === proposal.id,
-                    )}
-                    members={members}
-                    userId={userId}
-                    canDelete={proposal.created_by === userId}
-                    onVote={(value) => handleVote(proposal.id, value)}
-                    onDelete={() => handleDelete(proposal.id)}
-                    onAddComment={handleAddComment}
-                    onDeleteComment={handleDeleteComment}
-                  />
-                ))}
-              </div>
-            </section>
+      <section className="space-y-3">
+        <h2 className="font-semibold">
+          {copy.food.slots.title}{" "}
+          <span className="font-normal text-muted-foreground capitalize">
+            · {formatDateLong(anchor)}
+          </span>
+        </h2>
+        <div className="space-y-3">
+          {FOOD_SLOTS.map((slot) => (
+            <FoodSlotCard
+              key={slot.key}
+              slot={slot}
+              date={anchor}
+              suggestions={proposals.filter(
+                (p) => p.slot_key === slot.key && p.food_date === anchor,
+              )}
+              votes={votes}
+              comments={comments}
+              members={members}
+              userId={userId}
+              onSetPreference={handleSetSlotPreference}
+              onClearPreference={handleClearSlotPreference}
+              onVote={handleVote}
+              onDelete={handleDelete}
+              onAddComment={handleAddComment}
+              onDeleteComment={handleDeleteComment}
+            />
           ))}
         </div>
-      )}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">{copy.food.slots.free}</h2>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger render={<Button size="sm" variant="outline" />}>
+              <Plus />
+              {copy.food.new}
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{copy.food.form.title}</DialogTitle>
+              </DialogHeader>
+              <FoodForm
+                roomId={roomId}
+                onCreated={(proposal) => {
+                  setProposals((prev) =>
+                    prev.some((i) => i.id === proposal.id)
+                      ? prev
+                      : [...prev, proposal],
+                  );
+                  setOpen(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {groups.length === 0 ? (
+          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            {freeForm.length === 0
+              ? copy.food.empty
+              : copy.proposals.calendar.emptyRange}
+          </p>
+        ) : (
+          <div className="space-y-5">
+            {groups.map((group) => (
+              <section key={group.date} className="space-y-2">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase">
+                  {group.label}
+                </h3>
+                <div className="space-y-3">
+                  {group.items.map((proposal) => (
+                    <FoodCard
+                      key={proposal.id}
+                      proposal={proposal}
+                      votes={votes.filter(
+                        (v) => v.food_proposal_id === proposal.id,
+                      )}
+                      comments={comments.filter(
+                        (c) => c.food_proposal_id === proposal.id,
+                      )}
+                      members={members}
+                      userId={userId}
+                      canDelete={proposal.created_by === userId}
+                      onVote={(value) => handleVote(proposal.id, value)}
+                      onDelete={() => handleDelete(proposal.id)}
+                      onAddComment={handleAddComment}
+                      onDeleteComment={handleDeleteComment}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

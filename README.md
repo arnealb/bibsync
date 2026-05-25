@@ -17,9 +17,10 @@ en chat met je groep. Alles live via Supabase Realtime.
 - **Auth** — registreren, inloggen (wachtwoord of magic link), uitloggen
 - **Rooms** — aanmaken, joinen via 6-cijferige code, owner-instellingen
   (hernoemen, code vernieuwen, leden kicken, verwijderen)
-- **Pauzevoorstellen** — type/datum/kwartier-tijd/duur/notitie, stemmen
-  (👍/🤔/👎) met optimistic updates, **kalender-filter** (dag/week/maand) en
-  **reacties** per voorstel. Voorstellen verdwijnen 1u na hun einde.
+- **Pauzevoorstellen** — 5 **vaste dag-slots** (ochtend/middag/avond) met
+  voorkeurstijd per persoon + getoond **gemiddelde**, plus vrije voorstellen.
+  Stemmen (👍/🤔/👎), **reacties**, **kalender-filter** (dag/week/maand).
+  Vrije voorstellen verdwijnen 1u na hun einde.
 - **Wat eten we?** — aparte pagina (`/app/rooms/[id]/eten`) om per dag te
   stemmen op een eetplek (Brug/Panda/Okay of zelf invullen), met reacties +
   realtime, dezelfde functionaliteit als de pauzevoorstellen
@@ -80,6 +81,8 @@ Open in het Supabase dashboard de **SQL Editor** en run beide migrations
    en de `get_push_targets`-functie.
 9. [`supabase/migrations/0009_push_prefs.sql`](supabase/migrations/0009_push_prefs.sql)
    — extra meldingstypes (chat/reacties/stemmen) + `get_user_push_targets`.
+10. [`supabase/migrations/0010_slots.sql`](supabase/migrations/0010_slots.sql)
+    — `slot_key` op `break_proposals` + `food_proposals` voor de vaste dag-slots.
 
 > Verifieer in de **Table Editor** dat de tabellen bestaan (`profiles`, `rooms`,
 > `room_members`, `break_proposals`, `votes`, `presence`, `messages`). Realtime

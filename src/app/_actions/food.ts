@@ -3,12 +3,14 @@
 import type { ActionResult } from "@/app/_actions/types";
 import { copy } from "@/lib/copy";
 import { sendRoomPush, sendUserPush } from "@/lib/push/send";
+import { FOOD_SLOTS } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
 import { formatTime } from "@/lib/time";
 import {
   addFoodCommentSchema,
   castFoodVoteSchema,
   createFoodProposalSchema,
+  setFoodSlotPreferenceSchema,
   type AddFoodCommentInput,
   type CastFoodVoteInput,
   type CreateFoodProposalInput,
@@ -173,6 +175,73 @@ export async function deleteFoodComment(id: string): Promise<ActionResult> {
   const { error } = await supabase.from("food_comments").delete().eq("id", id);
   if (error) {
     console.error("[deleteFoodComment]", error);
+    return { ok: false, error: copy.common.genericError };
+  }
+  return { ok: true };
+}
+
+/** Sets the caller's food choice for a fixed slot (one per user/slot/day). */
+export async function setFoodSlotPreference(input: {
+  roomId: string;
+  slotKey: string;
+  date: string;
+  choice: string;
+}): Promise<ActionResult> {
+  const parsed = setFoodSlotPreferenceSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? copy.common.genericError,
+    };
+  }
+  const slot = FOOD_SLOTS.find((s) => s.key === parsed.data.slotKey);
+  if (!slot) return { ok: false, error: copy.common.genericError };
+
+  const supabase = await createClient();
+  const uid = await userId();
+  if (!uid) return { ok: false, error: copy.common.notAuthenticated };
+
+  await supabase
+    .from("food_proposals")
+    .delete()
+    .eq("room_id", parsed.data.roomId)
+    .eq("food_date", parsed.data.date)
+    .eq("created_by", uid)
+    .eq("slot_key", slot.key);
+
+  const { error } = await supabase.from("food_proposals").insert({
+    room_id: parsed.data.roomId,
+    created_by: uid,
+    food_date: parsed.data.date,
+    food_time: slot.defaultTime,
+    choice: parsed.data.choice,
+    slot_key: slot.key,
+  });
+  if (error) {
+    console.error("[setFoodSlotPreference]", error);
+    return { ok: false, error: copy.common.genericError };
+  }
+  return { ok: true };
+}
+
+export async function removeFoodSlotPreference(
+  roomId: string,
+  date: string,
+  slotKey: string,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const uid = await userId();
+  if (!uid) return { ok: false, error: copy.common.notAuthenticated };
+
+  const { error } = await supabase
+    .from("food_proposals")
+    .delete()
+    .eq("room_id", roomId)
+    .eq("food_date", date)
+    .eq("created_by", uid)
+    .eq("slot_key", slotKey);
+  if (error) {
+    console.error("[removeFoodSlotPreference]", error);
     return { ok: false, error: copy.common.genericError };
   }
   return { ok: true };
