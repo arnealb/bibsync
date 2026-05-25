@@ -265,6 +265,7 @@ export function PokerPanel({
               <Button
                 variant="outline"
                 disabled={pending}
+                className="border-red-500/40 text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400"
                 onClick={() =>
                   run(() => playPokerAction({ roomId, action: "fold" }))
                 }
@@ -273,8 +274,8 @@ export function PokerPanel({
               </Button>
               {legal.canCheck ? (
                 <Button
-                  variant="outline"
                   disabled={pending}
+                  className="bg-emerald-600 text-white hover:bg-emerald-700"
                   onClick={() =>
                     run(() => playPokerAction({ roomId, action: "check" }))
                   }
@@ -293,8 +294,8 @@ export function PokerPanel({
               )}
               {seat.chips > 0 && (
                 <Button
-                  variant="secondary"
                   disabled={pending}
+                  className="bg-amber-500 text-white hover:bg-amber-600"
                   onClick={() =>
                     run(() => playPokerAction({ roomId, action: "allin" }))
                   }
