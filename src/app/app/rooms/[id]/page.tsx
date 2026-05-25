@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { PresenceSidebar } from "@/components/presence/presence-sidebar";
 import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
 import { copy } from "@/lib/copy";
+import { getRoomPresence } from "@/lib/presence/queries";
 import { getRoomProposals } from "@/lib/proposals/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
@@ -24,9 +26,10 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [members, proposalsData] = await Promise.all([
+  const [members, proposalsData, presenceRows] = await Promise.all([
     getRoomMembers(id),
     getRoomProposals(id),
+    getRoomPresence(id),
   ]);
 
   const memberNames: Record<string, string> = Object.fromEntries(
@@ -35,6 +38,11 @@ export default async function RoomPage({ params }: RoomPageProps) {
       member.profile?.display_name ?? "—",
     ]),
   );
+
+  const memberOptions = members.map((member) => ({
+    id: member.user_id,
+    name: member.profile?.display_name ?? "—",
+  }));
 
   return (
     <RoomDashboard
@@ -55,7 +63,12 @@ export default async function RoomPage({ params }: RoomPageProps) {
         />
       }
       presenceSlot={
-        <p className="text-sm text-muted-foreground">{copy.presence.empty}</p>
+        <PresenceSidebar
+          roomId={access.room.id}
+          userId={access.userId}
+          members={memberOptions}
+          initialPresence={presenceRows}
+        />
       }
     />
   );

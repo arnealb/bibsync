@@ -51,6 +51,19 @@ export function formatTime(time: string): string {
   return time.slice(0, 5);
 }
 
+/** Format a timestamp as `HH:mm` (24h) in Brussels time. */
+export function formatClock(value: Date | string): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return format(new TZDate(date, TIME_ZONE), "HH:mm", { locale: nl });
+}
+
+/** Epoch ms of today 04:00 in Brussels — the daily presence-reset threshold. */
+export function todayResetThreshold(): number {
+  const reset = TZDate.tz(TIME_ZONE);
+  reset.setHours(4, 0, 0, 0);
+  return reset.getTime();
+}
+
 /** Relative time (e.g. "3 minuten geleden"), Dutch. */
 export function formatRelative(value: Date | string): string {
   const date = typeof value === "string" ? new Date(value) : value;
