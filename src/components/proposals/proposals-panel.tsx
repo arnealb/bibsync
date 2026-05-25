@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
@@ -18,7 +18,7 @@ import {
 import { useProposalsRealtime } from "@/hooks/use-proposals-realtime";
 import { copy } from "@/lib/copy";
 import { dateLabelGroups } from "@/lib/proposals/group";
-import { isoDatePlus } from "@/lib/time";
+import { isProposalVisible } from "@/lib/proposals/visibility";
 import type { BreakProposal, Vote, VoteValue } from "@/types/database";
 
 interface ProposalsPanelProps {
@@ -39,7 +39,15 @@ export function ProposalsPanel({
   const [proposals, setProposals] = useState(initialProposals);
   const [votes, setVotes] = useState(initialVotes);
   const [open, setOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const [, startTransition] = useTransition();
+
+  // Re-evaluate visibility every minute so expired proposals drop off on their
+  // own (one hour after they end) without needing a refresh.
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useProposalsRealtime(roomId, {
     onProposalInsert: (proposal) =>
@@ -116,7 +124,7 @@ export function ProposalsPanel({
   }
 
   const groups = dateLabelGroups(
-    proposals.filter((p) => p.proposal_date >= isoDatePlus(0)),
+    proposals.filter((p) => isProposalVisible(p, now)),
   );
 
   return (

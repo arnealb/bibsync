@@ -1,5 +1,6 @@
+import { isProposalVisible } from "@/lib/proposals/visibility";
 import { createClient } from "@/lib/supabase/server";
-import { todayInBrussels } from "@/lib/time";
+import { isoDatePlus } from "@/lib/time";
 import type { BreakProposal, Vote } from "@/types/database";
 
 export interface RoomProposalsData {
@@ -19,22 +20,25 @@ export async function getRoomProposals(
   const { data: proposals } = await supabase
     .from("break_proposals")
     .select("*")
+    // From yesterday so late-night proposals crossing midnight aren't dropped;
+    // the precise "hide one hour after it ends" rule is applied below.
+    .gte("proposal_date", isoDatePlus(-1))
     .eq("room_id", roomId)
-    .gte("proposal_date", todayInBrussels())
     .order("proposal_date", { ascending: true })
     .order("start_time", { ascending: true });
 
-  if (!proposals || proposals.length === 0) {
-    return { proposals: [], votes: [] };
-  }
+  const visible = (proposals ?? []).filter((proposal) =>
+    isProposalVisible(proposal),
+  );
+  if (visible.length === 0) return { proposals: [], votes: [] };
 
   const { data: votes } = await supabase
     .from("votes")
     .select("*")
     .in(
       "proposal_id",
-      proposals.map((proposal) => proposal.id),
+      visible.map((proposal) => proposal.id),
     );
 
-  return { proposals, votes: votes ?? [] };
+  return { proposals: visible, votes: votes ?? [] };
 }

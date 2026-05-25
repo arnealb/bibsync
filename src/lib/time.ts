@@ -1,5 +1,5 @@
 import { TZDate } from "@date-fns/tz";
-import { addDays, format, formatDistanceToNow } from "date-fns";
+import { addDays, addMinutes, format, formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
 
 /**
@@ -21,6 +21,16 @@ export function todayInBrussels(): string {
 /** ISO date (YYYY-MM-DD) `days` from today in Brussels (e.g. +7). */
 export function isoDatePlus(days: number): string {
   return format(addDays(nowInBrussels(), days), "yyyy-MM-dd");
+}
+
+/** Epoch ms when a proposal ends (date + start time + duration), Brussels tz. */
+export function proposalEndsAt(
+  date: string,
+  startTime: string,
+  durationMinutes: number,
+): number {
+  const start = new TZDate(`${date}T${formatTime(startTime)}:00`, TIME_ZONE);
+  return addMinutes(start, durationMinutes).getTime();
 }
 
 /** End time `HH:MM` for a start time + duration, wrapping past midnight. */
