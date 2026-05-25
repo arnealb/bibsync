@@ -8,7 +8,7 @@ import { GifPicker } from "@/components/chat/gif-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { copy } from "@/lib/copy";
-import { toggleRainbow } from "@/lib/rainbow";
+import { applyRainbow } from "@/lib/rainbow";
 import {
   MESSAGE_COUNTER_THRESHOLD,
   MESSAGE_MAX_LENGTH,
@@ -26,10 +26,17 @@ export function ChatInput({
   function submit() {
     const trimmed = value.trim();
     if (!trimmed) return;
-    // Easter egg: /alan toggles full rainbow mode instead of sending.
-    if (trimmed.toLowerCase() === "/alan") {
-      const on = toggleRainbow();
-      toast.success(on ? copy.chat.rainbowOn : copy.chat.rainbowOff);
+    // Easter eggs: /alan → full rainbow mode, /boobs → back to normal.
+    const command = trimmed.toLowerCase();
+    if (command === "/alan") {
+      applyRainbow(true);
+      toast.success(copy.chat.rainbowOn);
+      setValue("");
+      return;
+    }
+    if (command === "/boobs") {
+      applyRainbow(false);
+      toast.success(copy.chat.rainbowOff);
       setValue("");
       return;
     }
