@@ -24,6 +24,17 @@ async function currentUserId(): Promise<string | null> {
   return user?.id ?? null;
 }
 
+/** True when `userId` owns the room. Used to gate owner-only mutations. */
+async function isRoomOwner(roomId: string, userId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("rooms")
+    .select("owner_id")
+    .eq("id", roomId)
+    .maybeSingle();
+  return data?.owner_id === userId;
+}
+
 export async function createRoom(
   _prev: ActionResult | null,
   formData: FormData,
@@ -133,11 +144,14 @@ export async function kickMember(
   roomId: string,
   userId: string,
 ): Promise<ActionResult> {
-  const supabase = await createClient();
   const me = await currentUserId();
   if (!me) return { ok: false, error: copy.common.notAuthenticated };
   if (userId === me) return { ok: false, error: copy.common.genericError };
+  if (!(await isRoomOwner(roomId, me))) {
+    return { ok: false, error: copy.rooms.onlyOwner };
+  }
 
+  const supabase = await createClient();
   const { error } = await supabase
     .from("room_members")
     .delete()
@@ -153,6 +167,12 @@ export async function kickMember(
 }
 
 export async function regenerateJoinCode(roomId: string): Promise<ActionResult> {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: copy.common.notAuthenticated };
+  if (!(await isRoomOwner(roomId, userId))) {
+    return { ok: false, error: copy.rooms.onlyOwner };
+  }
+
   const supabase = await createClient();
 
   for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
@@ -188,6 +208,12 @@ export async function renameRoom(
     };
   }
 
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: copy.common.notAuthenticated };
+  if (!(await isRoomOwner(parsed.data.roomId, userId))) {
+    return { ok: false, error: copy.rooms.onlyOwner };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("rooms")
@@ -207,6 +233,12 @@ export async function renameRoom(
 }
 
 export async function deleteRoom(roomId: string): Promise<ActionResult> {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: copy.common.notAuthenticated };
+  if (!(await isRoomOwner(roomId, userId))) {
+    return { ok: false, error: copy.rooms.onlyOwner };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.from("rooms").delete().eq("id", roomId);
   if (error) {

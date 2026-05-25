@@ -32,6 +32,18 @@ export async function createProposal(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: copy.common.notAuthenticated };
 
+  // One proposal per time slot: reject a clash on the same date + start time.
+  const { data: clash } = await supabase
+    .from("break_proposals")
+    .select("id")
+    .eq("room_id", parsed.data.roomId)
+    .eq("proposal_date", parsed.data.proposalDate)
+    .eq("start_time", parsed.data.startTime)
+    .limit(1);
+  if (clash && clash.length > 0) {
+    return { ok: false, error: copy.proposals.validation.slotTaken };
+  }
+
   const { data, error } = await supabase
     .from("break_proposals")
     .insert({

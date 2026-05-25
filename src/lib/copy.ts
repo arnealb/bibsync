@@ -136,6 +136,7 @@ export const copy = {
       "Je kan later opnieuw joinen met de join code.",
     ownerCannotLeave:
       "Als eigenaar kan je de room niet verlaten. Verwijder ze in plaats daarvan.",
+    onlyOwner: "Alleen de eigenaar van de room kan dit doen.",
     settings: {
       title: "Room-instellingen",
       rename: "Naam & beschrijving",
@@ -187,7 +188,7 @@ export const copy = {
     types: {
       lunch: "Lunch",
       dinner: "Avondeten",
-      coffee: "Koffie",
+      coffee: "Pauze",
       other: "Andere",
     },
     duration: (min: number) =>
@@ -213,6 +214,8 @@ export const copy = {
       timeQuarter: "Starttijd moet op het kwartier vallen.",
       durationInvalid: "Kies een geldige duur.",
       noteTooLong: "Notitie mag max 200 tekens zijn.",
+      slotTaken:
+        "Er staat al een voorstel op dit tijdstip. Kies een ander moment.",
     },
   },
   presence: {
