@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
 import { getInitials } from "@/lib/initials";
+import { voterDisplayName } from "@/lib/proposals/joke";
 import { endTime, formatDateLong, formatTime, isoDatePlus } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { VOTE_VALUES } from "@/lib/validation/proposals";
@@ -144,7 +145,7 @@ function Voters({
       {VOTE_VALUES.map((value) => {
         const names = votes
           .filter((vote) => vote.vote === value)
-          .map((vote) => members[vote.user_id] ?? "—");
+          .map((vote) => voterDisplayName(members[vote.user_id] ?? "—"));
         if (names.length === 0) return null;
         return (
           <li key={value} className={cn("flex gap-1.5")}>
