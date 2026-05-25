@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import type { AuthError } from "@supabase/supabase-js";
+
 import type { AuthState } from "@/app/_actions/auth-types";
 import { copy } from "@/lib/copy";
 import { createClient } from "@/lib/supabase/server";
@@ -12,6 +14,35 @@ import {
   magicLinkSchema,
   registerSchema,
 } from "@/lib/validation/auth";
+
+/**
+ * Logs the full Supabase auth error server-side and maps known cases to a
+ * clear Dutch message, falling back to `fallback` for anything unexpected.
+ */
+function describeAuthError(error: AuthError, fallback: string): string {
+  console.error("[auth]", {
+    code: error.code,
+    status: error.status,
+    message: error.message,
+  });
+
+  switch (error.code) {
+    case "user_already_exists":
+    case "email_exists":
+      return copy.auth.emailInUse;
+    case "over_email_send_rate_limit":
+    case "over_request_rate_limit":
+      return copy.auth.rateLimited;
+    case "weak_password":
+      return copy.auth.weakPassword;
+    case "email_not_confirmed":
+      return copy.auth.emailNotConfirmed;
+    case "invalid_credentials":
+      return copy.auth.invalidCredentials;
+    default:
+      return error.status === 429 ? copy.auth.rateLimited : fallback;
+  }
+}
 
 /** Only allow in-app relative redirect targets to avoid open redirects. */
 function safeRedirectTarget(value: FormDataEntryValue | null): string {
@@ -37,7 +68,10 @@ export async function loginAction(
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) {
-    return { status: "error", message: copy.auth.invalidCredentials };
+    return {
+      status: "error",
+      message: describeAuthError(error, copy.auth.invalidCredentials),
+    };
   }
 
   revalidatePath("/", "layout");
@@ -71,7 +105,10 @@ export async function registerAction(
     },
   });
   if (error) {
-    return { status: "error", message: copy.auth.genericError };
+    return {
+      status: "error",
+      message: describeAuthError(error, copy.auth.genericError),
+    };
   }
 
   // When email confirmation is disabled, a session is returned immediately.
@@ -102,7 +139,10 @@ export async function magicLinkAction(
     options: { emailRedirectTo: `${origin}/auth/confirm?next=/app` },
   });
   if (error) {
-    return { status: "error", message: copy.auth.genericError };
+    return {
+      status: "error",
+      message: describeAuthError(error, copy.auth.genericError),
+    };
   }
 
   return { status: "success", message: copy.auth.magicLinkSent };

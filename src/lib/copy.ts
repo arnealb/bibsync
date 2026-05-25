@@ -53,6 +53,12 @@ export const copy = {
     confirmEmailSent:
       "Bijna klaar! Check je mailbox om je account te bevestigen.",
     invalidCredentials: "E-mailadres of wachtwoord klopt niet.",
+    emailInUse: "Dit e-mailadres is al in gebruik. Log in plaats daarvan in.",
+    rateLimited:
+      "Te veel pogingen in korte tijd. Wacht even en probeer opnieuw.",
+    weakPassword: "Kies een sterker wachtwoord (minstens 8 tekens).",
+    emailNotConfirmed:
+      "Bevestig eerst je e-mailadres — check je mailbox voor de link.",
     genericError: "Er ging iets mis. Probeer het opnieuw.",
     confirmFailed: "De bevestigingslink is ongeldig of verlopen.",
   },
