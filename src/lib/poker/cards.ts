@@ -62,9 +62,9 @@ const RANK_LABEL: Record<Rank, string> = {
   "8": "8",
   "9": "9",
   T: "10",
-  J: "B",
-  Q: "V",
-  K: "H",
+  J: "J",
+  Q: "D",
+  K: "K",
   A: "A",
 };
 
