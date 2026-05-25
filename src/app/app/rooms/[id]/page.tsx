@@ -5,6 +5,7 @@ import { ChatPanel } from "@/components/chat/chat-panel";
 import { PresenceSidebar } from "@/components/presence/presence-sidebar";
 import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
+import { getRoomReactions } from "@/lib/chat/reactions-queries";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
 import { getRoomMessages } from "@/lib/messages/queries";
@@ -30,14 +31,21 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [members, proposalsData, presenceRows, messagesData, comments] =
-    await Promise.all([
-      getRoomMembers(id),
-      getRoomProposals(id),
-      getRoomPresence(id),
-      getRoomMessages(id),
-      getRoomComments(id),
-    ]);
+  const [
+    members,
+    proposalsData,
+    presenceRows,
+    messagesData,
+    comments,
+    reactions,
+  ] = await Promise.all([
+    getRoomMembers(id),
+    getRoomProposals(id),
+    getRoomPresence(id),
+    getRoomMessages(id),
+    getRoomComments(id),
+    getRoomReactions(id),
+  ]);
 
   const memberMap: MemberMap = Object.fromEntries(
     members.map((member) => [
@@ -89,6 +97,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
           members={memberMap}
           initialMessages={messagesData.messages}
           initialHasMore={messagesData.hasMore}
+          initialReactions={reactions}
         />
       }
     />

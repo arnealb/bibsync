@@ -1,5 +1,6 @@
 "use client";
 
+import { MessageReactions } from "@/components/chat/message-reactions";
 import { UserAvatar } from "@/components/user-avatar";
 import { isGifUrl } from "@/lib/chat/gif";
 import { copy } from "@/lib/copy";
@@ -7,15 +8,20 @@ import type { MemberMap } from "@/lib/members";
 import type { MessageGroup } from "@/lib/messages/group";
 import { formatMessageTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
+import type { MessageReaction } from "@/types/database";
 
 export function MessageList({
   groups,
   members,
   userId,
+  reactions,
+  onToggleReaction,
 }: {
   groups: MessageGroup[];
   members: MemberMap;
   userId: string;
+  reactions: MessageReaction[];
+  onToggleReaction: (messageId: string, emoji: string) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -45,34 +51,42 @@ export function MessageList({
                   {formatMessageTime(group.startedAt)}
                 </span>
               </div>
-              <div className="space-y-0.5">
-                {group.items.map((message) =>
-                  isGifUrl(message.content) ? (
-                    <div
-                      key={message.id}
-                      className={cn(message.pending && "opacity-60")}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={message.content}
-                        alt="GIF"
-                        className="max-h-48 max-w-[220px] rounded-md"
-                        loading="lazy"
+              <div className="space-y-1.5">
+                {group.items.map((message) => (
+                  <div key={message.id}>
+                    {isGifUrl(message.content) ? (
+                      <div className={cn(message.pending && "opacity-60")}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={message.content}
+                          alt="GIF"
+                          className="max-h-48 max-w-[220px] rounded-md"
+                          loading="lazy"
+                        />
+                      </div>
+                    ) : (
+                      <p
+                        className={cn(
+                          "text-sm break-words whitespace-pre-wrap",
+                          message.pending && "text-muted-foreground italic",
+                        )}
+                      >
+                        {message.content}
+                        {message.pending && ` · ${copy.chat.sending}`}
+                      </p>
+                    )}
+                    {!message.pending && (
+                      <MessageReactions
+                        messageId={message.id}
+                        reactions={reactions.filter(
+                          (r) => r.message_id === message.id,
+                        )}
+                        userId={userId}
+                        onToggle={onToggleReaction}
                       />
-                    </div>
-                  ) : (
-                    <p
-                      key={message.id}
-                      className={cn(
-                        "text-sm break-words whitespace-pre-wrap",
-                        message.pending && "text-muted-foreground italic",
-                      )}
-                    >
-                      {message.content}
-                      {message.pending && ` · ${copy.chat.sending}`}
-                    </p>
-                  ),
-                )}
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

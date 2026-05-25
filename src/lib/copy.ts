@@ -297,6 +297,7 @@ export const copy = {
     error: "Bericht niet verzonden. Probeer opnieuw.",
     rainbowOn: "🌈 Full rainbow mode aan!",
     rainbowOff: "Rainbow mode uit.",
+    react: "Reageer",
     gif: {
       button: "GIF kiezen",
       title: "Kies een GIF",

@@ -348,6 +348,30 @@ export interface Database {
         };
         Relationships: [];
       };
+      message_reactions: {
+        Row: {
+          message_id: string;
+          user_id: string;
+          emoji: string;
+          room_id: string;
+          created_at: Timestamp;
+        };
+        Insert: {
+          message_id: string;
+          user_id: string;
+          emoji: string;
+          room_id: string;
+          created_at?: Timestamp;
+        };
+        Update: {
+          message_id?: string;
+          user_id?: string;
+          emoji?: string;
+          room_id?: string;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -386,3 +410,5 @@ export type FoodProposal =
 export type FoodVote = Database["public"]["Tables"]["food_votes"]["Row"];
 export type FoodComment =
   Database["public"]["Tables"]["food_comments"]["Row"];
+export type MessageReaction =
+  Database["public"]["Tables"]["message_reactions"]["Row"];

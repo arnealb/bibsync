@@ -4,13 +4,17 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { loadOlderMessages, sendMessage } from "@/app/_actions/messages";
+import { toggleMessageReaction } from "@/app/_actions/reactions";
 import { ChatInput } from "@/components/chat/chat-input";
 import { MessageList } from "@/components/chat/message-list";
 import { Button } from "@/components/ui/button";
 import { useMessagesRealtime } from "@/hooks/use-messages-realtime";
+import { useReactionsRealtime } from "@/hooks/use-reactions-realtime";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
+import type { ReactionEmoji } from "@/lib/chat/reactions";
 import { groupMessages, type ChatMessage } from "@/lib/messages/group";
+import type { MessageReaction } from "@/types/database";
 
 const NEAR_BOTTOM_PX = 100;
 
@@ -20,6 +24,18 @@ interface ChatPanelProps {
   members: MemberMap;
   initialMessages: ChatMessage[];
   initialHasMore: boolean;
+  initialReactions: MessageReaction[];
+}
+
+function sameReaction(
+  a: { message_id: string; user_id: string; emoji: string },
+  b: { message_id: string; user_id: string; emoji: string },
+): boolean {
+  return (
+    a.message_id === b.message_id &&
+    a.user_id === b.user_id &&
+    a.emoji === b.emoji
+  );
 }
 
 export function ChatPanel({
@@ -28,8 +44,11 @@ export function ChatPanel({
   members,
   initialMessages,
   initialHasMore,
+  initialReactions,
 }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [reactions, setReactions] =
+    useState<MessageReaction[]>(initialReactions);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [newCount, setNewCount] = useState(0);
   const [sending, startSending] = useTransition();
@@ -68,6 +87,53 @@ export function ChatPanel({
       setNewCount((count) => count + 1);
     }
   });
+
+  useReactionsRealtime(roomId, {
+    onInsert: (reaction) =>
+      setReactions((prev) =>
+        prev.some((r) => sameReaction(r, reaction))
+          ? prev
+          : [...prev, reaction],
+      ),
+    onDelete: (key) =>
+      setReactions((prev) => prev.filter((r) => !sameReaction(r, key))),
+  });
+
+  function handleToggleReaction(messageId: string, emoji: string) {
+    const key = { message_id: messageId, user_id: userId, emoji };
+    const mine = reactions.find((r) => sameReaction(r, key));
+
+    // Optimistic toggle; revert on error.
+    if (mine) {
+      setReactions((prev) => prev.filter((r) => !sameReaction(r, key)));
+    } else {
+      setReactions((prev) => [
+        ...prev,
+        {
+          message_id: messageId,
+          user_id: userId,
+          emoji,
+          room_id: roomId,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    }
+
+    void toggleMessageReaction({
+      messageId,
+      emoji: emoji as ReactionEmoji,
+    }).then((result) => {
+      if (result.ok) return;
+      setReactions((prev) =>
+        mine
+          ? prev.some((r) => sameReaction(r, key))
+            ? prev
+            : [...prev, mine]
+          : prev.filter((r) => !sameReaction(r, key)),
+      );
+      toast.error(result.error);
+    });
+  }
 
   function handleSend(content: string) {
     const tempId = `temp-${crypto.randomUUID()}`;
@@ -145,7 +211,13 @@ export function ChatPanel({
             {copy.chat.empty}
           </p>
         ) : (
-          <MessageList groups={groups} members={members} userId={userId} />
+          <MessageList
+            groups={groups}
+            members={members}
+            userId={userId}
+            reactions={reactions}
+            onToggleReaction={handleToggleReaction}
+          />
         )}
       </div>
 
