@@ -186,6 +186,22 @@ export const copy = {
     },
     chatPlaceholder: "Chat komt binnenkort beschikbaar.",
   },
+  instantBreak: {
+    button: "Pauze nu",
+    pushed: "Jij wil pauze ✓",
+    durationLabel: "Duur",
+    hint: (needed: number, seconds: number) =>
+      `${needed} mensen die binnen ${seconds}s drukken = meteen pauze, wat er ook gepland staat.`,
+    waiting: (count: number, needed: number) =>
+      `${count}/${needed} — druk ook om pauze af te dwingen!`,
+    wantsBreak: (names: string) => `${names} wil pauze`,
+    active: "Het is pauze! 🎉",
+    activeBody: "Genoeg mensen wilden pauze — leg je boeken even neer.",
+    until: (time: string) => `tot ${time}`,
+    remaining: (min: number) => `nog ${min} min`,
+    triggeredBy: (name: string) => `afgedwongen door ${name}`,
+    failed: "Kon je pauze-stem niet doorgeven. Probeer opnieuw.",
+  },
   proposals: {
     title: "Pauzevoorstellen",
     new: "Nieuw voorstel",

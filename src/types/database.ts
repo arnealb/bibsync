@@ -372,6 +372,57 @@ export interface Database {
         };
         Relationships: [];
       };
+      instant_break_pushes: {
+        Row: {
+          id: string;
+          room_id: string;
+          user_id: string;
+          duration_minutes: number;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          user_id: string;
+          duration_minutes: number;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          user_id?: string;
+          duration_minutes?: number;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      instant_breaks: {
+        Row: {
+          id: string;
+          room_id: string;
+          triggered_by: string;
+          duration_minutes: number;
+          started_at: Timestamp;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          triggered_by: string;
+          duration_minutes: number;
+          started_at?: Timestamp;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          triggered_by?: string;
+          duration_minutes?: number;
+          started_at?: Timestamp;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -412,3 +463,7 @@ export type FoodComment =
   Database["public"]["Tables"]["food_comments"]["Row"];
 export type MessageReaction =
   Database["public"]["Tables"]["message_reactions"]["Row"];
+export type InstantBreakPush =
+  Database["public"]["Tables"]["instant_break_pushes"]["Row"];
+export type InstantBreak =
+  Database["public"]["Tables"]["instant_breaks"]["Row"];

@@ -2,11 +2,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ChatPanel } from "@/components/chat/chat-panel";
+import { InstantBreakPanel } from "@/components/instant-break/instant-break-panel";
 import { PresenceSidebar } from "@/components/presence/presence-sidebar";
 import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
 import { getRoomReactions } from "@/lib/chat/reactions-queries";
 import { copy } from "@/lib/copy";
+import {
+  getActiveInstantBreak,
+  getRecentPushes,
+} from "@/lib/instant-break/queries";
 import type { MemberMap } from "@/lib/members";
 import { getRoomMessages } from "@/lib/messages/queries";
 import { getRoomPresence } from "@/lib/presence/queries";
@@ -38,6 +43,8 @@ export default async function RoomPage({ params }: RoomPageProps) {
     messagesData,
     comments,
     reactions,
+    activeBreak,
+    recentPushes,
   ] = await Promise.all([
     getRoomMembers(id),
     getRoomProposals(id),
@@ -45,6 +52,8 @@ export default async function RoomPage({ params }: RoomPageProps) {
     getRoomMessages(id),
     getRoomComments(id),
     getRoomReactions(id),
+    getActiveInstantBreak(id),
+    getRecentPushes(id),
   ]);
 
   const memberMap: MemberMap = Object.fromEntries(
@@ -71,7 +80,15 @@ export default async function RoomPage({ params }: RoomPageProps) {
       joinCode={access.room.join_code}
       isOwner={access.isOwner}
       memberCount={members.length}
-      statusSlot={null}
+      statusSlot={
+        <InstantBreakPanel
+          roomId={access.room.id}
+          userId={access.userId}
+          members={memberMap}
+          initialActiveBreak={activeBreak}
+          initialPushes={recentPushes}
+        />
+      }
       breaksSlot={
         <ProposalsPanel
           roomId={access.room.id}
