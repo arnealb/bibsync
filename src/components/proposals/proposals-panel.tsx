@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
 import { castVote, deleteProposal } from "@/app/_actions/proposals";
+import { ProposalCalendarBar } from "@/components/proposals/proposal-calendar-bar";
 import { ProposalCard } from "@/components/proposals/proposal-card";
 import { ProposalForm } from "@/components/proposals/proposal-form";
 import { Button } from "@/components/ui/button";
@@ -17,8 +18,14 @@ import {
 } from "@/components/ui/dialog";
 import { useProposalsRealtime } from "@/hooks/use-proposals-realtime";
 import { copy } from "@/lib/copy";
+import {
+  rangeFor,
+  shiftAnchor,
+  type CalendarView,
+} from "@/lib/proposals/calendar";
 import { dateLabelGroups } from "@/lib/proposals/group";
 import { isProposalVisible } from "@/lib/proposals/visibility";
+import { isoDatePlus } from "@/lib/time";
 import type { BreakProposal, Vote, VoteValue } from "@/types/database";
 
 interface ProposalsPanelProps {
@@ -40,6 +47,8 @@ export function ProposalsPanel({
   const [votes, setVotes] = useState(initialVotes);
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [view, setView] = useState<CalendarView>("week");
+  const [anchor, setAnchor] = useState(() => isoDatePlus(0));
   const [, startTransition] = useTransition();
 
   // Re-evaluate visibility every minute so expired proposals drop off on their
@@ -123,8 +132,12 @@ export function ProposalsPanel({
     });
   }
 
+  const range = rangeFor(view, anchor);
+  const visible = proposals.filter((p) => isProposalVisible(p, now));
   const groups = dateLabelGroups(
-    proposals.filter((p) => isProposalVisible(p, now)),
+    visible.filter(
+      (p) => p.proposal_date >= range.start && p.proposal_date <= range.end,
+    ),
   );
 
   return (
@@ -155,9 +168,21 @@ export function ProposalsPanel({
         </Dialog>
       </div>
 
-      {groups.length === 0 ? (
+      <ProposalCalendarBar
+        view={view}
+        anchor={anchor}
+        onView={setView}
+        onShift={(dir) => setAnchor((a) => shiftAnchor(view, a, dir))}
+        onToday={() => setAnchor(isoDatePlus(0))}
+      />
+
+      {visible.length === 0 ? (
         <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
           {copy.proposals.empty}
+        </p>
+      ) : groups.length === 0 ? (
+        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+          {copy.proposals.calendar.emptyRange}
         </p>
       ) : (
         <div className="space-y-5">

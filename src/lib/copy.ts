@@ -210,6 +210,26 @@ export const copy = {
     deleted: "Voorstel verwijderd.",
     deleteConfirm: "Dit voorstel verwijderen?",
     by: "door",
+    calendar: {
+      day: "Dag",
+      week: "Week",
+      month: "Maand",
+      today: "Vandaag",
+      prev: "Vorige",
+      next: "Volgende",
+      emptyRange: "Geen voorstellen in deze periode.",
+    },
+    comments: {
+      title: "Reacties",
+      placeholder: "Schrijf een reactie…",
+      send: "Plaats",
+      empty: "Nog geen reacties.",
+      toggle: (n: number) =>
+        n === 0
+          ? "Reageren"
+          : `${n} ${n === 1 ? "reactie" : "reacties"}`,
+      error: "Reactie niet geplaatst. Probeer opnieuw.",
+    },
     votes: {
       yes: "Ja",
       maybe: "Misschien",
