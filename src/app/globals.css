@@ -128,3 +128,39 @@
     @apply font-sans;
   }
 }
+
+/* Easter egg: full rainbow mode (toggled by typing /alan in the chat). */
+@keyframes bibsync-rainbow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+html.rainbow body {
+  background: linear-gradient(
+    125deg,
+    #ff004c,
+    #ff8a00,
+    #ffe600,
+    #00d26a,
+    #00b3ff,
+    #7a5cff,
+    #ff2fd0,
+    #ff004c
+  );
+  background-size: 300% 300%;
+  background-attachment: fixed;
+  animation: bibsync-rainbow 8s ease infinite;
+}
+
+/* Let the rainbow shine through cards and the header a touch. */
+html.rainbow [data-slot="card"],
+html.rainbow header {
+  background-color: color-mix(in oklch, var(--background) 82%, transparent);
+}

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Send } from "lucide-react";
 
 import { GifPicker } from "@/components/chat/gif-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { copy } from "@/lib/copy";
+import { toggleRainbow } from "@/lib/rainbow";
 import {
   MESSAGE_COUNTER_THRESHOLD,
   MESSAGE_MAX_LENGTH,
@@ -24,6 +26,13 @@ export function ChatInput({
   function submit() {
     const trimmed = value.trim();
     if (!trimmed) return;
+    // Easter egg: /alan toggles full rainbow mode instead of sending.
+    if (trimmed.toLowerCase() === "/alan") {
+      const on = toggleRainbow();
+      toast.success(on ? copy.chat.rainbowOn : copy.chat.rainbowOff);
+      setValue("");
+      return;
+    }
     onSend(trimmed);
     setValue("");
   }

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { PwaRegister } from "@/components/pwa-register";
+import { RainbowInit } from "@/components/rainbow-init";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { copy } from "@/lib/copy";
@@ -61,6 +62,7 @@ export default function RootLayout({
           <Toaster richColors position="top-center" />
         </ThemeProvider>
         <PwaRegister />
+        <RainbowInit />
       </body>
     </html>
   );

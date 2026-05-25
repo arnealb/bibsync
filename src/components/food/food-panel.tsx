@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 
 import {
   addFoodComment,
@@ -33,7 +33,7 @@ import {
   type CalendarView,
 } from "@/lib/proposals/calendar";
 import { FOOD_SLOTS } from "@/lib/slots";
-import { formatDateLong, isoDatePlus } from "@/lib/time";
+import { formatClock, formatDateLong, isoDatePlus } from "@/lib/time";
 import type {
   FoodComment,
   FoodProposal,
@@ -87,7 +87,14 @@ export function FoodPanel({
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<CalendarView>("week");
   const [anchor, setAnchor] = useState(() => isoDatePlus(0));
+  const [showEarlier, setShowEarlier] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useFoodRealtime(roomId, {
     onProposalInsert: (p) =>
@@ -235,6 +242,40 @@ export function FoodPanel({
     ),
   );
 
+  // Split fixed meal slots into upcoming and already-passed (today only).
+  const todayIso = isoDatePlus(0);
+  const nowClock = formatClock(now);
+  const slotEntries = FOOD_SLOTS.map((slot) => {
+    const suggestions = proposals.filter(
+      (p) => p.slot_key === slot.key && p.food_date === anchor,
+    );
+    const passed =
+      anchor < todayIso ||
+      (anchor === todayIso && slot.defaultTime < nowClock);
+    return { slot, suggestions, passed };
+  });
+  const upcomingSlots = slotEntries.filter((e) => !e.passed);
+  const earlierSlots = slotEntries.filter((e) => e.passed);
+
+  const renderSlot = (entry: (typeof slotEntries)[number]) => (
+    <FoodSlotCard
+      key={entry.slot.key}
+      slot={entry.slot}
+      date={anchor}
+      suggestions={entry.suggestions}
+      votes={votes}
+      comments={comments}
+      members={members}
+      userId={userId}
+      onSetPreference={handleSetSlotPreference}
+      onClearPreference={handleClearSlotPreference}
+      onVote={handleVote}
+      onDelete={handleDelete}
+      onAddComment={handleAddComment}
+      onDeleteComment={handleDeleteComment}
+    />
+  );
+
   return (
     <div className="space-y-6">
       <ProposalCalendarBar
@@ -252,28 +293,33 @@ export function FoodPanel({
             · {formatDateLong(anchor)}
           </span>
         </h2>
-        <div className="space-y-3">
-          {FOOD_SLOTS.map((slot) => (
-            <FoodSlotCard
-              key={slot.key}
-              slot={slot}
-              date={anchor}
-              suggestions={proposals.filter(
-                (p) => p.slot_key === slot.key && p.food_date === anchor,
-              )}
-              votes={votes}
-              comments={comments}
-              members={members}
-              userId={userId}
-              onSetPreference={handleSetSlotPreference}
-              onClearPreference={handleClearSlotPreference}
-              onVote={handleVote}
-              onDelete={handleDelete}
-              onAddComment={handleAddComment}
-              onDeleteComment={handleDeleteComment}
-            />
-          ))}
-        </div>
+        <div className="space-y-3">{upcomingSlots.map(renderSlot)}</div>
+
+        {earlierSlots.length > 0 && (
+          <div className="space-y-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              aria-expanded={showEarlier}
+              onClick={() => setShowEarlier((v) => !v)}
+            >
+              <ChevronDown
+                className={
+                  showEarlier
+                    ? "size-4 rotate-180 transition-transform"
+                    : "size-4 transition-transform"
+                }
+              />
+              {copy.food.slots.earlier} ({earlierSlots.length})
+            </Button>
+            {showEarlier && (
+              <div className="space-y-3 opacity-80">
+                {earlierSlots.map(renderSlot)}
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="space-y-3">

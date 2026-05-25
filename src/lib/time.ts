@@ -62,8 +62,8 @@ export function formatTime(time: string): string {
 }
 
 /** Format a timestamp as `HH:mm` (24h) in Brussels time. */
-export function formatClock(value: Date | string): string {
-  const date = typeof value === "string" ? new Date(value) : value;
+export function formatClock(value: Date | string | number): string {
+  const date = value instanceof Date ? value : new Date(value);
   return format(new TZDate(date, TIME_ZONE), "HH:mm", { locale: nl });
 }
 

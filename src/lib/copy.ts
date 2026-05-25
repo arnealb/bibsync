@@ -200,6 +200,7 @@ export const copy = {
       clear: "Wissen",
       saved: "Voorkeur opgeslagen.",
       empty: "Nog geen voorkeuren — geef de jouwe of stem op de standaard.",
+      earlier: "Eerdere momenten",
     },
     form: {
       title: "Pauze voorstellen",
@@ -293,6 +294,8 @@ export const copy = {
     newMessages: (n: number) =>
       `${n} ${n === 1 ? "nieuw bericht" : "nieuwe berichten"} ↓`,
     error: "Bericht niet verzonden. Probeer opnieuw.",
+    rainbowOn: "🌈 Full rainbow mode aan!",
+    rainbowOff: "Rainbow mode uit.",
     gif: {
       button: "GIF kiezen",
       title: "Kies een GIF",
@@ -320,6 +323,7 @@ export const copy = {
       clear: "Wissen",
       saved: "Keuze opgeslagen.",
       empty: "Nog geen keuzes — geef de jouwe of stem op de standaard.",
+      earlier: "Eerdere maaltijden",
     },
     form: {
       title: "Waar gaan we eten?",
