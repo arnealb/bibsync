@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { useFoodRealtime } from "@/hooks/use-food-realtime";
 import { copy } from "@/lib/copy";
+import type { MemberMap } from "@/lib/members";
 import {
   rangeFor,
   shiftAnchor,
@@ -62,7 +63,7 @@ function groupByDate(items: FoodProposal[]) {
 interface FoodPanelProps {
   roomId: string;
   userId: string;
-  members: Record<string, string>;
+  members: MemberMap;
   initialProposals: FoodProposal[];
   initialVotes: FoodVote[];
   initialComments: FoodComment[];

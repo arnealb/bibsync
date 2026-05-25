@@ -27,6 +27,8 @@ en chat met je groep. Alles live via Supabase Realtime.
 - **Chat** — realtime berichten per room, met optimistic verzenden, paginatie en
   een **GIF-picker** (Giphy; optionele gratis API-key)
 - **Admin** — een admin-rol die alle rooms kan zien en beheren (`/app/admin`)
+- **Profielfoto's** — upload via Supabase Storage; getoond in header, profiel,
+  leden, voorstellen, chat en presence
 - Dark mode, mobile-first, Nederlandse UI
 
 ## Setup
@@ -64,6 +66,8 @@ Open in het Supabase dashboard de **SQL Editor** en run beide migrations
 5. [`supabase/migrations/0005_food.sql`](supabase/migrations/0005_food.sql)
    — eet-voorstellen (`food_proposals`/`food_votes`/`food_comments`), met RLS +
    realtime.
+6. [`supabase/migrations/0006_avatars.sql`](supabase/migrations/0006_avatars.sql)
+   — publieke `avatars` Storage-bucket + policies voor profielfoto's.
 
 > Verifieer in de **Table Editor** dat de tabellen bestaan (`profiles`, `rooms`,
 > `room_members`, `break_proposals`, `votes`, `presence`, `messages`). Realtime

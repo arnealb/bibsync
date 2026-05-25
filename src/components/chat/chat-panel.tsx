@@ -9,6 +9,7 @@ import { MessageList } from "@/components/chat/message-list";
 import { Button } from "@/components/ui/button";
 import { useMessagesRealtime } from "@/hooks/use-messages-realtime";
 import { copy } from "@/lib/copy";
+import type { MemberMap } from "@/lib/members";
 import { groupMessages, type ChatMessage } from "@/lib/messages/group";
 
 const NEAR_BOTTOM_PX = 100;
@@ -16,7 +17,7 @@ const NEAR_BOTTOM_PX = 100;
 interface ChatPanelProps {
   roomId: string;
   userId: string;
-  members: Record<string, string>;
+  members: MemberMap;
   initialMessages: ChatMessage[];
   initialHasMore: boolean;
 }

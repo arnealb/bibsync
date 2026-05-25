@@ -3,10 +3,10 @@
 import { Trash2, UtensilsCrossed } from "lucide-react";
 
 import { ProposalComments } from "@/components/proposals/proposal-comments";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/user-avatar";
 import { copy } from "@/lib/copy";
-import { getInitials } from "@/lib/initials";
+import type { MemberMap } from "@/lib/members";
 import { formatTally, voteWeight } from "@/lib/proposals/joke";
 import { formatDateLong, isoDatePlus } from "@/lib/time";
 import { VOTE_VALUES } from "@/lib/validation/proposals";
@@ -28,7 +28,7 @@ interface FoodCardProps {
   proposal: FoodProposal;
   votes: FoodVote[];
   comments: FoodComment[];
-  members: Record<string, string>;
+  members: MemberMap;
   userId: string;
   canDelete: boolean;
   onVote: (value: VoteValue) => void;
@@ -50,7 +50,8 @@ export function FoodCard({
   onDeleteComment,
 }: FoodCardProps) {
   const ownVote = votes.find((vote) => vote.user_id === userId)?.vote;
-  const creatorName = members[proposal.created_by] ?? "—";
+  const creator = members[proposal.created_by];
+  const creatorName = creator?.name ?? "—";
 
   return (
     <article className="rounded-lg border p-4">
@@ -79,11 +80,12 @@ export function FoodCard({
       </div>
 
       <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Avatar className="size-5">
-          <AvatarFallback className="text-[10px]">
-            {getInitials(creatorName)}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          name={creatorName}
+          avatarUrl={creator?.avatarUrl}
+          className="size-5"
+          fallbackClassName="text-[10px]"
+        />
         {copy.proposals.by} {creatorName}
       </div>
 
@@ -94,7 +96,8 @@ export function FoodCard({
           const count = votes
             .filter((vote) => vote.vote === value)
             .reduce(
-              (sum, vote) => sum + voteWeight(members[vote.user_id] ?? ""),
+              (sum, vote) =>
+                sum + voteWeight(members[vote.user_id]?.name ?? ""),
               0,
             );
           return (

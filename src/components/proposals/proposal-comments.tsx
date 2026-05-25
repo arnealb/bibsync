@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { MessageSquare, Send, X } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { UserAvatar } from "@/components/user-avatar";
 import { copy } from "@/lib/copy";
-import { getInitials } from "@/lib/initials";
+import type { MemberMap } from "@/lib/members";
 import { COMMENT_MAX_LENGTH } from "@/lib/validation/comments";
 
 /** Minimal comment shape — works for both proposal and food comments. */
@@ -20,7 +20,7 @@ export interface CommentLike {
 interface ProposalCommentsProps {
   proposalId: string;
   comments: CommentLike[];
-  members: Record<string, string>;
+  members: MemberMap;
   userId: string;
   onAdd: (proposalId: string, content: string) => void;
   onDelete: (commentId: string) => void;
@@ -70,14 +70,15 @@ export function ProposalComments({
                   key={comment.id}
                   className="group flex items-start gap-2 text-sm"
                 >
-                  <Avatar className="mt-0.5 size-5">
-                    <AvatarFallback className="text-[9px]">
-                      {getInitials(members[comment.author_id] ?? "—")}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    name={members[comment.author_id]?.name ?? "—"}
+                    avatarUrl={members[comment.author_id]?.avatarUrl}
+                    className="mt-0.5 size-5"
+                    fallbackClassName="text-[9px]"
+                  />
                   <div className="min-w-0 flex-1">
                     <span className="font-medium">
-                      {members[comment.author_id] ?? "—"}
+                      {members[comment.author_id]?.name ?? "—"}
                     </span>{" "}
                     <span className="break-words">{comment.content}</span>
                   </div>

@@ -5,10 +5,9 @@ import { toast } from "sonner";
 
 import { setPresence } from "@/app/_actions/presence";
 import { StatusControl } from "@/components/presence/status-control";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/user-avatar";
 import { usePresenceRealtime } from "@/hooks/use-presence-realtime";
 import { copy } from "@/lib/copy";
-import { getInitials } from "@/lib/initials";
 import { PRESENCE_EMOJI } from "@/lib/presence/display";
 import { presenceSortKey, presenceView } from "@/lib/presence/view";
 import { formatTime } from "@/lib/time";
@@ -17,6 +16,7 @@ import type { PresenceStatus, Presence } from "@/types/database";
 interface RoomMemberOption {
   id: string;
   name: string;
+  avatarUrl: string | null;
 }
 
 interface PresenceSidebarProps {
@@ -100,11 +100,12 @@ export function PresenceSidebar({
               className="flex items-center justify-between gap-2 rounded-md px-1 py-1.5"
             >
               <div className="flex min-w-0 items-center gap-2">
-                <Avatar className="size-7">
-                  <AvatarFallback className="text-[11px]">
-                    {getInitials(member.name)}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  name={member.name}
+                  avatarUrl={member.avatarUrl}
+                  className="size-7"
+                  fallbackClassName="text-[11px]"
+                />
                 <span className="truncate text-sm">
                   {member.name}
                   {member.id === userId && (

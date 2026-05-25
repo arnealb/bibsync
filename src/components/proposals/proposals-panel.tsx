@@ -23,6 +23,7 @@ import {
 import { useProposalCommentsRealtime } from "@/hooks/use-proposal-comments-realtime";
 import { useProposalsRealtime } from "@/hooks/use-proposals-realtime";
 import { copy } from "@/lib/copy";
+import type { MemberMap } from "@/lib/members";
 import {
   rangeFor,
   shiftAnchor,
@@ -41,7 +42,7 @@ import type {
 interface ProposalsPanelProps {
   roomId: string;
   userId: string;
-  members: Record<string, string>;
+  members: MemberMap;
   initialProposals: BreakProposal[];
   initialVotes: Vote[];
   initialComments: ProposalComment[];

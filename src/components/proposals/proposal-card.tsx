@@ -9,10 +9,10 @@ import {
 } from "lucide-react";
 
 import { ProposalComments } from "@/components/proposals/proposal-comments";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/user-avatar";
 import { copy } from "@/lib/copy";
-import { getInitials } from "@/lib/initials";
+import type { MemberMap } from "@/lib/members";
 import { formatTally, voteWeight } from "@/lib/proposals/joke";
 import { endTime, formatDateLong, formatTime, isoDatePlus } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -48,7 +48,7 @@ interface ProposalCardProps {
   proposal: BreakProposal;
   votes: Vote[];
   comments: ProposalComment[];
-  members: Record<string, string>;
+  members: MemberMap;
   userId: string;
   canDelete: boolean;
   onVote: (value: VoteValue) => void;
@@ -71,7 +71,8 @@ export function ProposalCard({
 }: ProposalCardProps) {
   const Icon = TYPE_ICON[proposal.proposal_type];
   const ownVote = votes.find((vote) => vote.user_id === userId)?.vote;
-  const creatorName = members[proposal.created_by] ?? "—";
+  const creator = members[proposal.created_by];
+  const creatorName = creator?.name ?? "—";
 
   return (
     <article className="rounded-lg border p-4">
@@ -104,11 +105,12 @@ export function ProposalCard({
       </div>
 
       <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Avatar className="size-5">
-          <AvatarFallback className="text-[10px]">
-            {getInitials(creatorName)}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          name={creatorName}
+          avatarUrl={creator?.avatarUrl}
+          className="size-5"
+          fallbackClassName="text-[10px]"
+        />
         {copy.proposals.by} {creatorName}
       </div>
 
@@ -119,7 +121,8 @@ export function ProposalCard({
           const count = votes
             .filter((vote) => vote.vote === value)
             .reduce(
-              (sum, vote) => sum + voteWeight(members[vote.user_id] ?? ""),
+              (sum, vote) =>
+                sum + voteWeight(members[vote.user_id]?.name ?? ""),
               0,
             );
           return (
@@ -158,7 +161,7 @@ function Voters({
   members,
 }: {
   votes: Vote[];
-  members: Record<string, string>;
+  members: MemberMap;
 }) {
   if (votes.length === 0) {
     return (
@@ -172,7 +175,7 @@ function Voters({
       {VOTE_VALUES.map((value) => {
         const names = votes
           .filter((vote) => vote.vote === value)
-          .map((vote) => members[vote.user_id] ?? "—");
+          .map((vote) => members[vote.user_id]?.name ?? "—");
         if (names.length === 0) return null;
         return (
           <li key={value} className={cn("flex gap-1.5")}>

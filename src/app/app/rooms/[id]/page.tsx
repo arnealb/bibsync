@@ -6,6 +6,7 @@ import { PresenceSidebar } from "@/components/presence/presence-sidebar";
 import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
 import { copy } from "@/lib/copy";
+import type { MemberMap } from "@/lib/members";
 import { getRoomMessages } from "@/lib/messages/queries";
 import { getRoomPresence } from "@/lib/presence/queries";
 import { getRoomComments } from "@/lib/proposals/comments-queries";
@@ -38,16 +39,20 @@ export default async function RoomPage({ params }: RoomPageProps) {
       getRoomComments(id),
     ]);
 
-  const memberNames: Record<string, string> = Object.fromEntries(
+  const memberMap: MemberMap = Object.fromEntries(
     members.map((member) => [
       member.user_id,
-      member.profile?.display_name ?? "—",
+      {
+        name: member.profile?.display_name ?? "—",
+        avatarUrl: member.profile?.avatar_url ?? null,
+      },
     ]),
   );
 
   const memberOptions = members.map((member) => ({
     id: member.user_id,
     name: member.profile?.display_name ?? "—",
+    avatarUrl: member.profile?.avatar_url ?? null,
   }));
 
   return (
@@ -63,7 +68,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
         <ProposalsPanel
           roomId={access.room.id}
           userId={access.userId}
-          members={memberNames}
+          members={memberMap}
           initialProposals={proposalsData.proposals}
           initialVotes={proposalsData.votes}
           initialComments={comments}
@@ -81,7 +86,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
         <ChatPanel
           roomId={access.room.id}
           userId={access.userId}
-          members={memberNames}
+          members={memberMap}
           initialMessages={messagesData.messages}
           initialHasMore={messagesData.hasMore}
         />

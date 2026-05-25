@@ -1,9 +1,9 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { copy } from "@/lib/copy";
+import { UserAvatar } from "@/components/user-avatar";
 import { isGifUrl } from "@/lib/chat/gif";
-import { getInitials } from "@/lib/initials";
+import { copy } from "@/lib/copy";
+import type { MemberMap } from "@/lib/members";
 import type { MessageGroup } from "@/lib/messages/group";
 import { formatMessageTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -14,21 +14,22 @@ export function MessageList({
   userId,
 }: {
   groups: MessageGroup[];
-  members: Record<string, string>;
+  members: MemberMap;
   userId: string;
 }) {
   return (
     <div className="space-y-4">
       {groups.map((group) => {
-        const name = members[group.authorId] ?? "—";
+        const name = members[group.authorId]?.name ?? "—";
         const isOwn = group.authorId === userId;
         return (
           <div key={group.key} className="flex gap-2.5">
-            <Avatar className="mt-0.5 size-7 shrink-0">
-              <AvatarFallback className="text-[11px]">
-                {getInitials(name)}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              name={name}
+              avatarUrl={members[group.authorId]?.avatarUrl}
+              className="mt-0.5 size-7 shrink-0"
+              fallbackClassName="text-[11px]"
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm font-medium">

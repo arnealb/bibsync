@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { FoodPanel } from "@/components/food/food-panel";
 import { copy } from "@/lib/copy";
 import { getRoomFood } from "@/lib/food/queries";
+import type { MemberMap } from "@/lib/members";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
 interface FoodPageProps {
@@ -32,10 +33,13 @@ export default async function FoodPage({ params }: FoodPageProps) {
     getRoomFood(id),
   ]);
 
-  const memberNames: Record<string, string> = Object.fromEntries(
+  const memberMap: MemberMap = Object.fromEntries(
     members.map((member) => [
       member.user_id,
-      member.profile?.display_name ?? "—",
+      {
+        name: member.profile?.display_name ?? "—",
+        avatarUrl: member.profile?.avatar_url ?? null,
+      },
     ]),
   );
 
@@ -55,7 +59,7 @@ export default async function FoodPage({ params }: FoodPageProps) {
       <FoodPanel
         roomId={id}
         userId={access.userId}
-        members={memberNames}
+        members={memberMap}
         initialProposals={food.proposals}
         initialVotes={food.votes}
         initialComments={food.comments}

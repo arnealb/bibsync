@@ -77,6 +77,10 @@ Editor, in order:
 5. `0005_food.sql` — food voting (`food_proposals`/`food_votes`/`food_comments`
    + `can_access_food()`), its own parallel stack on `/app/rooms/[id]/eten`.
    Reuses the calendar bar, generic comments component and joke vote-weight.
+6. `0006_avatars.sql` — public `avatars` Storage bucket + policies. Avatars are
+   uploaded client-side, set via `updateAvatar`, rendered with `UserAvatar`.
+   Member data flows as `MemberMap` (`Record<id,{name,avatarUrl}>`), see
+   `src/lib/members.ts`.
 
 **RLS recursion is avoided with `SECURITY DEFINER` helpers**
 (`is_room_member`, `is_room_owner`, `can_access_proposal`, `is_admin`): they
