@@ -78,6 +78,11 @@ export const copy = {
     displayNameRequired: "Geef een weergavenaam in.",
     displayNameTooLong: "Weergavenaam mag max 40 tekens zijn.",
   },
+  notFound: {
+    title: "Pagina niet gevonden",
+    body: "Deze pagina bestaat niet (meer) of je hebt er geen toegang toe.",
+    cta: "Naar de app",
+  },
   common: {
     cancel: "Annuleren",
     save: "Opslaan",
