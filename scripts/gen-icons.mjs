@@ -5,9 +5,9 @@ import sharp from "sharp";
 // A layered retro flame (red → orange → yellow), with a bold black B on top.
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
-      <stop offset="0%" stop-color="#fff3d6"/>
-      <stop offset="100%" stop-color="#f4d59e"/>
+    <radialGradient id="bg" cx="50%" cy="38%" r="80%">
+      <stop offset="0%" stop-color="#222222"/>
+      <stop offset="100%" stop-color="#000000"/>
     </radialGradient>
     <path id="flame" d="M256 80
       C 286 170, 350 200, 322 286
@@ -32,7 +32,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" vi
 
   <text x="50%" y="53%" text-anchor="middle" dominant-baseline="middle"
     font-family="'Arial Black', Arial, Helvetica, sans-serif" font-size="300"
-    font-weight="900" fill="#0a0a0a">B</text>
+    font-weight="900" fill="#ededed">B</text>
 </svg>`;
 
 const buffer = Buffer.from(svg);
