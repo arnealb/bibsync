@@ -76,6 +76,15 @@ export const copy = {
     emailLabel: "E-mailadres",
     displayNameLabel: "Weergavenaam",
     memberSince: "Lid sinds",
+    avatar: {
+      upload: "Foto uploaden",
+      remove: "Verwijderen",
+      updated: "Profielfoto bijgewerkt.",
+      removed: "Profielfoto verwijderd.",
+      invalid: "Kies een afbeelding.",
+      tooLarge: "Afbeelding mag max 5 MB zijn.",
+      error: "Uploaden mislukt. Probeer opnieuw.",
+    },
   },
   appHome: {
     welcome: (name: string) => `Welkom ${name}`,

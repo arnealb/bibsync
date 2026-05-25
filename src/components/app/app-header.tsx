@@ -3,11 +3,10 @@ import { Shield } from "lucide-react";
 
 import { RoomSwitcher } from "@/components/app/room-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/user-avatar";
 import { getAuthContext } from "@/lib/auth";
 import { copy } from "@/lib/copy";
-import { getInitials } from "@/lib/initials";
 import { getMyRooms } from "@/lib/rooms/queries";
 
 export async function AppHeader() {
@@ -44,9 +43,11 @@ export async function AppHeader() {
             aria-label={copy.nav.profile}
             className="rounded-full outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
           >
-            <Avatar className="size-9">
-              <AvatarFallback>{getInitials(name)}</AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              name={name}
+              avatarUrl={ctx?.profile?.avatar_url ?? null}
+              className="size-9"
+            />
           </Link>
         </div>
       </div>

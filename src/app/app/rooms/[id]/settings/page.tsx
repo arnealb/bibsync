@@ -38,6 +38,7 @@ export default async function RoomSettingsPage({ params }: SettingsPageProps) {
   const memberItems = members.map((member) => ({
     userId: member.user_id,
     name: member.profile?.display_name ?? "—",
+    avatarUrl: member.profile?.avatar_url ?? null,
     isOwner: member.user_id === access.room.owner_id,
   }));
 
