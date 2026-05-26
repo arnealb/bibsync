@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { createProposal } from "@/app/_actions/proposals";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -17,16 +18,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { copy } from "@/lib/copy";
 import { isoDatePlus } from "@/lib/time";
 import { DURATION_OPTIONS, PROPOSAL_TYPES } from "@/lib/validation/proposals";
-import type { BreakProposal, ProposalType } from "@/types/database";
+import type { BreakProposal, ProposalType, RoomPlace } from "@/types/database";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 const MINUTES = ["00", "15", "30", "45"];
 
 export function ProposalForm({
   roomId,
+  places,
   onCreated,
 }: {
   roomId: string;
+  places: RoomPlace[];
   onCreated: (proposal: BreakProposal) => void;
 }) {
   const [type, setType] = useState<ProposalType>("lunch");
@@ -34,6 +37,8 @@ export function ProposalForm({
   const [hour, setHour] = useState("12");
   const [minute, setMinute] = useState("30");
   const [duration, setDuration] = useState("30");
+  const [destination, setDestination] = useState("");
+  const [isWalk, setIsWalk] = useState(false);
   const [note, setNote] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -46,6 +51,8 @@ export function ProposalForm({
         proposalDate: date,
         startTime: `${hour}:${minute}`,
         durationMinutes: Number(duration),
+        destination: destination.trim() || undefined,
+        isWalk,
         note: note.trim() || undefined,
       });
       if (result.ok) {
@@ -141,6 +148,46 @@ export function ProposalForm({
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="proposal-dest">
+          {copy.proposals.form.destinationLabel}
+        </Label>
+        {places.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {places.map((place) => (
+              <button
+                key={place.id}
+                type="button"
+                onClick={() => {
+                  setDestination(place.name);
+                  setIsWalk(place.is_walk);
+                }}
+                className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
+              >
+                {place.is_walk ? "🚶 " : ""}
+                {place.name}
+              </button>
+            ))}
+          </div>
+        )}
+        <Input
+          id="proposal-dest"
+          value={destination}
+          onChange={(e) => setDestination(e.target.value)}
+          maxLength={80}
+          placeholder={copy.proposals.form.destinationPlaceholder}
+        />
+        <label className="flex w-fit items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isWalk}
+            onChange={(e) => setIsWalk(e.target.checked)}
+            className="size-4 accent-emerald-600"
+          />
+          {copy.proposals.form.walkLabel}
+        </label>
       </div>
 
       <div className="space-y-2">

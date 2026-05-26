@@ -24,6 +24,8 @@ export const createProposalSchema = z
         copy.proposals.validation.durationInvalid,
       ),
     note: z.string().trim().max(200, copy.proposals.validation.noteTooLong).optional(),
+    destination: z.string().trim().max(80).optional(),
+    isWalk: z.boolean().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.proposalDate < isoDatePlus(0)) {

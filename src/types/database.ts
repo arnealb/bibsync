@@ -116,6 +116,8 @@ export interface Database {
           duration_minutes: number;
           note: string | null;
           slot_key: string | null;
+          destination: string | null;
+          is_walk: boolean;
           created_at: Timestamp;
         };
         Insert: {
@@ -128,6 +130,8 @@ export interface Database {
           duration_minutes: number;
           note?: string | null;
           slot_key?: string | null;
+          destination?: string | null;
+          is_walk?: boolean;
           created_at?: Timestamp;
         };
         Update: {
@@ -140,6 +144,35 @@ export interface Database {
           duration_minutes?: number;
           note?: string | null;
           slot_key?: string | null;
+          destination?: string | null;
+          is_walk?: boolean;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      room_places: {
+        Row: {
+          id: string;
+          room_id: string;
+          name: string;
+          is_walk: boolean;
+          created_by: string | null;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          name: string;
+          is_walk?: boolean;
+          created_by?: string | null;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          name?: string;
+          is_walk?: boolean;
+          created_by?: string | null;
           created_at?: Timestamp;
         };
         Relationships: [];
@@ -689,6 +722,7 @@ export type Room = Database["public"]["Tables"]["rooms"]["Row"];
 export type RoomMember = Database["public"]["Tables"]["room_members"]["Row"];
 export type BreakProposal =
   Database["public"]["Tables"]["break_proposals"]["Row"];
+export type RoomPlace = Database["public"]["Tables"]["room_places"]["Row"];
 export type Vote = Database["public"]["Tables"]["votes"]["Row"];
 export type Presence = Database["public"]["Tables"]["presence"]["Row"];
 export type Message = Database["public"]["Tables"]["messages"]["Row"];

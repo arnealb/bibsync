@@ -1,7 +1,18 @@
 import { isProposalVisible } from "@/lib/proposals/visibility";
 import { createClient } from "@/lib/supabase/server";
 import { isoDatePlus } from "@/lib/time";
-import type { BreakProposal, Vote } from "@/types/database";
+import type { BreakProposal, RoomPlace, Vote } from "@/types/database";
+
+/** Reusable destination/walk presets saved for a room. */
+export async function getRoomPlaces(roomId: string): Promise<RoomPlace[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("room_places")
+    .select("*")
+    .eq("room_id", roomId)
+    .order("created_at", { ascending: true });
+  return data ?? [];
+}
 
 export interface RoomProposalsData {
   proposals: BreakProposal[];

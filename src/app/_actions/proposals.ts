@@ -51,6 +51,9 @@ export async function createProposal(
     return { ok: false, error: copy.proposals.validation.slotTaken };
   }
 
+  const destination = parsed.data.destination?.trim() || null;
+  const isWalk = parsed.data.isWalk ?? false;
+
   const { data, error } = await supabase
     .from("break_proposals")
     .insert({
@@ -61,6 +64,8 @@ export async function createProposal(
       start_time: parsed.data.startTime,
       duration_minutes: parsed.data.durationMinutes,
       note: parsed.data.note ?? null,
+      destination,
+      is_walk: isWalk,
     })
     .select("*")
     .single();
@@ -68,6 +73,19 @@ export async function createProposal(
   if (error || !data) {
     console.error("[createProposal]", error);
     return { ok: false, error: copy.common.genericError };
+  }
+
+  // Remember the destination as a reusable preset for the room.
+  if (destination) {
+    await supabase.from("room_places").upsert(
+      {
+        room_id: parsed.data.roomId,
+        name: destination,
+        is_walk: isWalk,
+        created_by: user.id,
+      },
+      { onConflict: "room_id,name", ignoreDuplicates: true },
+    );
   }
 
   await sendRoomPush(parsed.data.roomId, "proposals", {

@@ -127,6 +127,15 @@ export function ProposalCard({
         {copy.proposals.by} {creatorName}
       </div>
 
+      {proposal.destination && (
+        <p className="mt-2 flex items-center gap-1.5 text-sm font-medium">
+          <span aria-hidden>
+            {proposal.is_walk ? copy.proposals.walkBy : copy.proposals.destinationBy}
+          </span>
+          {proposal.destination}
+        </p>
+      )}
+
       {proposal.note && <p className="mt-2 text-sm">{proposal.note}</p>}
 
       <div className="mt-3 grid grid-cols-3 gap-2">

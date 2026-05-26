@@ -15,7 +15,7 @@ import {
 import type { MemberMap } from "@/lib/members";
 import { getRoomPresence } from "@/lib/presence/queries";
 import { getRoomComments } from "@/lib/proposals/comments-queries";
-import { getRoomProposals } from "@/lib/proposals/queries";
+import { getRoomPlaces, getRoomProposals } from "@/lib/proposals/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
 interface RoomPageProps {
@@ -35,15 +35,23 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [members, proposalsData, presenceRows, comments, activeBreak, recentPushes] =
-    await Promise.all([
-      getRoomMembers(id),
-      getRoomProposals(id),
-      getRoomPresence(id),
-      getRoomComments(id),
-      getActiveInstantBreak(id),
-      getRecentPushes(id),
-    ]);
+  const [
+    members,
+    proposalsData,
+    presenceRows,
+    comments,
+    activeBreak,
+    recentPushes,
+    places,
+  ] = await Promise.all([
+    getRoomMembers(id),
+    getRoomProposals(id),
+    getRoomPresence(id),
+    getRoomComments(id),
+    getActiveInstantBreak(id),
+    getRecentPushes(id),
+    getRoomPlaces(id),
+  ]);
 
   const memberMap: MemberMap = Object.fromEntries(
     members.map((member) => [
@@ -81,6 +89,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
             initialProposals={proposalsData.proposals}
             initialVotes={proposalsData.votes}
             initialComments={comments}
+            initialPlaces={places}
           />
         }
         presenceSlot={

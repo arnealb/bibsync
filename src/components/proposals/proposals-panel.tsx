@@ -44,6 +44,7 @@ import { formatClock, formatDateLong, isoDatePlus } from "@/lib/time";
 import type {
   BreakProposal,
   ProposalComment,
+  RoomPlace,
   Vote,
   VoteValue,
 } from "@/types/database";
@@ -55,6 +56,7 @@ interface ProposalsPanelProps {
   initialProposals: BreakProposal[];
   initialVotes: Vote[];
   initialComments: ProposalComment[];
+  initialPlaces: RoomPlace[];
 }
 
 export function ProposalsPanel({
@@ -64,6 +66,7 @@ export function ProposalsPanel({
   initialProposals,
   initialVotes,
   initialComments,
+  initialPlaces,
 }: ProposalsPanelProps) {
   const [proposals, setProposals] = useState(initialProposals);
   const [votes, setVotes] = useState(initialVotes);
@@ -330,6 +333,7 @@ export function ProposalsPanel({
               </DialogHeader>
               <ProposalForm
                 roomId={roomId}
+                places={initialPlaces}
                 onCreated={(proposal) => {
                   setProposals((prev) =>
                     prev.some((item) => item.id === proposal.id)
