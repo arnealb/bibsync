@@ -50,6 +50,12 @@ export const ACHIEVEMENTS: Achievement[] = [
     reward: 50,
   },
   {
+    id: "roulette_win",
+    title: "Rien ne va plus",
+    description: "Win je eerste keer aan de roulette.",
+    reward: 50,
+  },
+  {
     id: "shopaholic",
     title: "Shopaholic",
     description: "Koop je eerste cosmetic.",
