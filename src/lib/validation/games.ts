@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const GAME_KEYS = ["snake"] as const;
+export const GAME_KEYS = ["snake", "petconnect"] as const;
 export const gameKeySchema = z.enum(GAME_KEYS);
 export type GameKey = z.infer<typeof gameKeySchema>;
 

@@ -313,6 +313,18 @@ export const copy = {
       column: "2:1",
     },
   },
+  petconnect: {
+    title: "Pet Connect",
+    subtitle:
+      "Verbind twee gelijke diertjes (max 2 bochten) en ruim het bord leeg.",
+    stat: "Beste score",
+    newGame: "Nieuw spel",
+    shuffle: "Schudden",
+    shuffleHint: "Geen zetten meer — schud het bord.",
+    won: (score: number) => `Bord leeg! Score ${score} 🎉`,
+    seconds: (s: number) => `${s}s`,
+    left: (n: number) => `${n} over`,
+  },
   proposals: {
     title: "Pauzevoorstellen",
     new: "Nieuw voorstel",

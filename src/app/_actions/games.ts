@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import type { ActionResult } from "@/app/_actions/types";
-import { earnFromSnake } from "@/lib/bibcoins/earn";
+import { earnFromPetConnect, earnFromSnake } from "@/lib/bibcoins/earn";
 import { copy } from "@/lib/copy";
 import { getShowCheated } from "@/lib/games/queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
@@ -43,6 +43,8 @@ export async function submitGameScore(
       parsed.data.score,
       parsed.data.cheated ?? false,
     );
+  } else if (parsed.data.gameKey === "petconnect") {
+    await earnFromPetConnect(access.userId);
   }
 
   revalidatePath(`/app/rooms/${parsed.data.roomId}/games`);

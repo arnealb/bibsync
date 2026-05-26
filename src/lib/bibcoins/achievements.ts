@@ -67,6 +67,12 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: "Rust een frame én een badge uit.",
     reward: 25,
   },
+  {
+    id: "petconnect_clear",
+    title: "Dierenvriend",
+    description: "Ruim een volledig Pet Connect-bord leeg.",
+    reward: 30,
+  },
 ];
 
 export const ACHIEVEMENT_BY_ID = new Map(

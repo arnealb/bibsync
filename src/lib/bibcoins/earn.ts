@@ -72,3 +72,14 @@ export async function earnFromSnake(
   if (score >= 25) await unlockAchievement(userId, "snake_25");
   if (score >= 100) await unlockAchievement(userId, "snake_100");
 }
+
+/** Clearing a Pet Connect board: a once-a-day coin reward + achievement. */
+export async function earnFromPetConnect(userId: string): Promise<void> {
+  await unlockAchievement(userId, "petconnect_clear");
+  await awardBibcoins(
+    userId,
+    REWARD.petConnectDaily,
+    "petconnect_daily",
+    todayInBrussels(),
+  );
+}

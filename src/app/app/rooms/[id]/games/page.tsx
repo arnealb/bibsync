@@ -31,12 +31,14 @@ export default async function GamesPage({ params }: GamesPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [snakeBest, snakeBoard, showCheated, balance] = await Promise.all([
-    getMyBestScore(id, access.userId, "snake"),
-    getRoomLeaderboard(id, "snake"),
-    getShowCheated(id),
-    getBibcoins(access.userId),
-  ]);
+  const [snakeBest, snakeBoard, showCheated, balance, petBest] =
+    await Promise.all([
+      getMyBestScore(id, access.userId, "snake"),
+      getRoomLeaderboard(id, "snake"),
+      getShowCheated(id),
+      getBibcoins(access.userId),
+      getMyBestScore(id, access.userId, "petconnect"),
+    ]);
 
   return (
     <div className="space-y-6">
@@ -78,6 +80,14 @@ export default async function GamesPage({ params }: GamesPageProps) {
           emoji="🎰"
           myBest={balance}
           statLabel={copy.roulette.stat}
+        />
+        <GameCard
+          href={`/app/rooms/${id}/games/petconnect`}
+          title={copy.petconnect.title}
+          subtitle={copy.petconnect.subtitle}
+          emoji="🐾"
+          myBest={petBest}
+          statLabel={copy.petconnect.stat}
         />
       </div>
 

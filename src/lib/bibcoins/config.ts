@@ -10,6 +10,8 @@ export const REWARD = {
   dailyChat: 25,
   /** Per +1 of a new honest Snake personal best. */
   snakeBestPerPoint: 1,
+  /** Clearing a Pet Connect board (once per day). */
+  petConnectDaily: 30,
 } as const;
 
 /** Messages needed in one day for the daily-chat reward. */
