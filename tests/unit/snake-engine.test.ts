@@ -16,7 +16,7 @@ describe("snake engine — initial state", () => {
     expect(state.score).toBe(0);
     expect(state.gameOver).toBe(false);
     expect(state.dir).toBe("right");
-    expect(state.pendingDir).toBe("right");
+    expect(state.inputQueue).toEqual([]);
     expect(state.food).not.toEqual(state.snake[0]);
   });
 
@@ -42,7 +42,7 @@ describe("snake engine — tick movement", () => {
       snake: [{ x: 5, y: 5 }],
       food: { x: 10, y: 10 },
       dir: "right",
-      pendingDir: "right",
+      inputQueue: [],
       score: 0,
       gameOver: false,
       tickCount: 0,
@@ -60,7 +60,7 @@ describe("snake engine — eating food", () => {
       snake: [{ x: 5, y: 5 }],
       food: { x: 6, y: 5 },
       dir: "right",
-      pendingDir: "right",
+      inputQueue: [],
       score: 0,
       gameOver: false,
       tickCount: 0,
@@ -76,7 +76,8 @@ describe("snake engine — eating food", () => {
     const state: SnakeState = {
       snake: [{ x: 5, y: 5 }],
       food: { x: 6, y: 5 },
-      dir: "right", pendingDir: "right",
+      dir: "right",
+      inputQueue: [],
       score: 0, gameOver: false, tickCount: 0, rngSeed: 1,
     };
     const next = tick(state);
@@ -89,7 +90,8 @@ describe("snake engine — collisions", () => {
     const state: SnakeState = {
       snake: [{ x: GRID - 1, y: 5 }],
       food: { x: 0, y: 0 },
-      dir: "right", pendingDir: "right",
+      dir: "right",
+      inputQueue: [],
       score: 0, gameOver: false, tickCount: 0, rngSeed: 1,
     };
     const next = tick(state);
@@ -105,7 +107,8 @@ describe("snake engine — collisions", () => {
         { x: 5, y: 4 },
       ],
       food: { x: 0, y: 0 },
-      dir: "up", pendingDir: "up",
+      dir: "up",
+      inputQueue: [],
       score: 0, gameOver: false, tickCount: 0, rngSeed: 1,
     };
     const next = tick(state);
@@ -116,7 +119,8 @@ describe("snake engine — collisions", () => {
     const dead: SnakeState = {
       snake: [{ x: 5, y: 5 }],
       food: { x: 0, y: 0 },
-      dir: "right", pendingDir: "right",
+      dir: "right",
+      inputQueue: [],
       score: 0, gameOver: true, tickCount: 0, rngSeed: 1,
     };
     expect(tick(dead)).toEqual(dead);
@@ -124,26 +128,63 @@ describe("snake engine — collisions", () => {
 });
 
 describe("snake engine — input", () => {
-  it("queues the next direction via pendingDir", () => {
+  it("queues the next direction", () => {
     const state = createInitialState(1);
     const turned = applyInput(state, "up");
-    expect(turned.pendingDir).toBe("up");
+    expect(turned.inputQueue).toEqual(["up"]);
     expect(turned.dir).toBe("right");
     const ticked = tick(turned);
     expect(ticked.dir).toBe("up");
+    expect(ticked.inputQueue).toEqual([]);
   });
 
-  it("rejects 180-degree turns", () => {
+  it("rejects 180-degree turns against the committed direction", () => {
     const state = createInitialState(1);
     const blocked = applyInput(state, "left");
-    expect(blocked.pendingDir).toBe("right");
+    expect(blocked.inputQueue).toEqual([]);
+  });
+
+  it("accepts a 90-degree chain across one tick interval (up then left while moving right)", () => {
+    const state = createInitialState(1);
+    const afterUp = applyInput(state, "up");
+    const afterLeft = applyInput(afterUp, "left");
+    expect(afterLeft.inputQueue).toEqual(["up", "left"]);
+    const t1 = tick(afterLeft);
+    expect(t1.dir).toBe("up");
+    expect(t1.inputQueue).toEqual(["left"]);
+    const t2 = tick(t1);
+    expect(t2.dir).toBe("left");
+    expect(t2.inputQueue).toEqual([]);
+  });
+
+  it("rejects a queued direction that would reverse the previous queued one", () => {
+    const state = createInitialState(1);
+    const afterUp = applyInput(state, "up");
+    const afterDown = applyInput(afterUp, "down");
+    expect(afterDown.inputQueue).toEqual(["up"]);
+  });
+
+  it("drops a queued direction equal to the previous queued one", () => {
+    const state = createInitialState(1);
+    const afterUp = applyInput(state, "up");
+    const afterUpAgain = applyInput(afterUp, "up");
+    expect(afterUpAgain.inputQueue).toEqual(["up"]);
+  });
+
+  it("caps the input queue at two", () => {
+    const state = createInitialState(1);
+    const a = applyInput(state, "up");
+    const b = applyInput(a, "left");
+    const c = applyInput(b, "down");
+    expect(c.inputQueue).toEqual(["up", "left"]);
   });
 
   it("ignores input after gameOver", () => {
     const dead: SnakeState = {
       snake: [{ x: 5, y: 5 }],
       food: { x: 0, y: 0 },
-      dir: "right", pendingDir: "right",
+      dir: "right",
+      inputQueue: [],
       score: 0, gameOver: true, tickCount: 0, rngSeed: 1,
     };
     expect(applyInput(dead, "up")).toEqual(dead);

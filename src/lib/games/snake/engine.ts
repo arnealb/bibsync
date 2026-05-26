@@ -3,11 +3,13 @@ export const GRID = 20;
 export type Direction = "up" | "down" | "left" | "right";
 export type Cell = { x: number; y: number };
 
+const MAX_QUEUED_INPUTS = 2;
+
 export interface SnakeState {
   snake: Cell[];
   food: Cell;
   dir: Direction;
-  pendingDir: Direction;
+  inputQueue: Direction[];
   score: number;
   gameOver: boolean;
   tickCount: number;
@@ -58,7 +60,7 @@ export function createInitialState(seed: number): SnakeState {
     snake,
     food,
     dir: "right",
-    pendingDir: "right",
+    inputQueue: [],
     score: 0,
     gameOver: false,
     tickCount: 0,
@@ -75,8 +77,11 @@ const OPPOSITE: Record<Direction, Direction> = {
 
 export function applyInput(state: SnakeState, dir: Direction): SnakeState {
   if (state.gameOver) return state;
-  if (OPPOSITE[state.dir] === dir) return state;
-  return { ...state, pendingDir: dir };
+  if (state.inputQueue.length >= MAX_QUEUED_INPUTS) return state;
+  const last = state.inputQueue.at(-1) ?? state.dir;
+  if (last === dir) return state;
+  if (OPPOSITE[last] === dir) return state;
+  return { ...state, inputQueue: [...state.inputQueue, dir] };
 }
 
 const DELTAS: Record<Direction, Cell> = {
@@ -88,7 +93,9 @@ const DELTAS: Record<Direction, Cell> = {
 
 export function tick(state: SnakeState): SnakeState {
   if (state.gameOver) return state;
-  const dir = state.pendingDir;
+  const [next, ...rest] = state.inputQueue;
+  const dir = next ?? state.dir;
+  const inputQueue = next ? rest : state.inputQueue;
   const head = state.snake[0]!;
   const delta = DELTAS[dir];
   const newHead: Cell = { x: head.x + delta.x, y: head.y + delta.y };
@@ -99,12 +106,24 @@ export function tick(state: SnakeState): SnakeState {
     newHead.y < 0 ||
     newHead.y >= GRID
   ) {
-    return { ...state, dir, gameOver: true, tickCount: state.tickCount + 1 };
+    return {
+      ...state,
+      dir,
+      inputQueue,
+      gameOver: true,
+      tickCount: state.tickCount + 1,
+    };
   }
 
   const ate = newHead.x === state.food.x && newHead.y === state.food.y;
   if (isOccupied(newHead, state.snake)) {
-    return { ...state, dir, gameOver: true, tickCount: state.tickCount + 1 };
+    return {
+      ...state,
+      dir,
+      inputQueue,
+      gameOver: true,
+      tickCount: state.tickCount + 1,
+    };
   }
 
   const body = ate ? state.snake : state.snake.slice(0, -1);
@@ -122,6 +141,7 @@ export function tick(state: SnakeState): SnakeState {
   return {
     ...state,
     dir,
+    inputQueue,
     snake: newSnake,
     food,
     score,
