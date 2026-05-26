@@ -1,4 +1,5 @@
 import { getRoomMembers } from "@/lib/rooms/queries";
+import { aggregateByUser } from "@/lib/steps/aggregate";
 import { createClient } from "@/lib/supabase/server";
 import { todayInBrussels } from "@/lib/time";
 
@@ -24,7 +25,7 @@ export async function getStepsBoard(
   const today = todayInBrussels();
   const { data, error } = await supabase
     .from("step_sessions")
-    .select("user_id, steps, recorded_for")
+    .select("user_id, steps, recorded_for, source")
     .eq("room_id", roomId);
 
   if (error) {
@@ -32,17 +33,10 @@ export async function getStepsBoard(
     return { today: [], allTime: [], myToday: 0 };
   }
 
-  const todayTotals = new Map<string, number>();
-  const allTotals = new Map<string, number>();
-  for (const row of data ?? []) {
-    allTotals.set(row.user_id, (allTotals.get(row.user_id) ?? 0) + row.steps);
-    if (row.recorded_for === today) {
-      todayTotals.set(
-        row.user_id,
-        (todayTotals.get(row.user_id) ?? 0) + row.steps,
-      );
-    }
-  }
+  const { today: todayTotals, allTime: allTotals } = aggregateByUser(
+    data ?? [],
+    today,
+  );
 
   const members = await getRoomMembers(roomId);
   const memberById = new Map(members.map((m) => [m.user_id, m]));

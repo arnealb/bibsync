@@ -327,19 +327,22 @@ export const copy = {
     left: (n: number) => `${n} over`,
   },
   steps: {
-    title: "Stappen tijdens de pauze",
+    title: "Stappen vergelijken",
     subtitle:
-      "Tel je stappen tijdens een wandelpauze en klim in de ranglijst.",
+      "Stuur je dagtotaal aan stappen naar BibSync en vergelijk met de groep.",
+    manualTitle: "Geen iPhone? Tel hier",
+    manualSubtitle:
+      "Tel via de bewegingssensor — dan moet je wel deze pagina open houden tijdens je pauze.",
     start: "Start met tellen",
     stop: "Stop & opslaan",
     saving: "Opslaan…",
     counting: "Aan het tellen — steek je telefoon op zak en wandel.",
-    hint: "Houd deze pagina open tijdens je pauze. We tellen via de bewegingssensor van je telefoon.",
+    hint: "Houd deze pagina open tijdens het tellen. We gebruiken de bewegingssensor van je telefoon.",
     saved: (n: number) => `${n} stappen opgeslagen! 👟`,
     denied:
       "Geen toegang tot de bewegingssensor. Sta beweging & oriëntatie toe in je browserinstellingen.",
     unsupported:
-      "Je toestel of browser ondersteunt de stappenteller niet. Gebruik de Apple Health-koppeling hieronder.",
+      "Je toestel of browser ondersteunt de stappenteller niet. Gebruik de Apple Health-koppeling hierboven.",
     board: {
       title: "Ranglijst",
       today: "Vandaag",
@@ -348,25 +351,36 @@ export const copy = {
       unit: (n: number) => n.toLocaleString("nl-BE"),
     },
     health: {
-      title: "Koppel met Apple Health (optioneel)",
+      title: "Stuur je Apple Health-stappen",
       intro:
-        "Liever je échte Health-stappen? Maak een Apple Shortcut die je stappen naar BibSync stuurt.",
+        "Koppel één keer met een Apple Shortcut. Daarna stuurt je iPhone je dagtotaal — je hoeft niets open te houden.",
       noService:
         "Health-koppeling is niet beschikbaar (server niet geconfigureerd).",
-      tokenLabel: "Jouw persoonlijke token",
-      generate: "Genereer token",
-      regenerate: "Nieuwe token",
-      noToken: "Genereer eerst een token om je shortcut in te stellen.",
+      generate: "Genereer mijn koppelcode",
+      regenerate: "Nieuwe koppelcode",
+      noToken: "Genereer eerst je koppelcode om de shortcut in te stellen.",
       copy: "Kopiëren",
+      copyCode: "Kopieer koppelcode",
       copied: "Gekopieerd ✓",
-      endpointLabel: "Endpoint (POST)",
-      bodyLabel: "JSON-body (vervang het stappen-getal)",
+      addToShortcuts: "Voeg toe aan Shortcuts",
+      oneTapTitle: "In 2 tikken klaar:",
+      oneTapSteps: [
+        "Kopieer je koppelcode hieronder.",
+        "Tik 'Voeg toe aan Shortcuts' en plak de code wanneer Shortcuts erom vraagt.",
+        "Klaar — start de shortcut na je pauze, of laat 'm dagelijks automatisch lopen.",
+      ],
+      notReady:
+        "De kant-en-klare shortcut is nog niet ingesteld. Gebruik zolang 'handmatig instellen' hieronder.",
       warning:
-        "Deel je token met niemand — wie hem heeft, kan stappen op jouw naam insturen.",
+        "Deel je koppelcode met niemand — wie hem heeft, kan stappen op jouw naam insturen.",
+      manualTitle: "Handmatig instellen",
+      endpointLabel: "Endpoint (POST)",
+      codeLabel: "Jouw koppelcode",
+      bodyLabel: "JSON-body (vervang het stappen-getal)",
       steps: [
         "Open de Opdrachten-app (Shortcuts) op je iPhone en maak een nieuwe opdracht.",
         "Voeg 'Zoek gezondheidsmonsters' toe: type Stappen, periode Vandaag.",
-        "Voeg 'Statistiek berekenen' toe met bewerking Som — zo krijg je je totaal.",
+        "Voeg 'Statistiek berekenen' toe met bewerking Som — dat is je dagtotaal.",
         "Voeg 'Inhoud van URL ophalen' toe: methode POST, met de endpoint hierboven.",
         "Zet de JSON-body zoals hieronder en vervang het stappen-getal door het resultaat uit de vorige stap.",
         "Bewaar de opdracht. Start ze na je pauze, of automatiseer ze dagelijks.",

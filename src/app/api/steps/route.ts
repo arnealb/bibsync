@@ -1,6 +1,9 @@
 import { earnFromSteps } from "@/lib/bibcoins/earn";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { apiStepsSchema } from "@/lib/validation/steps";
+import {
+  apiStepsSchema,
+  resolveStepCredentials,
+} from "@/lib/validation/steps";
 
 /**
  * Apple Shortcut → BibSync step ingest.
@@ -26,6 +29,14 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
+  const credentials = resolveStepCredentials(parsed.data);
+  if (!credentials) {
+    return Response.json(
+      { ok: false, error: "invalid_credentials" },
+      { status: 400 },
+    );
+  }
+
   const admin = createAdminClient();
   if (!admin) {
     return Response.json({ ok: false, error: "unavailable" }, { status: 503 });
@@ -34,7 +45,7 @@ export async function POST(request: Request): Promise<Response> {
   const { data: tokenRow } = await admin
     .from("health_tokens")
     .select("user_id")
-    .eq("token", parsed.data.token)
+    .eq("token", credentials.token)
     .maybeSingle();
   if (!tokenRow) {
     return Response.json(
@@ -46,7 +57,7 @@ export async function POST(request: Request): Promise<Response> {
   const { data: membership } = await admin
     .from("room_members")
     .select("user_id")
-    .eq("room_id", parsed.data.roomId)
+    .eq("room_id", credentials.roomId)
     .eq("user_id", tokenRow.user_id)
     .maybeSingle();
   if (!membership) {
@@ -54,7 +65,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const { error } = await admin.from("step_sessions").insert({
-    room_id: parsed.data.roomId,
+    room_id: credentials.roomId,
     user_id: tokenRow.user_id,
     steps: parsed.data.steps,
     source: "health",

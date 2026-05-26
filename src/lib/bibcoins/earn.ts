@@ -5,6 +5,7 @@ import {
   STEPS_REWARD_DAILY_CAP_THOUSANDS,
 } from "@/lib/bibcoins/config";
 import { unlockAchievement } from "@/lib/bibcoins/unlock";
+import { dayTotal } from "@/lib/steps/aggregate";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayInBrussels } from "@/lib/time";
 
@@ -102,14 +103,13 @@ export async function earnFromSteps(userId: string): Promise<void> {
   const today = todayInBrussels();
   const { data } = await admin
     .from("step_sessions")
-    .select("steps")
+    .select("steps, source")
     .eq("user_id", userId)
     .eq("recorded_for", today);
 
-  const totalToday = (data ?? []).reduce(
-    (sum: number, row: { steps: number }) => sum + row.steps,
-    0,
-  );
+  // Health rows carry the running daily total (take the max), browser rows are
+  // increments (sum) — never just add them up, or a daily total double-counts.
+  const totalToday = dayTotal(data ?? []);
   if (totalToday >= 10_000) await unlockAchievement(userId, "step_master");
 
   const milestones = Math.min(

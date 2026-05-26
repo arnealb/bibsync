@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 
 import { earnFromSteps } from "@/lib/bibcoins/earn";
 import { copy } from "@/lib/copy";
+import { getStepsBoard, type StepsEntry } from "@/lib/steps/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -48,6 +49,20 @@ export async function saveStepSession(
 
   await earnFromSteps(user.id);
   return { ok: true, steps: parsed.data.steps };
+}
+
+/** Re-reads the steps leaderboard (called by the client on realtime events). */
+export async function refreshStepsBoard(
+  roomId: string,
+): Promise<{ today: StepsEntry[]; allTime: StepsEntry[] }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { today: [], allTime: [] };
+
+  const board = await getStepsBoard(roomId, user.id);
+  return { today: board.today, allTime: board.allTime };
 }
 
 export type HealthTokenResult =
