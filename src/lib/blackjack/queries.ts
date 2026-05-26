@@ -14,11 +14,15 @@ export async function getBlackjackPublic(
 ): Promise<PublicBlackjack | null> {
   const admin = createAdminClient();
   if (!admin) return null;
-  const { data } = await admin
+  const { data, error } = await admin
     .from("blackjack_games")
     .select("state")
     .eq("user_id", userId)
     .maybeSingle();
-  if (!data) return null;
-  return toPublicBlackjack(data.state as unknown as BlackjackState);
+  if (error || !data) return null;
+
+  const state = data.state as unknown as BlackjackState;
+  // Ignore an empty / older-shape state so the page shows a fresh bet form.
+  if (!Array.isArray(state.hands)) return null;
+  return toPublicBlackjack(state);
 }
