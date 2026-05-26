@@ -54,6 +54,8 @@ export const setSlotPreferenceSchema = z.object({
   slotKey: z.string().min(1),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+  destination: z.string().trim().max(80).optional(),
+  isWalk: z.boolean().optional(),
 });
 
 export type CreateProposalInput = z.infer<typeof createProposalSchema>;

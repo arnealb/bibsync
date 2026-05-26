@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { ProposalCard } from "@/components/proposals/proposal-card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -20,6 +21,7 @@ import { averageTime, type BreakSlot } from "@/lib/slots";
 import type {
   BreakProposal,
   ProposalComment,
+  RoomPlace,
   Vote,
   VoteValue,
 } from "@/types/database";
@@ -37,7 +39,14 @@ interface SlotCardProps {
   comments: ProposalComment[];
   members: MemberMap;
   userId: string;
-  onSetPreference: (slotKey: string, date: string, time: string) => void;
+  places: RoomPlace[];
+  onSetPreference: (
+    slotKey: string,
+    date: string,
+    time: string,
+    destination?: string,
+    isWalk?: boolean,
+  ) => void;
   onClearPreference: (slotKey: string) => void;
   onVote: (proposalId: string, value: VoteValue) => void;
   onDelete: (proposalId: string) => void;
@@ -53,6 +62,7 @@ export function SlotCard({
   comments,
   members,
   userId,
+  places,
   onSetPreference,
   onClearPreference,
   onVote,
@@ -60,10 +70,15 @@ export function SlotCard({
   onAddComment,
   onDeleteComment,
 }: SlotCardProps) {
-  const myPref = suggestions.find((s) => s.created_by === userId)?.start_time;
+  const mySuggestion = suggestions.find((s) => s.created_by === userId);
+  const myPref = mySuggestion?.start_time;
   const initial = (myPref ?? slot.defaultTime).slice(0, 5);
   const [hour, setHour] = useState(initial.split(":")[0]);
   const [minute, setMinute] = useState(initial.split(":")[1]);
+  const [destination, setDestination] = useState(
+    mySuggestion?.destination ?? "",
+  );
+  const [isWalk, setIsWalk] = useState(mySuggestion?.is_walk ?? false);
   const average = averageTime(
     suggestions.map((s) => s.start_time),
     slot.defaultTime,
@@ -128,7 +143,15 @@ export function SlotCard({
         </div>
         <Button
           size="sm"
-          onClick={() => onSetPreference(slot.key, date, `${hour}:${minute}`)}
+          onClick={() =>
+            onSetPreference(
+              slot.key,
+              date,
+              `${hour}:${minute}`,
+              destination.trim() || undefined,
+              isWalk,
+            )
+          }
         >
           {copy.proposals.slots.save}
         </Button>
@@ -141,6 +164,45 @@ export function SlotCard({
             {copy.proposals.slots.clear}
           </Button>
         )}
+      </div>
+
+      <div className="space-y-1.5">
+        {places.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {places.map((place) => (
+              <button
+                key={place.id}
+                type="button"
+                onClick={() => {
+                  setDestination(place.name);
+                  setIsWalk(place.is_walk);
+                }}
+                className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
+              >
+                {place.is_walk ? "🚶 " : ""}
+                {place.name}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <Input
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            maxLength={80}
+            placeholder={copy.proposals.form.destinationPlaceholder}
+            className="h-8 flex-1"
+          />
+          <label className="flex shrink-0 items-center gap-1.5 text-xs">
+            <input
+              type="checkbox"
+              checked={isWalk}
+              onChange={(e) => setIsWalk(e.target.checked)}
+              className="size-4 accent-emerald-600"
+            />
+            {copy.proposals.form.walkLabel}
+          </label>
+        </div>
       </div>
 
       {ordered.length === 0 ? (

@@ -168,6 +168,8 @@ export async function setSlotPreference(input: {
   slotKey: string;
   date: string;
   time: string;
+  destination?: string;
+  isWalk?: boolean;
 }): Promise<ActionResult> {
   const parsed = setSlotPreferenceSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: copy.common.genericError };
@@ -179,6 +181,9 @@ export async function setSlotPreference(input: {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: copy.common.notAuthenticated };
+
+  const destination = parsed.data.destination?.trim() || null;
+  const isWalk = parsed.data.isWalk ?? false;
 
   // Replace any existing preference of this user for this slot + day.
   await supabase
@@ -197,10 +202,24 @@ export async function setSlotPreference(input: {
     start_time: parsed.data.time,
     duration_minutes: 30,
     slot_key: slot.key,
+    destination,
+    is_walk: isWalk,
   });
   if (error) {
     console.error("[setSlotPreference]", error);
     return { ok: false, error: copy.common.genericError };
+  }
+
+  if (destination) {
+    await supabase.from("room_places").upsert(
+      {
+        room_id: parsed.data.roomId,
+        name: destination,
+        is_walk: isWalk,
+        created_by: user.id,
+      },
+      { onConflict: "room_id,name", ignoreDuplicates: true },
+    );
   }
   return { ok: true };
 }
