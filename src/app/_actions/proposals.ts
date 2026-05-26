@@ -20,6 +20,11 @@ export type CreateProposalResult =
   | { ok: true; proposal: BreakProposal }
   | { ok: false; error: string };
 
+/** True when an insert failed because a (not-yet-migrated) column is missing. */
+function isMissingColumn(error: { code?: string } | null): boolean {
+  return error?.code === "PGRST204" || error?.code === "42703";
+}
+
 export async function createProposal(
   input: CreateProposalInput,
 ): Promise<CreateProposalResult> {
@@ -53,35 +58,48 @@ export async function createProposal(
 
   const destination = parsed.data.destination?.trim() || null;
   const isWalk = parsed.data.isWalk ?? false;
+  const routePoints = parsed.data.routePoints?.length
+    ? parsed.data.routePoints
+    : null;
 
-  const { data, error } = await supabase
+  const base = {
+    room_id: parsed.data.roomId,
+    created_by: user.id,
+    proposal_type: parsed.data.proposalType,
+    proposal_date: parsed.data.proposalDate,
+    start_time: parsed.data.startTime,
+    duration_minutes: parsed.data.durationMinutes,
+    note: parsed.data.note ?? null,
+  };
+
+  let { data, error } = await supabase
     .from("break_proposals")
-    .insert({
-      room_id: parsed.data.roomId,
-      created_by: user.id,
-      proposal_type: parsed.data.proposalType,
-      proposal_date: parsed.data.proposalDate,
-      start_time: parsed.data.startTime,
-      duration_minutes: parsed.data.durationMinutes,
-      note: parsed.data.note ?? null,
-      destination,
-      is_walk: isWalk,
-    })
+    .insert({ ...base, destination, is_walk: isWalk, route_points: routePoints })
     .select("*")
     .single();
+
+  // Migration 0021/0022 not run yet? Fall back to the base columns.
+  if (error && isMissingColumn(error)) {
+    ({ data, error } = await supabase
+      .from("break_proposals")
+      .insert(base)
+      .select("*")
+      .single());
+  }
 
   if (error || !data) {
     console.error("[createProposal]", error);
     return { ok: false, error: copy.common.genericError };
   }
 
-  // Remember the destination as a reusable preset for the room.
+  // Remember the destination (and its route) as a reusable preset.
   if (destination) {
     await supabase.from("room_places").upsert(
       {
         room_id: parsed.data.roomId,
         name: destination,
         is_walk: isWalk,
+        points: routePoints,
         created_by: user.id,
       },
       { onConflict: "room_id,name", ignoreDuplicates: true },
@@ -170,6 +188,7 @@ export async function setSlotPreference(input: {
   time: string;
   destination?: string;
   isWalk?: boolean;
+  routePoints?: { lat: number; lng: number }[];
 }): Promise<ActionResult> {
   const parsed = setSlotPreferenceSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: copy.common.genericError };
@@ -184,6 +203,9 @@ export async function setSlotPreference(input: {
 
   const destination = parsed.data.destination?.trim() || null;
   const isWalk = parsed.data.isWalk ?? false;
+  const routePoints = parsed.data.routePoints?.length
+    ? parsed.data.routePoints
+    : null;
 
   // Replace any existing preference of this user for this slot + day.
   await supabase
@@ -194,7 +216,7 @@ export async function setSlotPreference(input: {
     .eq("created_by", user.id)
     .eq("slot_key", slot.key);
 
-  const { error } = await supabase.from("break_proposals").insert({
+  const base = {
     room_id: parsed.data.roomId,
     created_by: user.id,
     proposal_type: slot.type,
@@ -202,9 +224,17 @@ export async function setSlotPreference(input: {
     start_time: parsed.data.time,
     duration_minutes: 30,
     slot_key: slot.key,
-    destination,
-    is_walk: isWalk,
-  });
+  };
+
+  let { error } = await supabase
+    .from("break_proposals")
+    .insert({ ...base, destination, is_walk: isWalk, route_points: routePoints });
+
+  // Migration 0021/0022 not run yet? Fall back to the base columns.
+  if (error && isMissingColumn(error)) {
+    ({ error } = await supabase.from("break_proposals").insert(base));
+  }
+
   if (error) {
     console.error("[setSlotPreference]", error);
     return { ok: false, error: copy.common.genericError };
@@ -216,6 +246,7 @@ export async function setSlotPreference(input: {
         room_id: parsed.data.roomId,
         name: destination,
         is_walk: isWalk,
+        points: routePoints,
         created_by: user.id,
       },
       { onConflict: "room_id,name", ignoreDuplicates: true },

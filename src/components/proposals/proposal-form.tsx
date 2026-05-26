@@ -15,7 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { RouteField } from "@/components/routes/route-field";
 import { copy } from "@/lib/copy";
+import { toRoutePoints, type RoutePoint } from "@/lib/routes/types";
 import { isoDatePlus } from "@/lib/time";
 import { DURATION_OPTIONS, PROPOSAL_TYPES } from "@/lib/validation/proposals";
 import type { BreakProposal, ProposalType, RoomPlace } from "@/types/database";
@@ -39,6 +41,7 @@ export function ProposalForm({
   const [duration, setDuration] = useState("30");
   const [destination, setDestination] = useState("");
   const [isWalk, setIsWalk] = useState(false);
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
   const [note, setNote] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -53,6 +56,7 @@ export function ProposalForm({
         durationMinutes: Number(duration),
         destination: destination.trim() || undefined,
         isWalk,
+        routePoints: routePoints.length ? routePoints : undefined,
         note: note.trim() || undefined,
       });
       if (result.ok) {
@@ -163,6 +167,7 @@ export function ProposalForm({
                 onClick={() => {
                   setDestination(place.name);
                   setIsWalk(place.is_walk);
+                  setRoutePoints(toRoutePoints(place.points));
                 }}
                 className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
               >
@@ -179,15 +184,22 @@ export function ProposalForm({
           maxLength={80}
           placeholder={copy.proposals.form.destinationPlaceholder}
         />
-        <label className="flex w-fit items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={isWalk}
-            onChange={(e) => setIsWalk(e.target.checked)}
-            className="size-4 accent-emerald-600"
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <label className="flex w-fit items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={isWalk}
+              onChange={(e) => setIsWalk(e.target.checked)}
+              className="size-4 accent-emerald-600"
+            />
+            {copy.proposals.form.walkLabel}
+          </label>
+          <RouteField
+            points={routePoints}
+            editable
+            onChange={setRoutePoints}
           />
-          {copy.proposals.form.walkLabel}
-        </label>
+        </div>
       </div>
 
       <div className="space-y-2">

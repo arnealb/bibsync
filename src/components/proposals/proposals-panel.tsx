@@ -214,6 +214,7 @@ export function ProposalsPanel({
     time: string,
     destination?: string,
     isWalk?: boolean,
+    routePoints?: { lat: number; lng: number }[],
   ) {
     startTransition(async () => {
       const result = await setSlotPreference({
@@ -223,6 +224,7 @@ export function ProposalsPanel({
         time,
         destination,
         isWalk,
+        routePoints,
       });
       if (result.ok) toast.success(copy.proposals.slots.saved);
       else toast.error(result.error);

@@ -9,10 +9,12 @@ import {
 } from "lucide-react";
 
 import { ProposalComments } from "@/components/proposals/proposal-comments";
+import { RouteField } from "@/components/routes/route-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { copy } from "@/lib/copy";
+import { toRoutePoints } from "@/lib/routes/types";
 import type { MemberMap } from "@/lib/members";
 import { formatTally, voteWeight } from "@/lib/proposals/joke";
 import { endTime, formatDateLong, formatTime, isoDatePlus } from "@/lib/time";
@@ -134,6 +136,12 @@ export function ProposalCard({
           </span>
           {proposal.destination}
         </p>
+      )}
+
+      {proposal.route_points && (
+        <div className="mt-2">
+          <RouteField points={toRoutePoints(proposal.route_points)} />
+        </div>
       )}
 
       {proposal.note && <p className="mt-2 text-sm">{proposal.note}</p>}

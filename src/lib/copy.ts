@@ -360,6 +360,14 @@ export const copy = {
     },
     destinationBy: "📍",
     walkBy: "🚶",
+    route: {
+      plot: "Route op kaart",
+      points: (n: number) => `Route · ${n} ${n === 1 ? "punt" : "punten"}`,
+      view: (n: number) => `🗺️ Route (${n})`,
+      hint: "Klik op de kaart om punten te plaatsen.",
+      undo: "Stap terug",
+      clear: "Route wissen",
+    },
     types: {
       lunch: "Lunch",
       dinner: "Avondeten",

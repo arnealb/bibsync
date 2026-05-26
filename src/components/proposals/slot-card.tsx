@@ -13,8 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RouteField } from "@/components/routes/route-field";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
+import { toRoutePoints, type RoutePoint } from "@/lib/routes/types";
 import { voteWeight } from "@/lib/proposals/joke";
 import { pickWinnerId } from "@/lib/proposals/winner";
 import { averageTime, type BreakSlot } from "@/lib/slots";
@@ -46,6 +48,7 @@ interface SlotCardProps {
     time: string,
     destination?: string,
     isWalk?: boolean,
+    routePoints?: RoutePoint[],
   ) => void;
   onClearPreference: (slotKey: string) => void;
   onVote: (proposalId: string, value: VoteValue) => void;
@@ -79,6 +82,9 @@ export function SlotCard({
     mySuggestion?.destination ?? "",
   );
   const [isWalk, setIsWalk] = useState(mySuggestion?.is_walk ?? false);
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>(
+    toRoutePoints(mySuggestion?.route_points),
+  );
   const average = averageTime(
     suggestions.map((s) => s.start_time),
     slot.defaultTime,
@@ -150,6 +156,7 @@ export function SlotCard({
               `${hour}:${minute}`,
               destination.trim() || undefined,
               isWalk,
+              routePoints.length ? routePoints : undefined,
             )
           }
         >
@@ -176,6 +183,7 @@ export function SlotCard({
                 onClick={() => {
                   setDestination(place.name);
                   setIsWalk(place.is_walk);
+                  setRoutePoints(toRoutePoints(place.points));
                 }}
                 className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
               >
@@ -203,6 +211,7 @@ export function SlotCard({
             {copy.proposals.form.walkLabel}
           </label>
         </div>
+        <RouteField points={routePoints} editable onChange={setRoutePoints} />
       </div>
 
       {ordered.length === 0 ? (

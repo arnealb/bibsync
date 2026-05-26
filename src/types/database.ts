@@ -118,6 +118,7 @@ export interface Database {
           slot_key: string | null;
           destination: string | null;
           is_walk: boolean;
+          route_points: { lat: number; lng: number }[] | null;
           created_at: Timestamp;
         };
         Insert: {
@@ -132,6 +133,7 @@ export interface Database {
           slot_key?: string | null;
           destination?: string | null;
           is_walk?: boolean;
+          route_points?: { lat: number; lng: number }[] | null;
           created_at?: Timestamp;
         };
         Update: {
@@ -146,6 +148,7 @@ export interface Database {
           slot_key?: string | null;
           destination?: string | null;
           is_walk?: boolean;
+          route_points?: { lat: number; lng: number }[] | null;
           created_at?: Timestamp;
         };
         Relationships: [];
@@ -156,6 +159,7 @@ export interface Database {
           room_id: string;
           name: string;
           is_walk: boolean;
+          points: { lat: number; lng: number }[] | null;
           created_by: string | null;
           created_at: Timestamp;
         };
@@ -164,6 +168,7 @@ export interface Database {
           room_id: string;
           name: string;
           is_walk?: boolean;
+          points?: { lat: number; lng: number }[] | null;
           created_by?: string | null;
           created_at?: Timestamp;
         };
@@ -172,6 +177,7 @@ export interface Database {
           room_id?: string;
           name?: string;
           is_walk?: boolean;
+          points?: { lat: number; lng: number }[] | null;
           created_by?: string | null;
           created_at?: Timestamp;
         };

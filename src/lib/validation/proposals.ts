@@ -10,6 +10,12 @@ export const MAX_DAYS_AHEAD = 7;
 
 const QUARTER_HOUR = /^([01]\d|2[0-3]):(00|15|30|45)$/;
 
+export const routePointSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
+export const routePointsSchema = z.array(routePointSchema).max(300);
+
 export const createProposalSchema = z
   .object({
     roomId: z.string().uuid(),
@@ -26,6 +32,7 @@ export const createProposalSchema = z
     note: z.string().trim().max(200, copy.proposals.validation.noteTooLong).optional(),
     destination: z.string().trim().max(80).optional(),
     isWalk: z.boolean().optional(),
+    routePoints: routePointsSchema.optional(),
   })
   .superRefine((value, ctx) => {
     if (value.proposalDate < isoDatePlus(0)) {
@@ -56,6 +63,7 @@ export const setSlotPreferenceSchema = z.object({
   time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
   destination: z.string().trim().max(80).optional(),
   isWalk: z.boolean().optional(),
+  routePoints: routePointsSchema.optional(),
 });
 
 export type CreateProposalInput = z.infer<typeof createProposalSchema>;
