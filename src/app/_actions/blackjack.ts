@@ -6,11 +6,14 @@ import { awardBibcoins, spendBibcoins } from "@/lib/bibcoins/award";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { unlockAchievement } from "@/lib/bibcoins/unlock";
 import {
+  canSplit,
   deal as engineDeal,
   doubleDown,
   hit,
+  split,
   stand,
   toPublicBlackjack,
+  totalPayout,
   type BlackjackState,
   type PublicBlackjack,
 } from "@/lib/blackjack/engine";
@@ -47,7 +50,10 @@ async function load(
     .eq("user_id", userId)
     .maybeSingle();
   if (!data) return null;
-  return { state: data.state as unknown as BlackjackState, version: data.version };
+  const state = data.state as unknown as BlackjackState;
+  // Ignore states from an older shape so a fresh round starts cleanly.
+  if (!Array.isArray(state.hands)) return null;
+  return { state, version: data.version };
 }
 
 /** Optimistic-locked update of an in-progress round. */
@@ -73,10 +79,11 @@ async function persist(
 /** Pays out a resolved round (once) and unlocks the win achievement. */
 async function settleRewards(userId: string, state: BlackjackState): Promise<void> {
   if (state.status !== "done") return;
-  if (state.payout > 0) {
-    await awardBibcoins(userId, state.payout, "blackjack_payout", state.roundId);
+  const payout = totalPayout(state);
+  if (payout > 0) {
+    await awardBibcoins(userId, payout, "blackjack_payout", state.roundId);
   }
-  if (state.result === "win" || state.result === "blackjack") {
+  if (state.hands.some((h) => h.result === "win" || h.result === "blackjack")) {
     await unlockAchievement(userId, "blackjack_win");
   }
 }
@@ -191,35 +198,64 @@ export async function doubleBlackjack(): Promise<BlackjackResultPayload> {
   if (!auth.ok) return auth;
 
   const loaded = await load(auth.admin, auth.userId);
+  const hand = loaded?.state.hands[loaded.state.active];
   if (
     !loaded ||
     loaded.state.status !== "player" ||
-    loaded.state.player.length !== 2 ||
-    loaded.state.doubled
+    !hand ||
+    hand.cards.length !== 2 ||
+    hand.doubled
   ) {
     return { ok: false, error: copy.blackjack.noRound };
   }
 
-  const extra = loaded.state.bet;
-  const paid = await spendBibcoins(
-    auth.userId,
-    extra,
-    "blackjack_bet",
-    `${loaded.state.roundId}:double`,
-  );
+  const extra = hand.bet;
+  const ref = `${loaded.state.roundId}:double:${loaded.state.active}`;
+  const paid = await spendBibcoins(auth.userId, extra, "blackjack_bet", ref);
   if (!paid) return { ok: false, error: copy.blackjack.cantAfford };
 
   let next: BlackjackState;
   try {
     next = doubleDown(loaded.state);
   } catch (error) {
-    // Refund the extra stake if the move was somehow illegal.
-    await awardBibcoins(
-      auth.userId,
-      extra,
-      "blackjack_refund",
-      `${loaded.state.roundId}:double`,
-    );
+    await awardBibcoins(auth.userId, extra, "blackjack_refund", ref);
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : copy.common.genericError,
+    };
+  }
+
+  const ok = await persist(auth.admin, auth.userId, loaded.version, next);
+  if (!ok) return { ok: false, error: copy.blackjack.busy };
+
+  await settleRewards(auth.userId, next);
+  return {
+    ok: true,
+    state: toPublicBlackjack(next),
+    balance: await getBibcoins(auth.userId),
+  };
+}
+
+/** Split a pair into two hands (charges an extra base bet). */
+export async function splitBlackjack(): Promise<BlackjackResultPayload> {
+  const auth = await authed();
+  if (!auth.ok) return auth;
+
+  const loaded = await load(auth.admin, auth.userId);
+  if (!loaded || !canSplit(loaded.state)) {
+    return { ok: false, error: copy.blackjack.noRound };
+  }
+
+  const extra = loaded.state.baseBet;
+  const ref = `${loaded.state.roundId}:split`;
+  const paid = await spendBibcoins(auth.userId, extra, "blackjack_bet", ref);
+  if (!paid) return { ok: false, error: copy.blackjack.cantAfford };
+
+  let next: BlackjackState;
+  try {
+    next = split(loaded.state);
+  } catch (error) {
+    await awardBibcoins(auth.userId, extra, "blackjack_refund", ref);
     return {
       ok: false,
       error: error instanceof Error ? error.message : copy.common.genericError,

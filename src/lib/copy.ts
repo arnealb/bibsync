@@ -273,6 +273,7 @@ export const copy = {
     hit: "Kaart",
     stand: "Pas",
     double: "Verdubbel",
+    split: "Split",
     newRound: "Nieuwe ronde",
     dealer: "Dealer",
     you: "Jij",

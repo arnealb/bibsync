@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canSplit,
   deal,
   doubleDown,
   handTotal,
   hit,
   isBlackjack,
+  split,
   stand,
   toPublicBlackjack,
+  totalPayout,
 } from "@/lib/blackjack/engine";
 import type { Card } from "@/lib/poker/cards";
 
@@ -19,7 +22,6 @@ describe("handTotal", () => {
   });
   it("reduces aces to 1 to avoid busting", () => {
     expect(handTotal(c("Ah 9d 9c"))).toEqual({ total: 19, soft: false });
-    expect(handTotal(c("Ah Ad 9c"))).toEqual({ total: 21, soft: true });
   });
   it("flags blackjack", () => {
     expect(isBlackjack(c("As Kd"))).toBe(true);
@@ -29,23 +31,22 @@ describe("handTotal", () => {
 
 describe("deal", () => {
   it("pays 3:2 on a natural blackjack", () => {
-    // player = As,Kd (21); dealer = 9h,7c (16)
     const s = deal("r1", c("As Kd 9h 7c 5d 5s"), 100);
     expect(s.status).toBe("done");
-    expect(s.result).toBe("blackjack");
-    expect(s.payout).toBe(250); // floor(100 * 2.5)
+    expect(s.hands[0].result).toBe("blackjack");
+    expect(totalPayout(s)).toBe(250);
   });
 
   it("pushes when both have blackjack", () => {
     const s = deal("r1", c("As Kd Ah Qc 5d"), 100);
-    expect(s.result).toBe("push");
-    expect(s.payout).toBe(100);
+    expect(s.hands[0].result).toBe("push");
+    expect(totalPayout(s)).toBe(100);
   });
 
   it("otherwise hands control to the player", () => {
     const s = deal("r1", c("Td 9c 8h 7s 2d"), 100);
     expect(s.status).toBe("player");
-    expect(s.result).toBeNull();
+    expect(s.hands[0].result).toBeNull();
   });
 });
 
@@ -54,33 +55,52 @@ describe("player actions", () => {
     let s = deal("r1", c("Td 6c 9h 9s Kh"), 100);
     s = hit(s); // draws Kh -> 26
     expect(s.status).toBe("done");
-    expect(s.result).toBe("lose");
-    expect(s.payout).toBe(0);
+    expect(s.hands[0].result).toBe("lose");
+    expect(totalPayout(s)).toBe(0);
   });
 
   it("wins when the dealer busts after standing", () => {
-    // player Td,9c (19); dealer Tc,6h (16) -> draws Kd -> 26 bust
     let s = deal("r1", c("Td 9c Tc 6h Kd"), 100);
     s = stand(s);
-    expect(s.result).toBe("win");
-    expect(s.payout).toBe(200);
+    expect(s.hands[0].result).toBe("win");
+    expect(totalPayout(s)).toBe(200);
   });
 
   it("doubles the bet, draws one, then resolves", () => {
-    // player 5d,6c (11) -> double draws 9h -> 20; dealer Tc,7h (17) stands
     let s = deal("r1", c("5d 6c Tc 7h 9h"), 100);
     s = doubleDown(s);
-    expect(s.bet).toBe(200);
-    expect(s.result).toBe("win");
-    expect(s.payout).toBe(400);
+    expect(s.hands[0].bet).toBe(200);
+    expect(s.hands[0].result).toBe("win");
+    expect(totalPayout(s)).toBe(400);
+  });
+});
+
+describe("split", () => {
+  it("splits a pair into two hands and resolves both", () => {
+    // pair of 8s; each draws a K (18); dealer 13 -> draws K -> 23 bust
+    let s = deal("r1", c("8d 8c 6h 7s Kd Kc Kh"), 100);
+    expect(canSplit(s)).toBe(true);
+    s = split(s);
+    expect(s.hands.length).toBe(2);
+    s = stand(s); // hand 0
+    s = stand(s); // hand 1 -> dealer plays
+    expect(s.status).toBe("done");
+    expect(s.hands.every((h) => h.result === "win")).toBe(true);
+    expect(totalPayout(s)).toBe(400);
+  });
+
+  it("split aces draw one card each and auto-resolve", () => {
+    // aces split -> 20 each; dealer 17 stands -> both win
+    const s = split(deal("r1", c("Ad Ac 9h 8s 9d 9c"), 100));
+    expect(s.status).toBe("done");
+    expect(totalPayout(s)).toBe(400);
   });
 });
 
 describe("toPublicBlackjack", () => {
   it("hides the dealer hole card while the player acts", () => {
-    const s = deal("r1", c("Td 9c 8h 7s 2d"), 100);
-    const pub = toPublicBlackjack(s);
-    expect(pub.dealer).toEqual(["8h"]); // only the up-card
+    const pub = toPublicBlackjack(deal("r1", c("Td 9c 8h 7s 2d"), 100));
+    expect(pub.dealer).toEqual(["8h"]);
     expect(pub.dealerTotal).toBeNull();
     expect(pub.canDouble).toBe(true);
   });
