@@ -5,6 +5,7 @@ import { GameCard } from "@/components/games/game-card";
 import { Leaderboard } from "@/components/games/leaderboard";
 import { copy } from "@/lib/copy";
 import { getMyBestScore, getRoomLeaderboard } from "@/lib/games/queries";
+import { getPokerTable } from "@/lib/poker/queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 
 interface GamesPageProps {
@@ -26,10 +27,14 @@ export default async function GamesPage({ params }: GamesPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [snakeBest, snakeBoard] = await Promise.all([
+  const [snakeBest, snakeBoard, pokerTable] = await Promise.all([
     getMyBestScore(id, access.userId, "snake"),
     getRoomLeaderboard(id, "snake"),
+    getPokerTable(id),
   ]);
+
+  const myChips =
+    pokerTable?.players.find((p) => p.userId === access.userId)?.chips ?? null;
 
   return (
     <div className="space-y-6">
@@ -47,6 +52,14 @@ export default async function GamesPage({ params }: GamesPageProps) {
           subtitle={copy.games.snake.subtitle}
           emoji="🐍"
           myBest={snakeBest}
+        />
+        <GameCard
+          href={`/app/rooms/${id}/games/poker`}
+          title={copy.games.poker.title}
+          subtitle={copy.games.poker.subtitle}
+          emoji="🃏"
+          myBest={myChips}
+          statLabel={copy.games.poker.stat}
         />
       </div>
 

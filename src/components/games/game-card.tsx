@@ -10,6 +10,8 @@ interface GameCardProps {
   subtitle: string;
   emoji: string;
   myBest: number | null;
+  /** Overrides the "Jouw beste" label (e.g. "Jouw fiches" for poker). */
+  statLabel?: string;
 }
 
 export function GameCard({
@@ -18,6 +20,7 @@ export function GameCard({
   subtitle,
   emoji,
   myBest,
+  statLabel,
 }: GameCardProps) {
   return (
     <Card className="flex flex-col">
@@ -32,7 +35,7 @@ export function GameCard({
       </CardHeader>
       <CardContent className="mt-auto flex items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          {copy.games.yourBest}:{" "}
+          {statLabel ?? copy.games.yourBest}:{" "}
           <span className="font-medium text-foreground">
             {myBest ?? copy.games.noBest}
           </span>

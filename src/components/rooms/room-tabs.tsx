@@ -41,11 +41,6 @@ export function RoomTabs({ roomId }: RoomTabsProps) {
       label: copy.rooms.tabs.games,
       matches: (p) => p.startsWith(`${base}/games`),
     },
-    {
-      href: `${base}/poker`,
-      label: copy.rooms.tabs.poker,
-      matches: (p) => p.startsWith(`${base}/poker`),
-    },
   ];
 
   return (

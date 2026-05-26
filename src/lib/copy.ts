@@ -184,7 +184,6 @@ export const copy = {
       chat: "Chat",
       food: "Eten",
       games: "Games",
-      poker: "Poker",
     },
     navLabel: "Sectie-navigatie",
   },
@@ -436,6 +435,11 @@ export const copy = {
       saved: (n: number) => `Score ${n} opgeslagen`,
       mobileBlocked:
         "Snake is enkel speelbaar op desktop — kom terug op een laptop.",
+    },
+    poker: {
+      title: "Poker",
+      subtitle: "Texas Hold'em met fiches tegen elkaar",
+      stat: "Jouw fiches",
     },
   },
   pwa: {
