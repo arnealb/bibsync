@@ -1,34 +1,34 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { FoodPanel } from "@/components/food/food-panel";
+import { ChatPanel } from "@/components/chat/chat-panel";
 import { copy } from "@/lib/copy";
-import { getRoomFood } from "@/lib/food/queries";
 import type { MemberMap } from "@/lib/members";
+import { getRoomMessages } from "@/lib/messages/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
-interface FoodPageProps {
+interface ChatPageProps {
   params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({
   params,
-}: FoodPageProps): Promise<Metadata> {
+}: ChatPageProps): Promise<Metadata> {
   const { id } = await params;
   const access = await requireRoomAccess(id);
   return {
-    title: access ? `${copy.food.title} · ${access.room.name}` : copy.food.title,
+    title: access ? `${copy.chat.title} · ${access.room.name}` : copy.chat.title,
   };
 }
 
-export default async function FoodPage({ params }: FoodPageProps) {
+export default async function ChatPage({ params }: ChatPageProps) {
   const { id } = await params;
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [members, food] = await Promise.all([
+  const [members, messagesData] = await Promise.all([
     getRoomMembers(id),
-    getRoomFood(id),
+    getRoomMessages(id),
   ]);
 
   const memberMap: MemberMap = Object.fromEntries(
@@ -45,17 +45,15 @@ export default async function FoodPage({ params }: FoodPageProps) {
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-semibold tracking-tight">
-          {copy.food.title}
+          {copy.chat.title}
         </h2>
-        <p className="text-sm text-muted-foreground">{copy.food.subtitle}</p>
       </div>
-      <FoodPanel
-        roomId={id}
+      <ChatPanel
+        roomId={access.room.id}
         userId={access.userId}
         members={memberMap}
-        initialProposals={food.proposals}
-        initialVotes={food.votes}
-        initialComments={food.comments}
+        initialMessages={messagesData.messages}
+        initialHasMore={messagesData.hasMore}
       />
     </div>
   );

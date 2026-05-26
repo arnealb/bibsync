@@ -348,6 +348,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      game_scores: {
+        Row: {
+          id: string;
+          room_id: string;
+          user_id: string;
+          game_key: string;
+          score: number;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          user_id: string;
+          game_key: string;
+          score: number;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          user_id?: string;
+          game_key?: string;
+          score?: number;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -386,3 +413,4 @@ export type FoodProposal =
 export type FoodVote = Database["public"]["Tables"]["food_votes"]["Row"];
 export type FoodComment =
   Database["public"]["Tables"]["food_comments"]["Row"];
+export type GameScore = Database["public"]["Tables"]["game_scores"]["Row"];

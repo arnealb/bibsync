@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { ChatPanel } from "@/components/chat/chat-panel";
 import { PresenceSidebar } from "@/components/presence/presence-sidebar";
 import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
-import { getRoomMessages } from "@/lib/messages/queries";
 import { getRoomPresence } from "@/lib/presence/queries";
 import { getRoomComments } from "@/lib/proposals/comments-queries";
 import { getRoomProposals } from "@/lib/proposals/queries";
@@ -30,14 +28,12 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [members, proposalsData, presenceRows, messagesData, comments] =
-    await Promise.all([
-      getRoomMembers(id),
-      getRoomProposals(id),
-      getRoomPresence(id),
-      getRoomMessages(id),
-      getRoomComments(id),
-    ]);
+  const [members, proposalsData, presenceRows, comments] = await Promise.all([
+    getRoomMembers(id),
+    getRoomProposals(id),
+    getRoomPresence(id),
+    getRoomComments(id),
+  ]);
 
   const memberMap: MemberMap = Object.fromEntries(
     members.map((member) => [
@@ -57,13 +53,6 @@ export default async function RoomPage({ params }: RoomPageProps) {
 
   return (
     <RoomDashboard
-      roomId={access.room.id}
-      roomName={access.room.name}
-      roomDescription={access.room.description}
-      joinCode={access.room.join_code}
-      isOwner={access.isOwner}
-      memberCount={members.length}
-      statusSlot={null}
       breaksSlot={
         <ProposalsPanel
           roomId={access.room.id}
@@ -80,15 +69,6 @@ export default async function RoomPage({ params }: RoomPageProps) {
           userId={access.userId}
           members={memberOptions}
           initialPresence={presenceRows}
-        />
-      }
-      chatSlot={
-        <ChatPanel
-          roomId={access.room.id}
-          userId={access.userId}
-          members={memberMap}
-          initialMessages={messagesData.messages}
-          initialHasMore={messagesData.hasMore}
         />
       }
     />
