@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Send } from "lucide-react";
 
 import { GifPicker } from "@/components/chat/gif-picker";
+import { PhotoUpload } from "@/components/chat/photo-upload";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toggleLeaderboardCheated } from "@/app/_actions/games";
@@ -18,10 +19,12 @@ import {
 
 export function ChatInput({
   roomId,
+  userId,
   onSend,
   pending,
 }: {
   roomId: string;
+  userId: string;
   onSend: (content: string) => void;
   pending: boolean;
 }) {
@@ -79,6 +82,11 @@ export function ChatInput({
       className="flex items-end gap-2 border-t bg-background p-2"
     >
       <GifPicker onSelect={(url) => onSend(url)} />
+      <PhotoUpload
+        roomId={roomId}
+        userId={userId}
+        onUploaded={(url) => onSend(url)}
+      />
       <div className="relative flex-1">
         <Textarea
           value={value}

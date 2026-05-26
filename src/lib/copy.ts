@@ -462,6 +462,13 @@ export const copy = {
       empty: "Geen GIFs gevonden.",
       poweredBy: "Powered by GIPHY",
     },
+    photo: {
+      button: "Foto sturen",
+      invalid: "Kies een afbeelding.",
+      tooLarge: "Afbeelding mag max 5 MB zijn.",
+      error: "Uploaden mislukt. Probeer opnieuw.",
+      expired: "📷 foto verlopen (na 3 dagen)",
+    },
   },
   food: {
     title: "Wat eten we?",

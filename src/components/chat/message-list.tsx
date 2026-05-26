@@ -1,5 +1,6 @@
 "use client";
 
+import { ChatImage } from "@/components/chat/chat-image";
 import { MessageReactions } from "@/components/chat/message-reactions";
 import { UserAvatar } from "@/components/user-avatar";
 import { isGifUrl } from "@/lib/chat/gif";
@@ -55,15 +56,10 @@ export function MessageList({
                 {group.items.map((message) => (
                   <div key={message.id}>
                     {isGifUrl(message.content) ? (
-                      <div className={cn(message.pending && "opacity-60")}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={message.content}
-                          alt="GIF"
-                          className="max-h-48 max-w-[220px] rounded-md"
-                          loading="lazy"
-                        />
-                      </div>
+                      <ChatImage
+                        src={message.content}
+                        pending={message.pending}
+                      />
                     ) : (
                       <p
                         className={cn(
