@@ -1,5 +1,6 @@
 "use server";
 
+import { earnFromMessage } from "@/lib/bibcoins/earn";
 import { isGifUrl } from "@/lib/chat/gif";
 import { copy } from "@/lib/copy";
 import { sendRoomPush } from "@/lib/push/send";
@@ -54,6 +55,7 @@ export async function sendMessage(
     tag: `chat-${parsed.data.roomId}`,
   });
 
+  await earnFromMessage(user.id);
   return { ok: true, message: data };
 }
 

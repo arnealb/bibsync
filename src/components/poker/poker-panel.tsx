@@ -7,7 +7,6 @@ import {
   getMyPokerHand,
   leavePokerTable,
   playPokerAction,
-  rebuyPoker,
   sitDownPoker,
   startPokerHand,
 } from "@/app/_actions/poker";
@@ -217,26 +216,22 @@ export function PokerPanel({
       {/* Action bar */}
       <div className="space-y-3 rounded-lg border p-3">
         {!seated && (
-          <Button
-            className="w-full"
-            disabled={pending}
-            onClick={() => run(() => sitDownPoker(roomId))}
-          >
-            {copy.poker.sit}
-          </Button>
-        )}
-
-        {seated && seat.chips === 0 && !inHand && (
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">{copy.poker.busted}</p>
+          <div className="space-y-1">
             <Button
               className="w-full"
               disabled={pending}
-              onClick={() => run(() => rebuyPoker(roomId))}
+              onClick={() => run(() => sitDownPoker(roomId))}
             >
-              {copy.poker.rebuy}
+              {copy.poker.sit}
             </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              {copy.poker.buyInNote}
+            </p>
           </div>
+        )}
+
+        {seated && seat.chips === 0 && !inHand && (
+          <p className="text-sm text-muted-foreground">{copy.poker.busted}</p>
         )}
 
         {seated && !inHand && (

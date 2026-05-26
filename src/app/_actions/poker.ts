@@ -3,18 +3,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { ActionResult } from "@/app/_actions/types";
+import { awardBibcoins, spendBibcoins } from "@/lib/bibcoins/award";
+import { getBibcoins } from "@/lib/bibcoins/queries";
+import { unlockAchievement } from "@/lib/bibcoins/unlock";
 import { copy } from "@/lib/copy";
 import { makeDeck, shuffle, type Card } from "@/lib/poker/cards";
-import {
-  POKER_SMALL_BLIND,
-  POKER_BIG_BLIND,
-  POKER_START_CHIPS,
-} from "@/lib/poker/config";
+import { POKER_SMALL_BLIND, POKER_BIG_BLIND } from "@/lib/poker/config";
 import {
   addPlayer,
   applyAction,
   initialState,
-  rebuy as engineRebuy,
   requestLeave,
   startHand as engineStartHand,
   toPublicState,
@@ -25,6 +23,37 @@ import { getMyHoleCards, getPokerTable } from "@/lib/poker/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 import { playerActionSchema, type PlayerActionInput } from "@/lib/validation/poker";
+
+type SeatChips = { userId: string; chips: number };
+
+/** Returns each player's bibcoins to their wallet when their seat is removed. */
+async function creditRemoved(
+  roomId: string,
+  before: SeatChips[],
+  after: SeatChips[],
+): Promise<void> {
+  const stillSeated = new Set(after.map((p) => p.userId));
+  for (const seat of before) {
+    if (!stillSeated.has(seat.userId) && seat.chips > 0) {
+      await awardBibcoins(
+        seat.userId,
+        seat.chips,
+        "poker_cashout",
+        `${roomId}:${Date.now()}:${seat.userId}`,
+      );
+    }
+  }
+}
+
+/** Unlocks the first-poker-win achievement for any winners of a resolved hand. */
+async function unlockPokerWinners(state: FullState): Promise<void> {
+  if (state.status !== "showdown" || !state.result) return;
+  for (const payout of state.result.payouts) {
+    if (payout.amount > 0) {
+      await unlockAchievement(payout.userId, "first_poker_win");
+    }
+  }
+}
 
 type MyHandResult =
   | { ok: true; cards: Card[] | null }
@@ -142,20 +171,36 @@ async function authorize(
   return { ok: true, userId: access.userId, admin };
 }
 
-/** Sit down at the table (idempotent); seeds the starting stack. */
+/** Sit down at the table, bringing your whole bibcoins balance as your stack. */
 export async function sitDownPoker(roomId: string): Promise<ActionResult> {
   const auth = await authorize(roomId);
   if (!auth.ok) return auth;
 
   const loaded = await loadOrCreate(auth.admin, roomId);
-  if (loaded.full.status === "betting") {
-    // Seats can still be added; the player simply joins the next hand.
+  if (loaded.full.players.some((p) => p.userId === auth.userId)) {
+    return { ok: true }; // already seated
   }
-  const next = addPlayer(loaded.full, auth.userId, POKER_START_CHIPS);
-  if (next === loaded.full) return { ok: true }; // already seated
 
+  const balance = await getBibcoins(auth.userId);
+  if (balance <= 0) return { ok: false, error: copy.poker.noCoins };
+
+  // Move the whole balance onto the table (wallet → chips).
+  const paid = await spendBibcoins(auth.userId, balance, "poker_buyin", roomId);
+  if (!paid) return { ok: false, error: copy.poker.noCoins };
+
+  const next = addPlayer(loaded.full, auth.userId, balance);
   const ok = await persist(auth.admin, roomId, loaded.version, next);
-  return ok ? { ok: true } : { ok: false, error: copy.poker.busy };
+  if (!ok) {
+    // Persist lost the race — refund the buy-in.
+    await awardBibcoins(
+      auth.userId,
+      balance,
+      "poker_refund",
+      `${roomId}:${Date.now()}`,
+    );
+    return { ok: false, error: copy.poker.busy };
+  }
+  return { ok: true };
 }
 
 /** Deal a new hand. */
@@ -167,6 +212,11 @@ export async function startPokerHand(roomId: string): Promise<ActionResult> {
   if (loaded.full.status === "betting") {
     return { ok: false, error: copy.poker.handInProgress };
   }
+
+  const before: SeatChips[] = loaded.full.players.map((p) => ({
+    userId: p.userId,
+    chips: p.chips,
+  }));
 
   let next: FullState;
   try {
@@ -193,7 +243,12 @@ export async function startPokerHand(roomId: string): Promise<ActionResult> {
   }
 
   const ok = await persist(auth.admin, roomId, loaded.version, next);
-  return ok ? { ok: true } : { ok: false, error: copy.poker.busy };
+  if (!ok) return { ok: false, error: copy.poker.busy };
+
+  // Players who left during the previous hand are removed now — cash them out.
+  await creditRemoved(roomId, before, next.players);
+  await unlockPokerWinners(next);
+  return { ok: true };
 }
 
 /** Make a move (fold/check/call/raise/allin). */
@@ -224,33 +279,31 @@ export async function playPokerAction(
   }
 
   const ok = await persist(auth.admin, parsed.data.roomId, loaded.version, next);
-  return ok ? { ok: true } : { ok: false, error: copy.poker.busy };
+  if (!ok) return { ok: false, error: copy.poker.busy };
+
+  await unlockPokerWinners(next);
+  return { ok: true };
 }
 
-/** Top a busted player back up to the starting stack between hands. */
-export async function rebuyPoker(roomId: string): Promise<ActionResult> {
-  const auth = await authorize(roomId);
-  if (!auth.ok) return auth;
-
-  const loaded = await loadOrCreate(auth.admin, roomId);
-  const next = engineRebuy(loaded.full, auth.userId, POKER_START_CHIPS);
-  if (next === loaded.full) return { ok: true };
-
-  const ok = await persist(auth.admin, roomId, loaded.version, next);
-  return ok ? { ok: true } : { ok: false, error: copy.poker.busy };
-}
-
-/** Leave the table (folds first if a hand is live). */
+/** Leave the table (folds first if a hand is live); cashes out your chips. */
 export async function leavePokerTable(roomId: string): Promise<ActionResult> {
   const auth = await authorize(roomId);
   if (!auth.ok) return auth;
 
   const loaded = await loadOrCreate(auth.admin, roomId);
+  const before: SeatChips[] = loaded.full.players.map((p) => ({
+    userId: p.userId,
+    chips: p.chips,
+  }));
+
   const next = requestLeave(loaded.full, auth.userId);
   if (next === loaded.full) return { ok: true };
 
   const ok = await persist(auth.admin, roomId, loaded.version, next);
-  return ok ? { ok: true } : { ok: false, error: copy.poker.busy };
+  if (!ok) return { ok: false, error: copy.poker.busy };
+
+  await creditRemoved(roomId, before, next.players);
+  return { ok: true };
 }
 
 /** The current user's hole cards for the live hand. */

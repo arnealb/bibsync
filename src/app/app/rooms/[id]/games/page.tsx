@@ -4,12 +4,12 @@ import { notFound } from "next/navigation";
 import { GameCard } from "@/components/games/game-card";
 import { Leaderboard } from "@/components/games/leaderboard";
 import { copy } from "@/lib/copy";
+import { getBibcoins } from "@/lib/bibcoins/queries";
 import {
   getMyBestScore,
   getRoomLeaderboard,
   getShowCheated,
 } from "@/lib/games/queries";
-import { getPokerTable } from "@/lib/poker/queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 
 interface GamesPageProps {
@@ -31,15 +31,12 @@ export default async function GamesPage({ params }: GamesPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [snakeBest, snakeBoard, pokerTable, showCheated] = await Promise.all([
+  const [snakeBest, snakeBoard, showCheated, balance] = await Promise.all([
     getMyBestScore(id, access.userId, "snake"),
     getRoomLeaderboard(id, "snake"),
-    getPokerTable(id),
     getShowCheated(id),
+    getBibcoins(access.userId),
   ]);
-
-  const myChips =
-    pokerTable?.players.find((p) => p.userId === access.userId)?.chips ?? null;
 
   return (
     <div className="space-y-6">
@@ -63,7 +60,7 @@ export default async function GamesPage({ params }: GamesPageProps) {
           title={copy.games.poker.title}
           subtitle={copy.games.poker.subtitle}
           emoji="🃏"
-          myBest={myChips}
+          myBest={balance}
           statLabel={copy.games.poker.stat}
         />
       </div>

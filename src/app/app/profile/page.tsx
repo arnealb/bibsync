@@ -11,8 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ACHIEVEMENTS } from "@/lib/bibcoins/achievements";
+import { getUnlockedAchievements } from "@/lib/bibcoins/queries";
 import { getAuthContext } from "@/lib/auth";
 import { copy } from "@/lib/copy";
+import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/time";
 
 export const metadata: Metadata = { title: copy.profile.title };
@@ -31,6 +34,7 @@ export default async function ProfilePage() {
   if (!ctx) redirect("/login");
 
   const name = ctx.profile?.display_name ?? "—";
+  const unlocked = new Set(await getUnlockedAchievements(ctx.user.id));
 
   return (
     <div className="mx-auto max-w-lg space-y-6 px-4 py-12">
@@ -54,6 +58,43 @@ export default async function ProfilePage() {
               />
             )}
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            {copy.bibcoins.achievements.title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2">
+            {ACHIEVEMENTS.map((achievement) => {
+              const done = unlocked.has(achievement.id);
+              return (
+                <li
+                  key={achievement.id}
+                  className={cn(
+                    "flex items-center justify-between gap-2 text-sm",
+                    !done && "opacity-50",
+                  )}
+                >
+                  <span className="min-w-0">
+                    <span className="font-medium">
+                      {done ? "🏆" : "🔒"} {achievement.title}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {done
+                        ? achievement.description
+                        : copy.bibcoins.achievements.locked}
+                    </span>
+                  </span>
+                  <span className="shrink-0 font-mono text-xs text-amber-500 tabular-nums">
+                    {copy.bibcoins.achievements.reward(achievement.reward)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         </CardContent>
       </Card>
       <NotificationSettings

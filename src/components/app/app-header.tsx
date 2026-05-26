@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Shield } from "lucide-react";
+import { Coins, Shield } from "lucide-react";
 
 import { RoomSwitcher } from "@/components/app/room-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
+import { getBibcoins } from "@/lib/bibcoins/queries";
 import { getAuthContext } from "@/lib/auth";
 import { copy } from "@/lib/copy";
 import { getMyRooms } from "@/lib/rooms/queries";
@@ -12,6 +13,7 @@ import { getMyRooms } from "@/lib/rooms/queries";
 export async function AppHeader() {
   const [ctx, rooms] = await Promise.all([getAuthContext(), getMyRooms()]);
   const name = ctx?.profile?.display_name ?? ctx?.user.email ?? "?";
+  const balance = ctx ? await getBibcoins(ctx.user.id) : 0;
 
   return (
     <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur">
@@ -26,6 +28,17 @@ export async function AppHeader() {
           />
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          <Button
+            render={<Link href="/app/shop" />}
+            nativeButton={false}
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 font-mono tabular-nums"
+            aria-label={copy.bibcoins.shop.nav}
+          >
+            <Coins className="size-4 text-amber-500" />
+            {balance}
+          </Button>
           {ctx?.isAdmin && (
             <Button
               render={<Link href="/app/admin" />}

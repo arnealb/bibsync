@@ -7,6 +7,7 @@ import { setPresence } from "@/app/_actions/presence";
 import { StatusControl } from "@/components/presence/status-control";
 import { UserAvatar } from "@/components/user-avatar";
 import { usePresenceRealtime } from "@/hooks/use-presence-realtime";
+import type { ResolvedLoadout } from "@/lib/cosmetics/resolve";
 import { copy } from "@/lib/copy";
 import { PRESENCE_EMOJI } from "@/lib/presence/display";
 import { presenceSortKey, presenceView } from "@/lib/presence/view";
@@ -17,6 +18,7 @@ interface RoomMemberOption {
   id: string;
   name: string;
   avatarUrl: string | null;
+  loadout?: ResolvedLoadout | null;
 }
 
 interface PresenceSidebarProps {
@@ -105,8 +107,16 @@ export function PresenceSidebar({
                   avatarUrl={member.avatarUrl}
                   className="size-7"
                   fallbackClassName="text-[11px]"
+                  loadout={member.loadout}
                 />
-                <span className="truncate text-sm">
+                <span
+                  className="truncate text-sm"
+                  style={
+                    member.loadout?.color
+                      ? { color: member.loadout.color.value }
+                      : undefined
+                  }
+                >
                   {member.name}
                   {member.id === userId && (
                     <span className="text-muted-foreground"> ({copy.rooms.you})</span>

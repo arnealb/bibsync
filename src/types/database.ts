@@ -519,6 +519,105 @@ export interface Database {
         };
         Relationships: [];
       };
+      wallets: {
+        Row: {
+          user_id: string;
+          bibcoins: number;
+          last_hourly_at: Timestamp;
+        };
+        Insert: {
+          user_id: string;
+          bibcoins?: number;
+          last_hourly_at?: Timestamp;
+        };
+        Update: {
+          user_id?: string;
+          bibcoins?: number;
+          last_hourly_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      bibcoin_transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          reason: string;
+          ref_key: string;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          amount: number;
+          reason: string;
+          ref_key?: string;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          amount?: number;
+          reason?: string;
+          ref_key?: string;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      user_cosmetics: {
+        Row: { user_id: string; item_id: string; acquired_at: Timestamp };
+        Insert: { user_id: string; item_id: string; acquired_at?: Timestamp };
+        Update: { user_id?: string; item_id?: string; acquired_at?: Timestamp };
+        Relationships: [];
+      };
+      user_loadout: {
+        Row: {
+          user_id: string;
+          frame: string | null;
+          name_color: string | null;
+          badge: string | null;
+          accessory: string | null;
+          pet: string | null;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          user_id: string;
+          frame?: string | null;
+          name_color?: string | null;
+          badge?: string | null;
+          accessory?: string | null;
+          pet?: string | null;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          user_id?: string;
+          frame?: string | null;
+          name_color?: string | null;
+          badge?: string | null;
+          accessory?: string | null;
+          pet?: string | null;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      user_achievements: {
+        Row: {
+          user_id: string;
+          achievement_id: string;
+          unlocked_at: Timestamp;
+        };
+        Insert: {
+          user_id: string;
+          achievement_id: string;
+          unlocked_at?: Timestamp;
+        };
+        Update: {
+          user_id?: string;
+          achievement_id?: string;
+          unlocked_at?: Timestamp;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -533,6 +632,28 @@ export interface Database {
       get_user_push_targets: {
         Args: { _user_id: string; _pref: string };
         Returns: { endpoint: string; p256dh: string; auth: string }[];
+      };
+      award_bibcoins: {
+        Args: {
+          _user_id: string;
+          _amount: number;
+          _reason: string;
+          _ref?: string;
+        };
+        Returns: boolean;
+      };
+      spend_bibcoins: {
+        Args: {
+          _user_id: string;
+          _amount: number;
+          _reason: string;
+          _ref?: string;
+        };
+        Returns: boolean;
+      };
+      claim_hourly_bibcoins: {
+        Args: { _user_id: string };
+        Returns: number;
       };
     };
     Enums: Record<never, never>;
@@ -568,3 +689,9 @@ export type PokerTableRow =
 export type GameScore = Database["public"]["Tables"]["game_scores"]["Row"];
 export type RoomLeaderboardSettings =
   Database["public"]["Tables"]["room_leaderboard_settings"]["Row"];
+export type Wallet = Database["public"]["Tables"]["wallets"]["Row"];
+export type UserCosmetic =
+  Database["public"]["Tables"]["user_cosmetics"]["Row"];
+export type UserLoadout = Database["public"]["Tables"]["user_loadout"]["Row"];
+export type UserAchievement =
+  Database["public"]["Tables"]["user_achievements"]["Row"];

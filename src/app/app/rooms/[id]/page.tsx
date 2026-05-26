@@ -5,6 +5,8 @@ import { InstantBreakPanel } from "@/components/instant-break/instant-break-pane
 import { PresenceSidebar } from "@/components/presence/presence-sidebar";
 import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
+import { getLoadouts } from "@/lib/cosmetics/queries";
+import { resolveLoadout } from "@/lib/cosmetics/resolve";
 import { copy } from "@/lib/copy";
 import {
   getActiveInstantBreak,
@@ -53,10 +55,12 @@ export default async function RoomPage({ params }: RoomPageProps) {
     ]),
   );
 
+  const loadouts = await getLoadouts(members.map((member) => member.user_id));
   const memberOptions = members.map((member) => ({
     id: member.user_id,
     name: member.profile?.display_name ?? "—",
     avatarUrl: member.profile?.avatar_url ?? null,
+    loadout: resolveLoadout(loadouts[member.user_id]),
   }));
 
   return (

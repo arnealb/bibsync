@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import type { ActionResult } from "@/app/_actions/types";
+import { earnFromSnake } from "@/lib/bibcoins/earn";
 import { copy } from "@/lib/copy";
 import { getShowCheated } from "@/lib/games/queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
@@ -34,6 +35,14 @@ export async function submitGameScore(
   if (error) {
     console.error("[submitGameScore]", error);
     return { ok: false, error: copy.games.submitError };
+  }
+
+  if (parsed.data.gameKey === "snake") {
+    await earnFromSnake(
+      access.userId,
+      parsed.data.score,
+      parsed.data.cheated ?? false,
+    );
   }
 
   revalidatePath(`/app/rooms/${parsed.data.roomId}/games`);

@@ -1,6 +1,7 @@
 "use server";
 
 import type { ActionResult } from "@/app/_actions/types";
+import { earnFromVote } from "@/lib/bibcoins/earn";
 import { copy } from "@/lib/copy";
 import { sendRoomPush, sendUserPush } from "@/lib/push/send";
 import { BREAK_SLOTS } from "@/lib/slots";
@@ -122,6 +123,7 @@ export async function castVote(input: CastVoteInput): Promise<ActionResult> {
     });
   }
 
+  await earnFromVote(user.id, parsed.data.proposalId);
   return { ok: true };
 }
 
