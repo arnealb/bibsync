@@ -212,9 +212,18 @@ export function ProposalsPanel({
     slotKey: string,
     date: string,
     time: string,
+    destination?: string,
+    isWalk?: boolean,
   ) {
     startTransition(async () => {
-      const result = await setSlotPreference({ roomId, slotKey, date, time });
+      const result = await setSlotPreference({
+        roomId,
+        slotKey,
+        date,
+        time,
+        destination,
+        isWalk,
+      });
       if (result.ok) toast.success(copy.proposals.slots.saved);
       else toast.error(result.error);
     });
@@ -266,6 +275,7 @@ export function ProposalsPanel({
       comments={comments}
       members={members}
       userId={userId}
+      places={initialPlaces}
       onSetPreference={handleSetSlotPreference}
       onClearPreference={handleClearSlotPreference}
       onVote={handleVote}
