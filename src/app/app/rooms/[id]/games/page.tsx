@@ -63,6 +63,14 @@ export default async function GamesPage({ params }: GamesPageProps) {
           myBest={balance}
           statLabel={copy.games.poker.stat}
         />
+        <GameCard
+          href={`/app/rooms/${id}/games/blackjack`}
+          title={copy.blackjack.title}
+          subtitle={copy.blackjack.subtitle}
+          emoji="♠️"
+          myBest={balance}
+          statLabel={copy.blackjack.stat}
+        />
       </div>
 
       <Leaderboard

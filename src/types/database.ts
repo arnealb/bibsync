@@ -618,6 +618,27 @@ export interface Database {
         };
         Relationships: [];
       };
+      blackjack_games: {
+        Row: {
+          user_id: string;
+          state: Record<string, unknown>;
+          version: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          user_id: string;
+          state: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          user_id?: string;
+          state?: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
