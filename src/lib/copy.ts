@@ -367,6 +367,10 @@ export const copy = {
     error: "Bericht niet verzonden. Probeer opnieuw.",
     rainbowOn: "🌈 Full rainbow mode aan!",
     rainbowOff: "Rainbow mode uit.",
+    snakeBotOn: "😈 Cheatcodes aan — open Snake, hij speelt vanzelf perfect.",
+    snakeBotOff: "Cheatcodes uit.",
+    boardHonestOn: "🧐 Leaderboard op eerlijk gezet — cheat-scores verborgen voor iedereen.",
+    boardAllOn: "🤖 Leaderboard toont weer alle scores (incl. cheats) voor iedereen.",
     react: "Reageer",
     gif: {
       button: "GIF kiezen",
@@ -425,6 +429,8 @@ export const copy = {
     leaderboard: "Leaderboard",
     noScores: "Nog niemand heeft gespeeld.",
     submitError: "Score kon niet opgeslagen worden.",
+    honestView: "eerlijke weergave",
+    cheatedTag: "Met cheats behaald",
     snake: {
       title: "Snake",
       subtitle: "Klassiek — pijltjes of WASD om te draaien",
@@ -433,6 +439,7 @@ export const copy = {
       restart: "Opnieuw",
       newHighScore: "Nieuwe high score!",
       saved: (n: number) => `Score ${n} opgeslagen`,
+      saveResult: "Result opslaan",
       mobileBlocked:
         "Snake is enkel speelbaar op desktop — kom terug op een laptop.",
     },

@@ -4,7 +4,11 @@ import { notFound } from "next/navigation";
 import { Leaderboard } from "@/components/games/leaderboard";
 import { SnakeGame } from "@/components/games/snake/snake-game";
 import { copy } from "@/lib/copy";
-import { getMyBestScore, getRoomLeaderboard } from "@/lib/games/queries";
+import {
+  getMyBestScore,
+  getRoomLeaderboard,
+  getShowCheated,
+} from "@/lib/games/queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 
 interface SnakePageProps {
@@ -28,9 +32,10 @@ export default async function SnakePage({ params }: SnakePageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [myBest, board] = await Promise.all([
+  const [myBest, board, showCheated] = await Promise.all([
     getMyBestScore(id, access.userId, "snake"),
     getRoomLeaderboard(id, "snake"),
+    getShowCheated(id),
   ]);
 
   return (
@@ -48,7 +53,10 @@ export default async function SnakePage({ params }: SnakePageProps) {
       </section>
       <Leaderboard
         title={`${copy.games.leaderboard} — ${copy.games.snake.title}`}
-        entries={board}
+        roomId={id}
+        full={board.full}
+        honest={board.honest}
+        initialShowCheated={showCheated}
       />
     </div>
   );

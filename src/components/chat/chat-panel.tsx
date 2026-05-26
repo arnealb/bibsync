@@ -234,7 +234,7 @@ export function ChatPanel({
         </button>
       )}
 
-      <ChatInput onSend={handleSend} pending={sending} />
+      <ChatInput roomId={roomId} onSend={handleSend} pending={sending} />
     </div>
   );
 }

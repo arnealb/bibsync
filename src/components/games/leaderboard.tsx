@@ -1,17 +1,42 @@
+"use client";
+
+import { useState } from "react";
+
 import { UserAvatar } from "@/components/user-avatar";
+import { useLeaderboardSettingsRealtime } from "@/hooks/use-leaderboard-settings-realtime";
 import { copy } from "@/lib/copy";
 import type { LeaderboardEntry } from "@/lib/games/queries";
 
 interface LeaderboardProps {
   title: string;
-  entries: LeaderboardEntry[];
+  roomId: string;
+  full: LeaderboardEntry[];
+  honest: LeaderboardEntry[];
+  /** Shared room setting: show all scores (true) or honest-only (false). */
+  initialShowCheated: boolean;
 }
 
-export function Leaderboard({ title, entries }: LeaderboardProps) {
+export function Leaderboard({
+  title,
+  roomId,
+  full,
+  honest,
+  initialShowCheated,
+}: LeaderboardProps) {
+  const [showCheated, setShowCheated] = useState(initialShowCheated);
+  useLeaderboardSettingsRealtime(roomId, setShowCheated);
+
+  const entries = showCheated ? full : honest;
+
   return (
     <section className="rounded-lg border">
-      <div className="border-b px-4 py-3">
+      <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+        {!showCheated && (
+          <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+            {copy.games.honestView}
+          </span>
+        )}
       </div>
       {entries.length === 0 ? (
         <p className="px-4 py-6 text-center text-sm text-muted-foreground">
@@ -20,10 +45,7 @@ export function Leaderboard({ title, entries }: LeaderboardProps) {
       ) : (
         <ol className="divide-y">
           {entries.map((entry, index) => (
-            <li
-              key={entry.userId}
-              className="flex items-center gap-3 px-4 py-2"
-            >
+            <li key={entry.userId} className="flex items-center gap-3 px-4 py-2">
               <span className="w-6 text-sm font-mono tabular-nums text-muted-foreground">
                 {index + 1}.
               </span>
@@ -32,7 +54,17 @@ export function Leaderboard({ title, entries }: LeaderboardProps) {
                 avatarUrl={entry.avatarUrl}
                 className="size-7"
               />
-              <span className="flex-1 truncate text-sm">{entry.name}</span>
+              <span className="flex flex-1 items-center gap-1.5 truncate text-sm">
+                {entry.name}
+                {entry.cheated && (
+                  <span
+                    title={copy.games.cheatedTag}
+                    aria-label={copy.games.cheatedTag}
+                  >
+                    🤖
+                  </span>
+                )}
+              </span>
               <span className="font-mono tabular-nums text-sm font-semibold">
                 {entry.bestScore}
               </span>

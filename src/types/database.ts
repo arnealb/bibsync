@@ -478,6 +478,7 @@ export interface Database {
           user_id: string;
           game_key: string;
           score: number;
+          cheated: boolean;
           created_at: Timestamp;
         };
         Insert: {
@@ -486,6 +487,7 @@ export interface Database {
           user_id: string;
           game_key: string;
           score: number;
+          cheated?: boolean;
           created_at?: Timestamp;
         };
         Update: {
@@ -494,7 +496,26 @@ export interface Database {
           user_id?: string;
           game_key?: string;
           score?: number;
+          cheated?: boolean;
           created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      room_leaderboard_settings: {
+        Row: {
+          room_id: string;
+          show_cheated: boolean;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          room_id: string;
+          show_cheated?: boolean;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          room_id?: string;
+          show_cheated?: boolean;
+          updated_at?: Timestamp;
         };
         Relationships: [];
       };
@@ -545,3 +566,5 @@ export type InstantBreak =
 export type PokerTableRow =
   Database["public"]["Tables"]["poker_tables"]["Row"];
 export type GameScore = Database["public"]["Tables"]["game_scores"]["Row"];
+export type RoomLeaderboardSettings =
+  Database["public"]["Tables"]["room_leaderboard_settings"]["Row"];

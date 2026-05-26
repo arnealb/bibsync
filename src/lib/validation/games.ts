@@ -8,6 +8,7 @@ export const submitScoreSchema = z.object({
   roomId: z.string().uuid(),
   gameKey: gameKeySchema,
   score: z.number().int().min(0).max(100_000),
+  cheated: z.boolean().optional(),
 });
 
 export type SubmitScoreInput = z.infer<typeof submitScoreSchema>;

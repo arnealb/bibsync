@@ -7,54 +7,94 @@ export interface LeaderboardEntry {
   name: string;
   avatarUrl: string | null;
   bestScore: number;
+  /** Whether the shown best score was achieved with the autopilot. */
+  cheated: boolean;
+}
+
+export interface LeaderboardData {
+  /** Best score per user (cheated runs included, flagged). */
+  full: LeaderboardEntry[];
+  /** Best honest (non-cheated) score per user. */
+  honest: LeaderboardEntry[];
 }
 
 /**
- * Top scores per user in a room for a given game, descending. Joins with
- * the existing member list so we don't need a separate profile fetch.
+ * Two leaderboards for a game in a room: the full board (cheated runs flagged)
+ * and the honest board (cheated runs excluded), both descending.
  */
 export async function getRoomLeaderboard(
   roomId: string,
   gameKey: GameKey,
   limit = 10,
-): Promise<LeaderboardEntry[]> {
+): Promise<LeaderboardData> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("game_scores")
-    .select("user_id, score")
+    .select("user_id, score, cheated")
     .eq("room_id", roomId)
     .eq("game_key", gameKey);
 
   if (error) {
     console.error("[getRoomLeaderboard]", error);
-    return [];
+    return { full: [], honest: [] };
   }
 
-  const bestByUser = new Map<string, number>();
+  const bestOverall = new Map<string, number>();
+  const bestHonest = new Map<string, number>();
   for (const row of data ?? []) {
-    const current = bestByUser.get(row.user_id) ?? -1;
-    if (row.score > current) bestByUser.set(row.user_id, row.score);
+    if (row.score > (bestOverall.get(row.user_id) ?? -1)) {
+      bestOverall.set(row.user_id, row.score);
+    }
+    if (!row.cheated && row.score > (bestHonest.get(row.user_id) ?? -1)) {
+      bestHonest.set(row.user_id, row.score);
+    }
   }
-  if (bestByUser.size === 0) return [];
+  if (bestOverall.size === 0) return { full: [], honest: [] };
 
   const members = await getRoomMembers(roomId);
   const memberById = new Map(members.map((m) => [m.user_id, m]));
+  const nameOf = (userId: string) =>
+    memberById.get(userId)?.profile?.display_name ?? "—";
+  const avatarOf = (userId: string) =>
+    memberById.get(userId)?.profile?.avatar_url ?? null;
 
-  const entries: LeaderboardEntry[] = [];
-  for (const [userId, bestScore] of bestByUser) {
-    const member = memberById.get(userId);
-    entries.push({
+  const full: LeaderboardEntry[] = [...bestOverall.entries()]
+    .map(([userId, bestScore]) => ({
       userId,
-      name: member?.profile?.display_name ?? "—",
-      avatarUrl: member?.profile?.avatar_url ?? null,
+      name: nameOf(userId),
+      avatarUrl: avatarOf(userId),
       bestScore,
-    });
-  }
-  entries.sort((a, b) => b.bestScore - a.bestScore);
-  return entries.slice(0, limit);
+      cheated: bestScore > (bestHonest.get(userId) ?? -1),
+    }))
+    .sort((a, b) => b.bestScore - a.bestScore)
+    .slice(0, limit);
+
+  const honest: LeaderboardEntry[] = [...bestHonest.entries()]
+    .map(([userId, bestScore]) => ({
+      userId,
+      name: nameOf(userId),
+      avatarUrl: avatarOf(userId),
+      bestScore,
+      cheated: false,
+    }))
+    .sort((a, b) => b.bestScore - a.bestScore)
+    .slice(0, limit);
+
+  return { full, honest };
 }
 
-/** The caller's best score in this room for this game, or null. */
+/** Whether this room's leaderboard currently shows cheated runs (default true). */
+export async function getShowCheated(roomId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("room_leaderboard_settings")
+    .select("show_cheated")
+    .eq("room_id", roomId)
+    .maybeSingle();
+  return data?.show_cheated ?? true;
+}
+
+/** The caller's best score in this room for this game (any run), or null. */
 export async function getMyBestScore(
   roomId: string,
   userId: string,

@@ -4,7 +4,11 @@ import { notFound } from "next/navigation";
 import { GameCard } from "@/components/games/game-card";
 import { Leaderboard } from "@/components/games/leaderboard";
 import { copy } from "@/lib/copy";
-import { getMyBestScore, getRoomLeaderboard } from "@/lib/games/queries";
+import {
+  getMyBestScore,
+  getRoomLeaderboard,
+  getShowCheated,
+} from "@/lib/games/queries";
 import { getPokerTable } from "@/lib/poker/queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 
@@ -27,10 +31,11 @@ export default async function GamesPage({ params }: GamesPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [snakeBest, snakeBoard, pokerTable] = await Promise.all([
+  const [snakeBest, snakeBoard, pokerTable, showCheated] = await Promise.all([
     getMyBestScore(id, access.userId, "snake"),
     getRoomLeaderboard(id, "snake"),
     getPokerTable(id),
+    getShowCheated(id),
   ]);
 
   const myChips =
@@ -65,7 +70,10 @@ export default async function GamesPage({ params }: GamesPageProps) {
 
       <Leaderboard
         title={`${copy.games.leaderboard} — ${copy.games.snake.title}`}
-        entries={snakeBoard}
+        roomId={id}
+        full={snakeBoard.full}
+        honest={snakeBoard.honest}
+        initialShowCheated={showCheated}
       />
     </div>
   );

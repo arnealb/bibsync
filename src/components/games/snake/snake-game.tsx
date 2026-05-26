@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { submitGameScore } from "@/app/_actions/games";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
+import { isAutopilot, SNAKE_BOT_EVENT } from "@/lib/games/snake/autopilot";
+import { botDirection } from "@/lib/games/snake/bot";
 import {
   applyInput,
   createInitialState,
@@ -68,17 +70,34 @@ function useIsCoarsePointer(): boolean {
   );
 }
 
+function subscribeAutopilot(callback: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(SNAKE_BOT_EVENT, callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(SNAKE_BOT_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+function useAutopilot(): boolean {
+  return useSyncExternalStore(subscribeAutopilot, isAutopilot, () => false);
+}
+
 export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
   const isMobile = useIsCoarsePointer();
+  const autopilot = useAutopilot();
   const [state, setState] = useState<SnakeState>(() =>
     createInitialState(makeSeed()),
   );
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const submittedRef = useRef(false);
+  // True once the autopilot has driven at least one tick this game.
+  const cheatedRef = useRef(false);
 
   // Input
   useEffect(() => {
-    if (isMobile) return;
+    if (isMobile || autopilot) return;
     function onKey(e: KeyboardEvent) {
       const dir = KEY_MAP[e.key];
       if (!dir) return;
@@ -87,16 +106,21 @@ export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isMobile]);
+  }, [isMobile, autopilot]);
 
   // Tick loop — restarts when score changes (so speed steps up)
   useEffect(() => {
     if (isMobile || state.gameOver) return;
     const interval = window.setInterval(() => {
-      setState((current) => tick(current));
+      if (autopilot) cheatedRef.current = true;
+      setState((current) =>
+        autopilot
+          ? tick({ ...current, inputQueue: [botDirection(current)] })
+          : tick(current),
+      );
     }, nextSpeedMs(state.score));
     return () => window.clearInterval(interval);
-  }, [isMobile, state.score, state.gameOver]);
+  }, [isMobile, autopilot, state.score, state.gameOver]);
 
   // Submit score once on game-over
   useEffect(() => {
@@ -104,7 +128,12 @@ export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
     submittedRef.current = true;
     const finalScore = state.score;
     const beatBest = finalScore > (myBest ?? 0);
-    void submitGameScore({ roomId, gameKey: "snake", score: finalScore }).then(
+    void submitGameScore({
+      roomId,
+      gameKey: "snake",
+      score: finalScore,
+      cheated: cheatedRef.current,
+    }).then(
       (result) => {
         if (!result.ok) {
           toast.error(result.error);
@@ -163,7 +192,16 @@ export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
 
   const restart = useCallback(() => {
     submittedRef.current = false;
+    cheatedRef.current = false;
     setState(createInitialState(makeSeed()));
+  }, []);
+
+  // Cash out: end the run now so the current (autopilot) score gets submitted,
+  // instead of waiting for the bot to fill the whole board.
+  const cashOut = useCallback(() => {
+    setState((current) =>
+      current.gameOver ? current : { ...current, gameOver: true },
+    );
   }, []);
 
   if (isMobile) {
@@ -185,9 +223,16 @@ export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
             {state.score}
           </span>
         </p>
-        <Button size="sm" variant="outline" onClick={restart}>
-          {copy.games.snake.restart}
-        </Button>
+        <div className="flex items-center gap-2">
+          {autopilot && !state.gameOver && state.score > 0 && (
+            <Button size="sm" onClick={cashOut}>
+              {copy.games.snake.saveResult}
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={restart}>
+            {copy.games.snake.restart}
+          </Button>
+        </div>
       </div>
       <canvas
         ref={canvasRef}

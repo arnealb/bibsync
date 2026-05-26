@@ -7,6 +7,8 @@ import { Send } from "lucide-react";
 import { GifPicker } from "@/components/chat/gif-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { toggleLeaderboardCheated } from "@/app/_actions/games";
+import { setAutopilot } from "@/lib/games/snake/autopilot";
 import { copy } from "@/lib/copy";
 import { applyRainbow } from "@/lib/rainbow";
 import {
@@ -15,9 +17,11 @@ import {
 } from "@/lib/validation/messages";
 
 export function ChatInput({
+  roomId,
   onSend,
   pending,
 }: {
+  roomId: string;
   onSend: (content: string) => void;
   pending: boolean;
 }) {
@@ -37,6 +41,28 @@ export function ChatInput({
     if (command === "/boobs") {
       applyRainbow(false);
       toast.success(copy.chat.rainbowOff);
+      setValue("");
+      return;
+    }
+    // Hidden: /cheatcodes activates the Snake autopilot, /cheatcodes-stop ends it.
+    if (command === "/cheatcodes" || command === "/cheatcodes-stop") {
+      const on = command === "/cheatcodes";
+      setAutopilot(on);
+      toast.success(on ? copy.chat.snakeBotOn : copy.chat.snakeBotOff);
+      setValue("");
+      return;
+    }
+    // /honest flips the shared leaderboard view for the whole room.
+    if (command === "/honest") {
+      void toggleLeaderboardCheated(roomId).then((result) => {
+        if (!result.ok) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success(
+          result.showCheated ? copy.chat.boardAllOn : copy.chat.boardHonestOn,
+        );
+      });
       setValue("");
       return;
     }
