@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 
 import { DeleteRoom } from "@/components/rooms/settings/delete-room";
 import { MemberList } from "@/components/rooms/settings/member-list";
@@ -43,18 +41,10 @@ export default async function RoomSettingsPage({ params }: SettingsPageProps) {
   }));
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
-      <Link
-        href={`/app/rooms/${id}`}
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        {access.room.name}
-      </Link>
-
-      <h1 className="text-2xl font-bold tracking-tight">
+    <div className="mx-auto max-w-2xl space-y-6">
+      <h2 className="text-lg font-semibold tracking-tight">
         {copy.rooms.settings.title}
-      </h1>
+      </h2>
 
       <Card>
         <CardHeader>

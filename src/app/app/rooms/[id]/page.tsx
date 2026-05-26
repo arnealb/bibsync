@@ -1,19 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { ChatPanel } from "@/components/chat/chat-panel";
 import { InstantBreakPanel } from "@/components/instant-break/instant-break-panel";
 import { PresenceSidebar } from "@/components/presence/presence-sidebar";
 import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
-import { getRoomReactions } from "@/lib/chat/reactions-queries";
 import { copy } from "@/lib/copy";
 import {
   getActiveInstantBreak,
   getRecentPushes,
 } from "@/lib/instant-break/queries";
 import type { MemberMap } from "@/lib/members";
-import { getRoomMessages } from "@/lib/messages/queries";
 import { getRoomPresence } from "@/lib/presence/queries";
 import { getRoomComments } from "@/lib/proposals/comments-queries";
 import { getRoomProposals } from "@/lib/proposals/queries";
@@ -36,25 +33,15 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [
-    members,
-    proposalsData,
-    presenceRows,
-    messagesData,
-    comments,
-    reactions,
-    activeBreak,
-    recentPushes,
-  ] = await Promise.all([
-    getRoomMembers(id),
-    getRoomProposals(id),
-    getRoomPresence(id),
-    getRoomMessages(id),
-    getRoomComments(id),
-    getRoomReactions(id),
-    getActiveInstantBreak(id),
-    getRecentPushes(id),
-  ]);
+  const [members, proposalsData, presenceRows, comments, activeBreak, recentPushes] =
+    await Promise.all([
+      getRoomMembers(id),
+      getRoomProposals(id),
+      getRoomPresence(id),
+      getRoomComments(id),
+      getActiveInstantBreak(id),
+      getRecentPushes(id),
+    ]);
 
   const memberMap: MemberMap = Object.fromEntries(
     members.map((member) => [
@@ -73,50 +60,34 @@ export default async function RoomPage({ params }: RoomPageProps) {
   }));
 
   return (
-    <RoomDashboard
-      roomId={access.room.id}
-      roomName={access.room.name}
-      roomDescription={access.room.description}
-      joinCode={access.room.join_code}
-      isOwner={access.isOwner}
-      memberCount={members.length}
-      statusSlot={
-        <InstantBreakPanel
-          roomId={access.room.id}
-          userId={access.userId}
-          members={memberMap}
-          initialActiveBreak={activeBreak}
-          initialPushes={recentPushes}
-        />
-      }
-      breaksSlot={
-        <ProposalsPanel
-          roomId={access.room.id}
-          userId={access.userId}
-          members={memberMap}
-          initialProposals={proposalsData.proposals}
-          initialVotes={proposalsData.votes}
-          initialComments={comments}
-        />
-      }
-      presenceSlot={
-        <PresenceSidebar
-          roomId={access.room.id}
-          userId={access.userId}
-          members={memberOptions}
-          initialPresence={presenceRows}
-        />
-      }
-      chatSlot={
-        <ChatPanel
-          roomId={access.room.id}
-          userId={access.userId}
-          members={memberMap}
-          initialMessages={messagesData.messages}
-          initialHasMore={messagesData.hasMore}
-          initialReactions={reactions}
-        />
-      }
-    />
+    <div className="space-y-4">
+      <InstantBreakPanel
+        roomId={access.room.id}
+        userId={access.userId}
+        members={memberMap}
+        initialActiveBreak={activeBreak}
+        initialPushes={recentPushes}
+      />
+      <RoomDashboard
+        breaksSlot={
+          <ProposalsPanel
+            roomId={access.room.id}
+            userId={access.userId}
+            members={memberMap}
+            initialProposals={proposalsData.proposals}
+            initialVotes={proposalsData.votes}
+            initialComments={comments}
+          />
+        }
+        presenceSlot={
+          <PresenceSidebar
+            roomId={access.room.id}
+            userId={access.userId}
+            members={memberOptions}
+            initialPresence={presenceRows}
+          />
+        }
+      />
+    </div>
   );
 }

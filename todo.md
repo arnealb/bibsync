@@ -12,8 +12,19 @@ unchecked item top-to-bottom.
       test-omgeving met seed-accounts.
 - [x] **"Winnaar"-badge** — meest-gestemde optie per slot + per dag-groep krijgt
       een groene "🏆 Beslist"-badge (`pickWinnerId`, gewogen met de joke-stem).
+- [x] **Aparte chatpagina + games-pagina per kamer** — chat verhuist naar
+      `/app/rooms/[id]/chat`, nieuwe sub-tabs (Overzicht/Chat/Eten/Games),
+      Snake als eerste spel met per-kamer leaderboard
+      (`game_scores` tabel + RLS). 13 nieuwe unit-tests + 3 e2e auth-gates.
 
 ## Now
+
+- [ ] **Snake-polish (post-MVP)** — drie kleine vervolgjes uit de holistic
+      review: (a) `getRoomLeaderboard` server-side aggregeren (RPC of view)
+      i.p.v. alle rijen ophalen, (b) bij eindscore = 0 een korte info-toast
+      i.p.v. stille no-op, (c) `myBest` na elke succesvolle submit lokaal
+      bijwerken zodat "Nieuwe high score" niet ten onrechte triggert binnen
+      één sessie.
 
 - [ ] **Emoji-reacties op chatberichten** (👍❤️😂) — los van de gewone reacties,
       lichtgewicht.

@@ -471,6 +471,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      game_scores: {
+        Row: {
+          id: string;
+          room_id: string;
+          user_id: string;
+          game_key: string;
+          score: number;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          user_id: string;
+          game_key: string;
+          score: number;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          user_id?: string;
+          game_key?: string;
+          score?: number;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -517,3 +544,4 @@ export type InstantBreak =
   Database["public"]["Tables"]["instant_breaks"]["Row"];
 export type PokerTableRow =
   Database["public"]["Tables"]["poker_tables"]["Row"];
+export type GameScore = Database["public"]["Tables"]["game_scores"]["Row"];

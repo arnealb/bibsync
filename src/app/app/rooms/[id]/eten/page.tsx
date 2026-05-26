@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 
 import { FoodPanel } from "@/components/food/food-panel";
 import { copy } from "@/lib/copy";
@@ -44,16 +42,11 @@ export default async function FoodPage({ params }: FoodPageProps) {
   );
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
-      <Link
-        href={`/app/rooms/${id}`}
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        {access.room.name}
-      </Link>
+    <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{copy.food.title}</h1>
+        <h2 className="text-lg font-semibold tracking-tight">
+          {copy.food.title}
+        </h2>
         <p className="text-sm text-muted-foreground">{copy.food.subtitle}</p>
       </div>
       <FoodPanel

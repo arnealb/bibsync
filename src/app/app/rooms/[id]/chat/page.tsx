@@ -1,42 +1,37 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { PokerPanel } from "@/components/poker/poker-panel";
+import { ChatPanel } from "@/components/chat/chat-panel";
+import { getRoomReactions } from "@/lib/chat/reactions-queries";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
-import { getMyHoleCards, getPokerTable } from "@/lib/poker/queries";
+import { getRoomMessages } from "@/lib/messages/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
-interface PokerPageProps {
+interface ChatPageProps {
   params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({
   params,
-}: PokerPageProps): Promise<Metadata> {
+}: ChatPageProps): Promise<Metadata> {
   const { id } = await params;
   const access = await requireRoomAccess(id);
   return {
-    title: access
-      ? `${copy.poker.title} · ${access.room.name}`
-      : copy.poker.title,
+    title: access ? `${copy.chat.title} · ${access.room.name}` : copy.chat.title,
   };
 }
 
-export default async function PokerPage({ params }: PokerPageProps) {
+export default async function ChatPage({ params }: ChatPageProps) {
   const { id } = await params;
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [members, table] = await Promise.all([
+  const [members, messagesData, reactions] = await Promise.all([
     getRoomMembers(id),
-    getPokerTable(id),
+    getRoomMessages(id),
+    getRoomReactions(id),
   ]);
-
-  const initialHand =
-    table && table.status !== "waiting"
-      ? await getMyHoleCards(id, table.handNo, access.userId)
-      : null;
 
   const memberMap: MemberMap = Object.fromEntries(
     members.map((member) => [
@@ -52,16 +47,16 @@ export default async function PokerPage({ params }: PokerPageProps) {
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-semibold tracking-tight">
-          {copy.poker.title}
+          {copy.chat.title}
         </h2>
-        <p className="text-sm text-muted-foreground">{copy.poker.subtitle}</p>
       </div>
-      <PokerPanel
-        roomId={id}
+      <ChatPanel
+        roomId={access.room.id}
         userId={access.userId}
         members={memberMap}
-        initialState={table}
-        initialHand={initialHand}
+        initialMessages={messagesData.messages}
+        initialHasMore={messagesData.hasMore}
+        initialReactions={reactions}
       />
     </div>
   );
