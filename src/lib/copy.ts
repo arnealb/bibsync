@@ -184,6 +184,7 @@ export const copy = {
       chat: "Chat",
       food: "Eten",
       games: "Games",
+      steps: "Stappen",
     },
     navLabel: "Sectie-navigatie",
   },
@@ -324,6 +325,53 @@ export const copy = {
     won: (score: number) => `Bord leeg! Score ${score} 🎉`,
     seconds: (s: number) => `${s}s`,
     left: (n: number) => `${n} over`,
+  },
+  steps: {
+    title: "Stappen tijdens de pauze",
+    subtitle:
+      "Tel je stappen tijdens een wandelpauze en klim in de ranglijst.",
+    start: "Start met tellen",
+    stop: "Stop & opslaan",
+    saving: "Opslaan…",
+    counting: "Aan het tellen — steek je telefoon op zak en wandel.",
+    hint: "Houd deze pagina open tijdens je pauze. We tellen via de bewegingssensor van je telefoon.",
+    saved: (n: number) => `${n} stappen opgeslagen! 👟`,
+    denied:
+      "Geen toegang tot de bewegingssensor. Sta beweging & oriëntatie toe in je browserinstellingen.",
+    unsupported:
+      "Je toestel of browser ondersteunt de stappenteller niet. Gebruik de Apple Health-koppeling hieronder.",
+    board: {
+      title: "Ranglijst",
+      today: "Vandaag",
+      allTime: "Aller tijden",
+      empty: "Nog niemand heeft stappen geteld.",
+      unit: (n: number) => n.toLocaleString("nl-BE"),
+    },
+    health: {
+      title: "Koppel met Apple Health (optioneel)",
+      intro:
+        "Liever je échte Health-stappen? Maak een Apple Shortcut die je stappen naar BibSync stuurt.",
+      noService:
+        "Health-koppeling is niet beschikbaar (server niet geconfigureerd).",
+      tokenLabel: "Jouw persoonlijke token",
+      generate: "Genereer token",
+      regenerate: "Nieuwe token",
+      noToken: "Genereer eerst een token om je shortcut in te stellen.",
+      copy: "Kopiëren",
+      copied: "Gekopieerd ✓",
+      endpointLabel: "Endpoint (POST)",
+      bodyLabel: "JSON-body (vervang het stappen-getal)",
+      warning:
+        "Deel je token met niemand — wie hem heeft, kan stappen op jouw naam insturen.",
+      steps: [
+        "Open de Opdrachten-app (Shortcuts) op je iPhone en maak een nieuwe opdracht.",
+        "Voeg 'Zoek gezondheidsmonsters' toe: type Stappen, periode Vandaag.",
+        "Voeg 'Statistiek berekenen' toe met bewerking Som — zo krijg je je totaal.",
+        "Voeg 'Inhoud van URL ophalen' toe: methode POST, met de endpoint hierboven.",
+        "Zet de JSON-body zoals hieronder en vervang het stappen-getal door het resultaat uit de vorige stap.",
+        "Bewaar de opdracht. Start ze na je pauze, of automatiseer ze dagelijks.",
+      ],
+    },
   },
   proposals: {
     title: "Pauzevoorstellen",

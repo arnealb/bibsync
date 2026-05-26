@@ -1,5 +1,9 @@
 import { awardBibcoins } from "@/lib/bibcoins/award";
-import { DAILY_CHAT_THRESHOLD, REWARD } from "@/lib/bibcoins/config";
+import {
+  DAILY_CHAT_THRESHOLD,
+  REWARD,
+  STEPS_REWARD_DAILY_CAP_THOUSANDS,
+} from "@/lib/bibcoins/config";
 import { unlockAchievement } from "@/lib/bibcoins/unlock";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayInBrussels } from "@/lib/time";
@@ -82,4 +86,37 @@ export async function earnFromPetConnect(userId: string): Promise<void> {
     "petconnect_daily",
     todayInBrussels(),
   );
+}
+
+/**
+ * Steps walked during breaks earn bibcoins per full 1000 of the user's *daily*
+ * total (summed across rooms), capped per day. Idempotent: each 1000-step
+ * milestone pays out once, so calling this after every saved session is safe.
+ */
+export async function earnFromSteps(userId: string): Promise<void> {
+  await unlockAchievement(userId, "first_steps");
+
+  const admin = createAdminClient();
+  if (!admin) return;
+
+  const today = todayInBrussels();
+  const { data } = await admin
+    .from("step_sessions")
+    .select("steps")
+    .eq("user_id", userId)
+    .eq("recorded_for", today);
+
+  const totalToday = (data ?? []).reduce(
+    (sum: number, row: { steps: number }) => sum + row.steps,
+    0,
+  );
+  if (totalToday >= 10_000) await unlockAchievement(userId, "step_master");
+
+  const milestones = Math.min(
+    Math.floor(totalToday / 1000),
+    STEPS_REWARD_DAILY_CAP_THOUSANDS,
+  );
+  for (let k = 1; k <= milestones; k++) {
+    await awardBibcoins(userId, REWARD.stepsPer1000, "steps", `${today}:${k}`);
+  }
 }

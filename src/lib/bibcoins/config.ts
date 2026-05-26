@@ -12,7 +12,12 @@ export const REWARD = {
   snakeBestPerPoint: 1,
   /** Clearing a Pet Connect board (once per day). */
   petConnectDaily: 30,
+  /** Per full 1000 steps of a user's daily total (capped, see below). */
+  stepsPer1000: 10,
 } as const;
 
 /** Messages needed in one day for the daily-chat reward. */
 export const DAILY_CHAT_THRESHOLD = 20;
+
+/** Max thousands of daily steps that earn bibcoins (anti-abuse cap). */
+export const STEPS_REWARD_DAILY_CAP_THOUSANDS = 20;

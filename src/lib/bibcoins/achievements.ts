@@ -73,6 +73,18 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: "Ruim een volledig Pet Connect-bord leeg.",
     reward: 30,
   },
+  {
+    id: "first_steps",
+    title: "Eerste stappen",
+    description: "Tel stappen tijdens een pauze.",
+    reward: 25,
+  },
+  {
+    id: "step_master",
+    title: "Stappenteller",
+    description: "Zet 10.000 stappen op één dag.",
+    reward: 100,
+  },
 ];
 
 export const ACHIEVEMENT_BY_ID = new Map(

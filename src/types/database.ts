@@ -678,6 +678,54 @@ export interface Database {
         };
         Relationships: [];
       };
+      step_sessions: {
+        Row: {
+          id: string;
+          room_id: string;
+          user_id: string;
+          steps: number;
+          source: string;
+          recorded_for: string;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          user_id: string;
+          steps: number;
+          source?: string;
+          recorded_for?: string;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          user_id?: string;
+          steps?: number;
+          source?: string;
+          recorded_for?: string;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      health_tokens: {
+        Row: {
+          user_id: string;
+          token: string;
+          created_at: Timestamp;
+        };
+        Insert: {
+          user_id: string;
+          token: string;
+          created_at?: Timestamp;
+        };
+        Update: {
+          user_id?: string;
+          token?: string;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -756,3 +804,7 @@ export type UserCosmetic =
 export type UserLoadout = Database["public"]["Tables"]["user_loadout"]["Row"];
 export type UserAchievement =
   Database["public"]["Tables"]["user_achievements"]["Row"];
+export type StepSession =
+  Database["public"]["Tables"]["step_sessions"]["Row"];
+export type HealthToken =
+  Database["public"]["Tables"]["health_tokens"]["Row"];
