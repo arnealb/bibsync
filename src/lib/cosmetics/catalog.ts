@@ -1,4 +1,11 @@
-export type CosmeticType = "frame" | "color" | "badge" | "accessory" | "pet";
+export type CosmeticType =
+  | "frame"
+  | "color"
+  | "badge"
+  | "accessory"
+  | "pet"
+  | "title"
+  | "effect";
 
 export interface CosmeticItem {
   id: string;
@@ -9,6 +16,8 @@ export interface CosmeticItem {
    * frame  → ring colour (hex) or "rainbow"
    * color  → name text colour (hex)
    * badge/accessory/pet → an emoji
+   * title  → the flair text shown next to your name
+   * effect → an animated name-effect key (see lib/cosmetics/effects)
    */
   value: string;
 }
@@ -20,6 +29,8 @@ export const TYPE_COLUMN: Record<CosmeticType, string> = {
   badge: "badge",
   accessory: "accessory",
   pet: "pet",
+  title: "title",
+  effect: "effect",
 };
 
 /** Cosmetic catalogue — extend freely; ids are stable keys. */
@@ -52,11 +63,28 @@ export const COSMETICS: CosmeticItem[] = [
   { id: "pet_cat", type: "pet", name: "Kat", price: 200, value: "🐱" },
   { id: "pet_dog", type: "pet", name: "Hond", price: 200, value: "🐶" },
   { id: "pet_dragon", type: "pet", name: "Draak", price: 400, value: "🐉" },
+
+  // ── Premium (2k+) ──────────────────────────────────────────────────────
+  // Titles: a flair shown next to your name in "Wie is er?". Pure flex.
+  { id: "title_goat", type: "title", name: "GOAT", price: 2000, value: "🐐 GOAT" },
+  { id: "title_brein", type: "title", name: "Brein", price: 2000, value: "🧠 Brein" },
+  { id: "title_rijkaard", type: "title", name: "Rijkaard", price: 2500, value: "🤑 Rijkaard" },
+  { id: "title_sigma", type: "title", name: "Sigma", price: 3000, value: "💀 Sigma" },
+  { id: "title_prof", type: "title", name: "Professor", price: 4000, value: "🎓 Professor" },
+  { id: "title_legende", type: "title", name: "Legende", price: 6000, value: "👑 Legende" },
+
+  // Name effects: animated styling on your displayed name.
+  { id: "fx_glow", type: "effect", name: "Paarse glow", price: 2500, value: "glow" },
+  { id: "fx_gold", type: "effect", name: "Gouden glans", price: 3000, value: "gold" },
+  { id: "fx_rainbow", type: "effect", name: "Regenboog-naam", price: 4000, value: "rainbow" },
+  { id: "fx_fire", type: "effect", name: "Vurige naam", price: 5000, value: "fire" },
 ];
 
 export const COSMETIC_BY_ID = new Map(COSMETICS.map((c) => [c.id, c]));
 
 export const COSMETIC_TYPES: CosmeticType[] = [
+  "title",
+  "effect",
   "frame",
   "color",
   "badge",

@@ -135,6 +135,9 @@ teammate merge, so the sequence jumps `0011 → 0014`):
     optional geofence (`lat`/`lng`/`radius_m`, default 150m); presence rows get
     `at_location` + `location_checked_at`. No new RLS (members already update
     their own presence row; owners/admins their room).
+23. `0030_loadout_title_effect.sql` — two premium cosmetic slots on
+    `user_loadout`: `title` (flair text next to your name) and `effect`
+    (animated name styling). Catalogue/prices in `src/lib/cosmetics/catalog.ts`.
 
 **RLS recursion is avoided with `SECURITY DEFINER` helpers**
 (`is_room_member`, `is_room_owner`, `can_access_proposal`, `is_admin`): they

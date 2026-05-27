@@ -632,6 +632,8 @@ export interface Database {
           badge: string | null;
           accessory: string | null;
           pet: string | null;
+          title: string | null;
+          effect: string | null;
           updated_at: Timestamp;
         };
         Insert: {
@@ -641,6 +643,8 @@ export interface Database {
           badge?: string | null;
           accessory?: string | null;
           pet?: string | null;
+          title?: string | null;
+          effect?: string | null;
           updated_at?: Timestamp;
         };
         Update: {
@@ -650,6 +654,8 @@ export interface Database {
           badge?: string | null;
           accessory?: string | null;
           pet?: string | null;
+          title?: string | null;
+          effect?: string | null;
           updated_at?: Timestamp;
         };
         Relationships: [];

@@ -12,7 +12,9 @@ import {
   cosmeticsByType,
   type CosmeticItem,
 } from "@/lib/cosmetics/catalog";
+import { effectClassName } from "@/lib/cosmetics/effects";
 import { copy } from "@/lib/copy";
+import { cn } from "@/lib/utils";
 import type { UserLoadout } from "@/types/database";
 
 const RAINBOW =
@@ -33,6 +35,20 @@ function Preview({ item }: { item: CosmeticItem }) {
     return (
       <span className="text-lg font-bold" style={{ color: item.value }}>
         Aa
+      </span>
+    );
+  }
+  if (item.type === "effect") {
+    return (
+      <span className={cn("text-lg font-bold", effectClassName(item.value))}>
+        Aa
+      </span>
+    );
+  }
+  if (item.type === "title") {
+    return (
+      <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap">
+        {item.value}
       </span>
     );
   }

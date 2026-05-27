@@ -7,6 +7,8 @@ export interface ResolvedLoadout {
   badge: CosmeticItem | null;
   accessory: CosmeticItem | null;
   pet: CosmeticItem | null;
+  title: CosmeticItem | null;
+  effect: CosmeticItem | null;
 }
 
 function itemOrNull(id: string | null | undefined): CosmeticItem | null {
@@ -23,6 +25,8 @@ export function resolveLoadout(
     badge: itemOrNull(loadout?.badge),
     accessory: itemOrNull(loadout?.accessory),
     pet: itemOrNull(loadout?.pet),
+    title: itemOrNull(loadout?.title),
+    effect: itemOrNull(loadout?.effect),
   };
 }
 
@@ -32,4 +36,6 @@ export const EMPTY_LOADOUT: ResolvedLoadout = {
   badge: null,
   accessory: null,
   pet: null,
+  title: null,
+  effect: null,
 };

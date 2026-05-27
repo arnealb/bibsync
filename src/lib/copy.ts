@@ -755,6 +755,8 @@ export const copy = {
       badge: "Badges",
       accessory: "Accessoires",
       pet: "Pets",
+      title: "✨ Titels (premium)",
+      effect: "🌈 Naam-effecten (premium)",
     },
   },
 } as const;

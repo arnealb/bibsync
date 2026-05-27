@@ -97,6 +97,8 @@ export async function equipCosmetic(input: {
     badge: existing?.badge ?? null,
     accessory: existing?.accessory ?? null,
     pet: existing?.pet ?? null,
+    title: existing?.title ?? null,
+    effect: existing?.effect ?? null,
     updated_at: new Date().toISOString(),
   };
   merged[TYPE_COLUMN[type]] = itemId;

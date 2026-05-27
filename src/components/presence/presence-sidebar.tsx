@@ -8,6 +8,7 @@ import { LocationReporter } from "@/components/presence/location-reporter";
 import { StatusControl } from "@/components/presence/status-control";
 import { UserAvatar } from "@/components/user-avatar";
 import { usePresenceRealtime } from "@/hooks/use-presence-realtime";
+import { effectClassName } from "@/lib/cosmetics/effects";
 import type { ResolvedLoadout } from "@/lib/cosmetics/resolve";
 import { copy } from "@/lib/copy";
 import { PRESENCE_EMOJI } from "@/lib/presence/display";
@@ -153,17 +154,27 @@ export function PresenceSidebar({
                   fallbackClassName="text-[11px]"
                   loadout={member.loadout}
                 />
-                <span
-                  className="truncate text-sm"
-                  style={
-                    member.loadout?.color
-                      ? { color: member.loadout.color.value }
-                      : undefined
-                  }
-                >
-                  {member.name}
-                  {member.id === userId && (
-                    <span className="text-muted-foreground"> ({copy.rooms.you})</span>
+                <span className="flex min-w-0 items-center gap-1">
+                  <span
+                    className={cn(
+                      "truncate text-sm",
+                      effectClassName(member.loadout?.effect?.value),
+                    )}
+                    style={
+                      member.loadout?.color && !member.loadout?.effect
+                        ? { color: member.loadout.color.value }
+                        : undefined
+                    }
+                  >
+                    {member.name}
+                    {member.id === userId && (
+                      <span className="text-muted-foreground"> ({copy.rooms.you})</span>
+                    )}
+                  </span>
+                  {member.loadout?.title && (
+                    <span className="shrink-0 rounded bg-muted px-1 text-[10px] font-semibold whitespace-nowrap">
+                      {member.loadout.title.value}
+                    </span>
                   )}
                 </span>
               </div>
