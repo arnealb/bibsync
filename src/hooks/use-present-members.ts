@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { usePresenceRealtime } from "@/hooks/use-presence-realtime";
-import { locationStatus } from "@/lib/presence/location";
+import { isPresent, presenceVerdict } from "@/lib/presence/present";
 import type { Presence } from "@/types/database";
 
 /** Module-scope clock read so render stays pure (no Date.now in render). */
@@ -19,6 +19,7 @@ function nowMs(): number {
 export function usePresentMembers(
   roomId: string,
   initial: Presence[],
+  today: string,
 ): Set<string> {
   const [presence, setPresence] = useState<Record<string, Presence>>(() =>
     Object.fromEntries(initial.map((row) => [row.user_id, row])),
@@ -49,8 +50,8 @@ export function usePresentMembers(
     const ids = new Set<string>();
     if (clock === 0) return ids;
     for (const [userId, row] of Object.entries(presence)) {
-      if (locationStatus(row, clock) === "here") ids.add(userId);
+      if (isPresent(presenceVerdict(row, today, clock))) ids.add(userId);
     }
     return ids;
-  }, [presence, clock]);
+  }, [presence, clock, today]);
 }

@@ -17,6 +17,7 @@ import { getRoomPresence } from "@/lib/presence/queries";
 import { getRoomComments } from "@/lib/proposals/comments-queries";
 import { getRoomPlaces, getRoomProposals } from "@/lib/proposals/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
+import { todayInBrussels } from "@/lib/time";
 
 interface RoomPageProps {
   params: Promise<{ id: string }>;
@@ -34,6 +35,8 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const { id } = await params;
   const access = await requireRoomAccess(id);
   if (!access) notFound();
+
+  const today = todayInBrussels();
 
   const [
     members,
@@ -91,6 +94,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
             initialComments={comments}
             initialPlaces={places}
             initialPresence={presenceRows}
+            today={today}
           />
         }
         presenceSlot={
@@ -101,6 +105,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
             initialPresence={presenceRows}
             hasLocation={access.room.lat != null && access.room.lng != null}
             canManage={access.canManage}
+            today={today}
           />
         }
       />

@@ -29,3 +29,11 @@ export const reportLocationSchema = z.object({
 });
 
 export type ReportLocationInput = z.infer<typeof reportLocationSchema>;
+
+/** Manual daily "I'm here today" check-in (alternative to location). */
+export const checkInSchema = z.object({
+  roomId: z.string().uuid(),
+  checkedIn: z.boolean(),
+});
+
+export type CheckInInput = z.infer<typeof checkInSchema>;

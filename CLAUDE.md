@@ -138,6 +138,8 @@ teammate merge, so the sequence jumps `0011 → 0014`):
 23. `0030_loadout_title_effect.sql` — two premium cosmetic slots on
     `user_loadout`: `title` (flair text next to your name) and `effect`
     (animated name styling). Catalogue/prices in `src/lib/cosmetics/catalog.ts`.
+24. `0031_presence_checkin.sql` — `presence.checked_in_on` (date): manual daily
+    "I'm here today" check-in, an alternative to location presence.
 
 **RLS recursion is avoided with `SECURITY DEFINER` helpers**
 (`is_room_member`, `is_room_owner`, `can_access_proposal`, `is_admin`): they
@@ -219,8 +221,13 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   (`at_location` + `location_checked_at`) — never raw coordinates. The sidebar
   shows "📍 ter plaatse / niet ter plaatse" via `locationStatus` (fresh ≤10 min,
   else unknown) and ranks confirmed-present members first. Manual status is
-  untouched; location reports never bump `updated_at`. **Vote tallies are
-  present-scoped:** when anyone is confirmed present, proposal/slot cards show
+  untouched; location reports never bump `updated_at`. **Alternative for people
+  who won't share location:** a manual daily **check-in** (`setCheckIn` →
+  `presence.checked_in_on` = today's Brussels date) also counts as present.
+  `presenceVerdict` (in `lib/presence/present.ts`) combines both: `here`
+  (location) / `checked-in` (manual today) → present; `away` / `unknown`
+  otherwise. **Vote tallies are present-scoped:** when anyone is present (by
+  either signal), proposal/slot cards show
   `<present yes>/<present total>` etc. (`presentTally` + `usePresentMembers`) —
   only people actually at the room count; with no present data they fall back
   to the weighted all-votes tally.

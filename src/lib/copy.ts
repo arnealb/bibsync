@@ -584,6 +584,13 @@ export const copy = {
       notSet: "📍 Geen locatie ingesteld voor deze room.",
       notSetManage: "Stel ze in bij instellingen om aanwezigheid te meten.",
     },
+    checkIn: {
+      prompt: "Vandaag in de bib?",
+      action: "Ik ben er",
+      done: "✓ Aanwezig vandaag",
+      undo: "Toch niet",
+      here: "✓ aanwezig",
+    },
   },
   chat: {
     title: "Chat",

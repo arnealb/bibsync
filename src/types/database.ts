@@ -222,6 +222,7 @@ export interface Database {
           updated_at: Timestamp;
           at_location: boolean | null;
           location_checked_at: Timestamp | null;
+          checked_in_on: string | null;
         };
         Insert: {
           room_id: string;
@@ -231,6 +232,7 @@ export interface Database {
           updated_at?: Timestamp;
           at_location?: boolean | null;
           location_checked_at?: Timestamp | null;
+          checked_in_on?: string | null;
         };
         Update: {
           room_id?: string;
@@ -240,6 +242,7 @@ export interface Database {
           updated_at?: Timestamp;
           at_location?: boolean | null;
           location_checked_at?: Timestamp | null;
+          checked_in_on?: string | null;
         };
         Relationships: [];
       };

@@ -60,6 +60,7 @@ interface ProposalsPanelProps {
   initialComments: ProposalComment[];
   initialPlaces: RoomPlace[];
   initialPresence: Presence[];
+  today: string;
 }
 
 export function ProposalsPanel({
@@ -71,6 +72,7 @@ export function ProposalsPanel({
   initialComments,
   initialPlaces,
   initialPresence,
+  today,
 }: ProposalsPanelProps) {
   const [proposals, setProposals] = useState(initialProposals);
   const [votes, setVotes] = useState(initialVotes);
@@ -81,8 +83,9 @@ export function ProposalsPanel({
   const [anchor, setAnchor] = useState(() => isoDatePlus(0));
   const [showEarlier, setShowEarlier] = useState(false);
   const [, startTransition] = useTransition();
-  // Members confirmed present at the room — vote tallies count only them.
-  const presentIds = usePresentMembers(roomId, initialPresence);
+  // Members present at the room (location-confirmed or checked in today) —
+  // vote tallies count only them.
+  const presentIds = usePresentMembers(roomId, initialPresence, today);
 
   // Re-evaluate visibility every minute so expired proposals drop off on their
   // own (one hour after they end) without needing a refresh.
