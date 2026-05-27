@@ -705,6 +705,27 @@ export interface Database {
         Update: { room_id?: string; full?: Record<string, unknown> };
         Relationships: [];
       };
+      roulette_tables: {
+        Row: {
+          room_id: string;
+          state: Record<string, unknown>;
+          version: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          room_id: string;
+          state: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          room_id?: string;
+          state?: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
       step_sessions: {
         Row: {
           id: string;

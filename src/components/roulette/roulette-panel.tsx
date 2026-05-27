@@ -1,18 +1,31 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { spinRoulette } from "@/app/_actions/roulette";
+import {
+  placeRouletteBet,
+  resolveRoulette,
+  startRouletteRound,
+  type RouletteActionResult,
+} from "@/app/_actions/roulette";
 import { RouletteWheel, rotationFor } from "@/components/roulette/roulette-wheel";
-import { Button } from "@/components/ui/button";
-import { colorOf, type Bet, type BetType } from "@/lib/roulette/engine";
+import { UserAvatar } from "@/components/user-avatar";
 import { copy } from "@/lib/copy";
+import type { MemberMap } from "@/lib/members";
+import { ROULETTE_CHIPS, ROULETTE_RESULT_MS } from "@/lib/roulette/config";
+import { colorOf, type BetType } from "@/lib/roulette/engine";
+import { useRouletteRealtime } from "@/hooks/use-roulette-realtime";
+import {
+  stakeFor,
+  type RouletteTable,
+} from "@/lib/roulette/table";
 import { cn } from "@/lib/utils";
 
-const CHIPS = [10, 50, 100, 500];
-const SPIN_MS = 4200;
+/** Module-scope clock read so render stays pure (no Date.now in render). */
+function now(): number {
+  return Date.now();
+}
 
 const CELL_COLOR: Record<string, string> = {
   red: "bg-red-600 hover:bg-red-500",
@@ -20,7 +33,7 @@ const CELL_COLOR: Record<string, string> = {
   green: "bg-emerald-700 hover:bg-emerald-600",
 };
 
-function betKey(type: BetType, value?: number): string {
+function spotKey(type: BetType, value?: number): string {
   return type === "straight" ? `s${value}` : type;
 }
 
@@ -49,7 +62,7 @@ function Spot({
     >
       {label}
       {amount > 0 && (
-        <span className="absolute -right-1 -top-1 flex min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-bold text-black tabular-nums shadow">
+        <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-bold text-black tabular-nums shadow">
           {amount}
         </span>
       )}
@@ -57,69 +70,111 @@ function Spot({
   );
 }
 
-export function RoulettePanel({ initialBalance }: { initialBalance: number }) {
-  const router = useRouter();
-  const [bets, setBets] = useState<Map<string, Bet>>(new Map());
-  const [chip, setChip] = useState(50);
+export function RoulettePanel({
+  roomId,
+  userId,
+  members,
+  initialState,
+  initialBalance,
+}: {
+  roomId: string;
+  userId: string;
+  members: MemberMap;
+  initialState: RouletteTable | null;
+  initialBalance: number;
+}) {
+  const [table, setTable] = useState<RouletteTable | null>(initialState);
   const [balance, setBalance] = useState(initialBalance);
+  const [chip, setChip] = useState<number>(50);
   const [rotation, setRotation] = useState(0);
-  const [spinning, setSpinning] = useState(false);
-  const [result, setResult] = useState<{ number: number; payout: number } | null>(
-    null,
-  );
-  const [, startAction] = useTransition();
+  const [nowTs, setNowTs] = useState(0);
+  const [pending, start] = useTransition();
 
-  const totalBet = [...bets.values()].reduce((s, b) => s + b.amount, 0);
-  const amountOn = (type: BetType, value?: number) =>
-    bets.get(betKey(type, value))?.amount ?? 0;
+  const animatedRound = useRef<number | null>(null);
+  const resolvedRound = useRef<number | null>(null);
+  const startedRound = useRef<number | null>(null);
 
-  function place(type: BetType, value?: number) {
-    if (spinning) return;
-    setResult(null);
-    setBets((prev) => {
-      const next = new Map(prev);
-      const key = betKey(type, value);
-      next.set(key, {
-        type,
-        value,
-        amount: (next.get(key)?.amount ?? 0) + chip,
-      });
-      return next;
-    });
-  }
-
-  function clear() {
-    if (!spinning) setBets(new Map());
-  }
-
-  function spin() {
-    const list = [...bets.values()];
-    if (list.length === 0 || spinning) return;
-    if (totalBet > balance) {
-      toast.error(copy.roulette.cantAfford);
-      return;
+  // Spin the wheel exactly once when a fresh result arrives (in the realtime
+  // handler, never in an effect/render).
+  useRouletteRealtime(roomId, (state) => {
+    setTable(state);
+    if (
+      state.phase === "result" &&
+      state.winningNumber != null &&
+      animatedRound.current !== state.roundNo
+    ) {
+      animatedRound.current = state.roundNo;
+      const n = state.winningNumber;
+      setRotation((r) => rotationFor(r, n));
     }
-    setSpinning(true);
-    setResult(null);
-    startAction(async () => {
-      const res = await spinRoulette(list);
-      if (!res.ok) {
-        toast.error(res.error);
-        setSpinning(false);
+  });
+
+  // Tick a clock for the countdown.
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTs(now()), 250);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const phase = table?.phase ?? "betting";
+  const endsAt = table?.bettingEndsAt ? Date.parse(table.bettingEndsAt) : null;
+  const roundNo = table?.roundNo ?? 0;
+  const secondsLeft =
+    endsAt != null && nowTs > 0 ? Math.max(0, Math.ceil((endsAt - nowTs) / 1000)) : null;
+
+  // When the timer is up, any client resolves the round (idempotent server-side).
+  useEffect(() => {
+    if (
+      phase === "betting" &&
+      endsAt != null &&
+      nowTs > 0 &&
+      nowTs >= endsAt &&
+      resolvedRound.current !== roundNo
+    ) {
+      resolvedRound.current = roundNo;
+      void resolveRoulette(roomId);
+    }
+  }, [phase, endsAt, nowTs, roundNo, roomId]);
+
+  // After showing the result, open the next round (idempotent server-side).
+  useEffect(() => {
+    if (phase !== "result" || startedRound.current === roundNo) return;
+    startedRound.current = roundNo;
+    const id = window.setTimeout(() => {
+      void startRouletteRound(roomId);
+    }, ROULETTE_RESULT_MS);
+    return () => window.clearTimeout(id);
+  }, [phase, roundNo, roomId]);
+
+  function run(fn: () => Promise<RouletteActionResult>) {
+    start(async () => {
+      const result = await fn();
+      if (!result.ok) {
+        toast.error(result.error);
         return;
       }
-      setRotation((r) => rotationFor(r, res.number));
-      window.setTimeout(() => {
-        setSpinning(false);
-        setResult({ number: res.number, payout: res.payout });
-        setBalance(res.balance);
-        setBets(new Map());
-        router.refresh();
-      }, SPIN_MS);
+      if (typeof result.balance === "number") setBalance(result.balance);
     });
   }
 
-  // Numbers laid out 3 rows × 12 cols (top row 3,6,…,36).
+  const bets = table?.bets ?? [];
+  const amountOn = (type: BetType, value?: number) =>
+    bets
+      .filter((b) => spotKey(b.type, b.value) === spotKey(type, value))
+      .reduce((sum, b) => sum + b.amount, 0);
+  const myStake = stakeFor(bets, userId);
+  const myResult = table?.results?.find((r) => r.userId === userId) ?? null;
+  const betting = phase === "betting";
+  const locked = !betting || secondsLeft === 0 || pending;
+
+  function place(type: BetType, value?: number) {
+    if (locked || chip > balance) {
+      if (chip > balance) toast.error(copy.roulette.cantAfford);
+      return;
+    }
+    run(() => placeRouletteBet({ roomId, bet: { type, value, amount: chip } }));
+  }
+
+  // Numbers laid out 3 rows × 12 cols (top row 3, 6, …, 36).
   const numbers = [0, 1, 2].flatMap((r) =>
     Array.from({ length: 12 }, (_, c) => c * 3 + (3 - r)),
   );
@@ -128,29 +183,71 @@ export function RoulettePanel({ initialBalance }: { initialBalance: number }) {
     <div className="space-y-5">
       <RouletteWheel rotation={rotation} />
 
+      {/* Status line */}
       <div className="flex items-center justify-between gap-2 text-sm">
         <span className="font-mono tabular-nums text-muted-foreground">
           {copy.bibcoins.balance(balance)}
         </span>
-        {result ? (
+        {phase === "result" && table?.winningNumber != null ? (
           <span
             className={cn(
               "font-medium",
-              result.payout > 0 ? "text-emerald-500" : "text-muted-foreground",
+              myResult && myResult.payout > 0
+                ? "text-emerald-500"
+                : "text-muted-foreground",
             )}
           >
-            {result.payout > 0
-              ? copy.roulette.resultWin(result.number, result.payout)
-              : copy.roulette.resultLose(result.number)}
+            {copy.roulette.winningNumber(table.winningNumber)} —{" "}
+            {myResult && myResult.payout > 0
+              ? copy.roulette.yourResultWin(myResult.payout)
+              : myStake > 0 || (myResult?.staked ?? 0) > 0
+                ? copy.roulette.yourResultLose
+                : ""}
+          </span>
+        ) : secondsLeft != null ? (
+          <span className="font-mono font-semibold tabular-nums text-amber-500">
+            {copy.roulette.bettingEndsIn(secondsLeft)}
           </span>
         ) : (
-          totalBet > 0 && (
-            <span className="font-mono tabular-nums">
-              {copy.roulette.totalBet(totalBet)}
-            </span>
-          )
+          <span className="text-muted-foreground">
+            {copy.roulette.waitingFirstBet}
+          </span>
         )}
       </div>
+
+      {phase === "result" &&
+        table?.results &&
+        table.results.length > 0 && (
+          <ul className="space-y-1 rounded-lg border p-2 text-sm">
+            {table.results.map((r) => (
+              <li key={r.userId} className="flex items-center gap-2">
+                <UserAvatar
+                  name={members[r.userId]?.name ?? "—"}
+                  avatarUrl={members[r.userId]?.avatarUrl}
+                  className="size-5"
+                  fallbackClassName="text-[9px]"
+                />
+                <span className="min-w-0 flex-1 truncate">
+                  {members[r.userId]?.name ?? "—"}
+                </span>
+                <span
+                  className={cn(
+                    "font-mono tabular-nums",
+                    r.payout > 0 ? "text-emerald-500" : "text-muted-foreground",
+                  )}
+                >
+                  {r.payout > 0 ? `+${r.payout}` : `−${r.staked}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+      {phase === "result" && (
+        <p className="text-center text-xs text-muted-foreground">
+          {copy.roulette.nextRound}
+        </p>
+      )}
 
       {/* Betting table */}
       <div className="overflow-x-auto">
@@ -159,7 +256,7 @@ export function RoulettePanel({ initialBalance }: { initialBalance: number }) {
             <Spot
               label="0"
               amount={amountOn("straight", 0)}
-              disabled={spinning}
+              disabled={locked}
               onClick={() => place("straight", 0)}
               className="w-8 shrink-0 self-stretch bg-emerald-700 hover:bg-emerald-600"
             />
@@ -169,7 +266,7 @@ export function RoulettePanel({ initialBalance }: { initialBalance: number }) {
                   key={n}
                   label={n}
                   amount={amountOn("straight", n)}
-                  disabled={spinning}
+                  disabled={locked}
                   onClick={() => place("straight", n)}
                   className={cn("h-9", CELL_COLOR[colorOf(n)])}
                 />
@@ -183,7 +280,7 @@ export function RoulettePanel({ initialBalance }: { initialBalance: number }) {
                 key={d}
                 label={copy.roulette.labels[d]}
                 amount={amountOn(d)}
-                disabled={spinning}
+                disabled={locked}
                 onClick={() => place(d)}
                 className="h-8 bg-muted/40"
               />
@@ -196,7 +293,7 @@ export function RoulettePanel({ initialBalance }: { initialBalance: number }) {
                 key={col}
                 label={copy.roulette.labels.column}
                 amount={amountOn(col)}
-                disabled={spinning}
+                disabled={locked}
                 onClick={() => place(col)}
                 className="h-8 bg-muted/40"
               />
@@ -204,12 +301,12 @@ export function RoulettePanel({ initialBalance }: { initialBalance: number }) {
           </div>
 
           <div className="grid grid-cols-6 gap-1">
-            <Spot label={copy.roulette.labels.low} amount={amountOn("low")} disabled={spinning} onClick={() => place("low")} className="h-8 bg-muted/40" />
-            <Spot label={copy.roulette.labels.even} amount={amountOn("even")} disabled={spinning} onClick={() => place("even")} className="h-8 bg-muted/40" />
-            <Spot label={copy.roulette.labels.red} amount={amountOn("red")} disabled={spinning} onClick={() => place("red")} className="h-8 bg-red-600 hover:bg-red-500" />
-            <Spot label={copy.roulette.labels.black} amount={amountOn("black")} disabled={spinning} onClick={() => place("black")} className="h-8 bg-neutral-900 hover:bg-neutral-800" />
-            <Spot label={copy.roulette.labels.odd} amount={amountOn("odd")} disabled={spinning} onClick={() => place("odd")} className="h-8 bg-muted/40" />
-            <Spot label={copy.roulette.labels.high} amount={amountOn("high")} disabled={spinning} onClick={() => place("high")} className="h-8 bg-muted/40" />
+            <Spot label={copy.roulette.labels.low} amount={amountOn("low")} disabled={locked} onClick={() => place("low")} className="h-8 bg-muted/40" />
+            <Spot label={copy.roulette.labels.even} amount={amountOn("even")} disabled={locked} onClick={() => place("even")} className="h-8 bg-muted/40" />
+            <Spot label={copy.roulette.labels.red} amount={amountOn("red")} disabled={locked} onClick={() => place("red")} className="h-8 bg-red-600 hover:bg-red-500" />
+            <Spot label={copy.roulette.labels.black} amount={amountOn("black")} disabled={locked} onClick={() => place("black")} className="h-8 bg-neutral-900 hover:bg-neutral-800" />
+            <Spot label={copy.roulette.labels.odd} amount={amountOn("odd")} disabled={locked} onClick={() => place("odd")} className="h-8 bg-muted/40" />
+            <Spot label={copy.roulette.labels.high} amount={amountOn("high")} disabled={locked} onClick={() => place("high")} className="h-8 bg-muted/40" />
           </div>
         </div>
       </div>
@@ -217,12 +314,12 @@ export function RoulettePanel({ initialBalance }: { initialBalance: number }) {
       {/* Chips */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-muted-foreground">{copy.roulette.chip}:</span>
-        {CHIPS.map((c) => (
+        {ROULETTE_CHIPS.map((c) => (
           <button
             key={c}
             type="button"
             onClick={() => setChip(c)}
-            disabled={spinning}
+            disabled={locked}
             className={cn(
               "size-9 rounded-full border-2 text-xs font-bold tabular-nums transition",
               chip === c
@@ -233,24 +330,11 @@ export function RoulettePanel({ initialBalance }: { initialBalance: number }) {
             {c}
           </button>
         ))}
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button
-          className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700"
-          disabled={spinning || totalBet === 0}
-          onClick={spin}
-        >
-          {spinning ? copy.roulette.spinning : copy.roulette.spin}
-        </Button>
-        <Button
-          variant="outline"
-          disabled={spinning || totalBet === 0}
-          onClick={clear}
-        >
-          {copy.roulette.clear}
-        </Button>
+        {myStake > 0 && (
+          <span className="ml-auto font-mono text-sm tabular-nums text-muted-foreground">
+            {copy.roulette.yourStake(myStake)}
+          </span>
+        )}
       </div>
     </div>
   );
