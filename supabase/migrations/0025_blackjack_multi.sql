@@ -19,7 +19,7 @@ create table if not exists public.blackjack_tables (
 
 create table if not exists public.blackjack_private (
   room_id uuid primary key references public.rooms(id) on delete cascade,
-  full    jsonb not null
+  state   jsonb not null
 );
 
 alter table public.blackjack_tables enable row level security;

@@ -78,16 +78,16 @@ async function loadOrCreate(
     );
     await admin
       .from("blackjack_private")
-      .upsert({ room_id: roomId, full: fresh }, { onConflict: "room_id" });
+      .upsert({ room_id: roomId, state: fresh }, { onConflict: "room_id" });
     return loadOrCreate(admin, roomId);
   }
 
   const priv = await admin
     .from("blackjack_private")
-    .select("full")
+    .select("state")
     .eq("room_id", roomId)
     .maybeSingle();
-  const full = (priv.data?.full as TableState | undefined) ?? initialTable();
+  const full = (priv.data?.state as TableState | undefined) ?? initialTable();
   return { full, version: existing.data.version };
 }
 
@@ -119,7 +119,7 @@ async function persist(
 
   await admin
     .from("blackjack_private")
-    .upsert({ room_id: roomId, full: next }, { onConflict: "room_id" });
+    .upsert({ room_id: roomId, state: next }, { onConflict: "room_id" });
   return true;
 }
 

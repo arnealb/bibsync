@@ -700,9 +700,9 @@ export interface Database {
         Relationships: [];
       };
       blackjack_private: {
-        Row: { room_id: string; full: Record<string, unknown> };
-        Insert: { room_id: string; full: Record<string, unknown> };
-        Update: { room_id?: string; full?: Record<string, unknown> };
+        Row: { room_id: string; state: Record<string, unknown> };
+        Insert: { room_id: string; state: Record<string, unknown> };
+        Update: { room_id?: string; state?: Record<string, unknown> };
         Relationships: [];
       };
       roulette_tables: {
