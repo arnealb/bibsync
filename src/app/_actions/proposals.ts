@@ -3,6 +3,7 @@
 import type { ActionResult } from "@/app/_actions/types";
 import { earnFromVote } from "@/lib/bibcoins/earn";
 import { copy } from "@/lib/copy";
+import { isUserPresent } from "@/lib/presence/queries";
 import { sendRoomPush, sendUserPush } from "@/lib/push/send";
 import { BREAK_SLOTS } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
@@ -41,6 +42,10 @@ export async function createProposal(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: copy.common.notAuthenticated };
+
+  if (!(await isUserPresent(parsed.data.roomId, user.id))) {
+    return { ok: false, error: copy.proposals.validation.notPresent };
+  }
 
   // One free-form proposal per time slot: reject a clash on date + start time
   // (slot suggestions are exempt — multiple people may prefer the same time).
@@ -137,6 +142,17 @@ export async function castVote(input: CastVoteInput): Promise<ActionResult> {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: copy.common.notAuthenticated };
 
+  // Voting requires being present — derive the room first to check.
+  const { data: proposal } = await supabase
+    .from("break_proposals")
+    .select("room_id, created_by")
+    .eq("id", parsed.data.proposalId)
+    .maybeSingle();
+  if (!proposal) return { ok: false, error: copy.proposals.votes.error };
+  if (!(await isUserPresent(proposal.room_id, user.id))) {
+    return { ok: false, error: copy.proposals.validation.notPresent };
+  }
+
   const { error } = await supabase.from("votes").upsert(
     {
       proposal_id: parsed.data.proposalId,
@@ -151,12 +167,7 @@ export async function castVote(input: CastVoteInput): Promise<ActionResult> {
     return { ok: false, error: copy.proposals.votes.error };
   }
 
-  const { data: proposal } = await supabase
-    .from("break_proposals")
-    .select("room_id, created_by")
-    .eq("id", parsed.data.proposalId)
-    .maybeSingle();
-  if (proposal) {
+  {
     const emoji = { yes: "👍", maybe: "🤔", no: "👎" }[parsed.data.vote];
     await sendUserPush(proposal.created_by, "votes", {
       title: copy.push.newVote,
@@ -207,6 +218,10 @@ export async function setSlotPreference(input: {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: copy.common.notAuthenticated };
+
+  if (!(await isUserPresent(parsed.data.roomId, user.id))) {
+    return { ok: false, error: copy.proposals.validation.notPresent };
+  }
 
   const destination = parsed.data.destination?.trim() || null;
   const isWalk = parsed.data.isWalk ?? false;

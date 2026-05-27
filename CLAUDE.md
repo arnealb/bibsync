@@ -226,8 +226,11 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   `presence.checked_in_on` = today's Brussels date) also counts as present.
   `presenceVerdict` (in `lib/presence/present.ts`) combines both: `here`
   (location) / `checked-in` (manual today) → present; `away` / `unknown`
-  otherwise. **Vote tallies are present-scoped:** when anyone is present (by
-  either signal), proposal/slot cards show
+  otherwise. **Only present members may propose/vote/comment** —
+  `isUserPresent` (server) gates `createProposal`/`castVote`/
+  `setSlotPreference`/`addProposalComment`; the panel disables the controls +
+  shows a hint otherwise. (Food voting on `/eten` is a separate stack, not
+  gated.) **Vote tallies are present-scoped:** cards show
   `<present yes>/<present total>` etc. (`presentTally` + `usePresentMembers`) —
   only people actually at the room count; with no present data they fall back
   to the weighted all-votes tally.

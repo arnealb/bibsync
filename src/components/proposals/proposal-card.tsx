@@ -60,6 +60,8 @@ interface ProposalCardProps {
   freeProposal?: boolean;
   /** Members currently present at the room; when set, tallies count only them. */
   presentIds?: Set<string>;
+  /** When false, voting/commenting is disabled (you're not present). */
+  canParticipate?: boolean;
   onVote: (value: VoteValue) => void;
   onDelete: () => void;
   onAddComment: (proposalId: string, content: string) => void;
@@ -76,6 +78,7 @@ export function ProposalCard({
   isWinner,
   freeProposal,
   presentIds,
+  canParticipate = true,
   onVote,
   onDelete,
   onAddComment,
@@ -184,6 +187,7 @@ export function ProposalCard({
               size="sm"
               className="gap-1"
               aria-pressed={ownVote === value}
+              disabled={!canParticipate}
               onClick={() => onVote(value)}
             >
               <span aria-hidden>{VOTE_EMOJI[value]}</span>
@@ -206,6 +210,7 @@ export function ProposalCard({
         comments={comments}
         members={members}
         userId={userId}
+        canComment={canParticipate}
         onAdd={onAddComment}
         onDelete={onDeleteComment}
       />

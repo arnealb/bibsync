@@ -22,6 +22,8 @@ interface ProposalCommentsProps {
   comments: CommentLike[];
   members: MemberMap;
   userId: string;
+  /** When false, the add-comment form is hidden (e.g. not present). */
+  canComment?: boolean;
   onAdd: (proposalId: string, content: string) => void;
   onDelete: (commentId: string) => void;
 }
@@ -31,6 +33,7 @@ export function ProposalComments({
   comments,
   members,
   userId,
+  canComment = true,
   onAdd,
   onDelete,
 }: ProposalCommentsProps) {
@@ -97,29 +100,31 @@ export function ProposalComments({
             </ul>
           )}
 
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              submit();
-            }}
-            className="flex items-center gap-2"
-          >
-            <Input
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-              maxLength={COMMENT_MAX_LENGTH}
-              placeholder={copy.proposals.comments.placeholder}
-              className="h-8"
-            />
-            <Button
-              type="submit"
-              size="icon-sm"
-              aria-label={copy.proposals.comments.send}
-              disabled={value.trim().length === 0}
+          {canComment && (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                submit();
+              }}
+              className="flex items-center gap-2"
             >
-              <Send />
-            </Button>
-          </form>
+              <Input
+                value={value}
+                onChange={(event) => setValue(event.target.value)}
+                maxLength={COMMENT_MAX_LENGTH}
+                placeholder={copy.proposals.comments.placeholder}
+                className="h-8"
+              />
+              <Button
+                type="submit"
+                size="icon-sm"
+                aria-label={copy.proposals.comments.send}
+                disabled={value.trim().length === 0}
+              >
+                <Send />
+              </Button>
+            </form>
+          )}
         </div>
       )}
     </div>

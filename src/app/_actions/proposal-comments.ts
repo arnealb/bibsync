@@ -2,6 +2,7 @@
 
 import type { ActionResult } from "@/app/_actions/types";
 import { copy } from "@/lib/copy";
+import { isUserPresent } from "@/lib/presence/queries";
 import { sendUserPush } from "@/lib/push/send";
 import { createClient } from "@/lib/supabase/server";
 import { addCommentSchema, type AddCommentInput } from "@/lib/validation/comments";
@@ -32,6 +33,10 @@ export async function addProposalComment(
     .eq("id", parsed.data.proposalId)
     .maybeSingle();
   if (!proposal) return { ok: false, error: copy.proposals.comments.error };
+
+  if (!(await isUserPresent(proposal.room_id, user.id))) {
+    return { ok: false, error: copy.proposals.validation.notPresent };
+  }
 
   const { data, error } = await supabase
     .from("proposal_comments")

@@ -84,8 +84,9 @@ export function ProposalsPanel({
   const [showEarlier, setShowEarlier] = useState(false);
   const [, startTransition] = useTransition();
   // Members present at the room (location-confirmed or checked in today) —
-  // vote tallies count only them.
+  // vote tallies count only them, and only they may propose/vote/comment.
   const presentIds = usePresentMembers(roomId, initialPresence, today);
+  const canParticipate = presentIds.has(userId);
 
   // Re-evaluate visibility every minute so expired proposals drop off on their
   // own (one hour after they end) without needing a refresh.
@@ -313,6 +314,7 @@ export function ProposalsPanel({
       userId={userId}
       places={initialPlaces}
       presentIds={presentIds}
+      canParticipate={canParticipate}
       onSetPreference={handleSetSlotPreference}
       onClearPreference={handleClearSlotPreference}
       onVote={handleVote}
@@ -334,6 +336,7 @@ export function ProposalsPanel({
       isWinner={proposal.id === winnerId}
       freeProposal
       presentIds={presentIds}
+      canParticipate={canParticipate}
       onVote={(value) => handleVote(proposal.id, value)}
       onDelete={() => handleDelete(proposal.id)}
       onAddComment={handleAddComment}
@@ -351,6 +354,12 @@ export function ProposalsPanel({
         onToday={() => setAnchor(isoDatePlus(0))}
       />
 
+      {!canParticipate && (
+        <p className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+          {copy.proposals.presentRequired}
+        </p>
+      )}
+
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-semibold">
@@ -360,7 +369,11 @@ export function ProposalsPanel({
             </span>
           </h2>
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger render={<Button size="sm" variant="outline" />}>
+            <DialogTrigger
+              render={
+                <Button size="sm" variant="outline" disabled={!canParticipate} />
+              }
+            >
               <Plus />
               {copy.proposals.new}
             </DialogTrigger>

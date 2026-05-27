@@ -554,7 +554,11 @@ export const copy = {
       noteTooLong: "Notitie mag max 200 tekens zijn.",
       slotTaken:
         "Er staat al een voorstel op dit tijdstip. Kies een ander moment.",
+      notPresent:
+        "Check eerst in (of deel je locatie) — alleen aanwezigen kunnen voorstellen en stemmen.",
     },
+    presentRequired:
+      "Check in of deel je locatie om voorstellen te plaatsen, te stemmen en te reageren.",
   },
   presence: {
     title: "Wie is er?",

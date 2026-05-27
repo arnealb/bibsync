@@ -43,6 +43,7 @@ interface SlotCardProps {
   userId: string;
   places: RoomPlace[];
   presentIds?: Set<string>;
+  canParticipate?: boolean;
   onSetPreference: (
     slotKey: string,
     date: string,
@@ -68,6 +69,7 @@ export function SlotCard({
   userId,
   places,
   presentIds,
+  canParticipate = true,
   onSetPreference,
   onClearPreference,
   onVote,
@@ -157,6 +159,7 @@ export function SlotCard({
         </div>
         <Button
           size="sm"
+          disabled={!canParticipate}
           onClick={() =>
             onSetPreference(
               slot.key,
@@ -240,6 +243,7 @@ export function SlotCard({
               userId={userId}
               canDelete={suggestion.created_by === userId}
               presentIds={presentIds}
+              canParticipate={canParticipate}
               onVote={(value) => onVote(suggestion.id, value)}
               onDelete={() => onDelete(suggestion.id)}
               onAddComment={onAddComment}
