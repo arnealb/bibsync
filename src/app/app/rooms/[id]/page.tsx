@@ -90,6 +90,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
             initialVotes={proposalsData.votes}
             initialComments={comments}
             initialPlaces={places}
+            initialPresence={presenceRows}
           />
         }
         presenceSlot={

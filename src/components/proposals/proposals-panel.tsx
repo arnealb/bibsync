@@ -26,6 +26,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { usePresentMembers } from "@/hooks/use-present-members";
 import { useProposalCommentsRealtime } from "@/hooks/use-proposal-comments-realtime";
 import { useProposalsRealtime } from "@/hooks/use-proposals-realtime";
 import { copy } from "@/lib/copy";
@@ -43,6 +44,7 @@ import { BREAK_SLOTS } from "@/lib/slots";
 import { formatClock, formatDateLong, isoDatePlus } from "@/lib/time";
 import type {
   BreakProposal,
+  Presence,
   ProposalComment,
   RoomPlace,
   Vote,
@@ -57,6 +59,7 @@ interface ProposalsPanelProps {
   initialVotes: Vote[];
   initialComments: ProposalComment[];
   initialPlaces: RoomPlace[];
+  initialPresence: Presence[];
 }
 
 export function ProposalsPanel({
@@ -67,6 +70,7 @@ export function ProposalsPanel({
   initialVotes,
   initialComments,
   initialPlaces,
+  initialPresence,
 }: ProposalsPanelProps) {
   const [proposals, setProposals] = useState(initialProposals);
   const [votes, setVotes] = useState(initialVotes);
@@ -77,6 +81,8 @@ export function ProposalsPanel({
   const [anchor, setAnchor] = useState(() => isoDatePlus(0));
   const [showEarlier, setShowEarlier] = useState(false);
   const [, startTransition] = useTransition();
+  // Members confirmed present at the room — vote tallies count only them.
+  const presentIds = usePresentMembers(roomId, initialPresence);
 
   // Re-evaluate visibility every minute so expired proposals drop off on their
   // own (one hour after they end) without needing a refresh.
@@ -303,6 +309,7 @@ export function ProposalsPanel({
       members={members}
       userId={userId}
       places={initialPlaces}
+      presentIds={presentIds}
       onSetPreference={handleSetSlotPreference}
       onClearPreference={handleClearSlotPreference}
       onVote={handleVote}
@@ -323,6 +330,7 @@ export function ProposalsPanel({
       canDelete={proposal.created_by === userId}
       isWinner={proposal.id === winnerId}
       freeProposal
+      presentIds={presentIds}
       onVote={(value) => handleVote(proposal.id, value)}
       onDelete={() => handleDelete(proposal.id)}
       onAddComment={handleAddComment}

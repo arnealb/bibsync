@@ -42,6 +42,7 @@ interface SlotCardProps {
   members: MemberMap;
   userId: string;
   places: RoomPlace[];
+  presentIds?: Set<string>;
   onSetPreference: (
     slotKey: string,
     date: string,
@@ -66,6 +67,7 @@ export function SlotCard({
   members,
   userId,
   places,
+  presentIds,
   onSetPreference,
   onClearPreference,
   onVote,
@@ -237,6 +239,7 @@ export function SlotCard({
               members={members}
               userId={userId}
               canDelete={suggestion.created_by === userId}
+              presentIds={presentIds}
               onVote={(value) => onVote(suggestion.id, value)}
               onDelete={() => onDelete(suggestion.id)}
               onAddComment={onAddComment}

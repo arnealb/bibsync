@@ -216,7 +216,11 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   (`at_location` + `location_checked_at`) — never raw coordinates. The sidebar
   shows "📍 ter plaatse / niet ter plaatse" via `locationStatus` (fresh ≤10 min,
   else unknown) and ranks confirmed-present members first. Manual status is
-  untouched; location reports never bump `updated_at`.
+  untouched; location reports never bump `updated_at`. **Vote tallies are
+  present-scoped:** when anyone is confirmed present, proposal/slot cards show
+  `<present yes>/<present total>` etc. (`presentTally` + `usePresentMembers`) —
+  only people actually at the room count; with no present data they fall back
+  to the weighted all-votes tally.
 - **Inside joke:** users whose display name matches `/alan|chakalaka/i` have a
   half vote (weight 0.5) — see `src/lib/proposals/joke.ts`.
 - **Admin:** owners *or* admins can manage a room (`canManageRoom`,

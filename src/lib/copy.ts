@@ -537,6 +537,8 @@ export const copy = {
       no: "Nee",
       noVotes: "Nog geen stemmen",
       error: "Stem niet opgeslagen. Probeer opnieuw.",
+      presentBasis: (n: number) =>
+        `van ${n} ${n === 1 ? "persoon" : "mensen"} ter plaatse`,
     },
     validation: {
       dateInPast: "Kies vandaag of een datum in de toekomst.",

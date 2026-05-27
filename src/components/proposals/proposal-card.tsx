@@ -17,6 +17,7 @@ import { copy } from "@/lib/copy";
 import { toRoutePoints } from "@/lib/routes/types";
 import type { MemberMap } from "@/lib/members";
 import { formatTally, voteWeight } from "@/lib/proposals/joke";
+import { presentTally } from "@/lib/proposals/present-tally";
 import { endTime, formatDateLong, formatTime, isoDatePlus } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { VOTE_VALUES } from "@/lib/validation/proposals";
@@ -57,6 +58,8 @@ interface ProposalCardProps {
   isWinner?: boolean;
   /** A free-form proposal (not a fixed slot) — gets a distinct accent. */
   freeProposal?: boolean;
+  /** Members currently present at the room; when set, tallies count only them. */
+  presentIds?: Set<string>;
   onVote: (value: VoteValue) => void;
   onDelete: () => void;
   onAddComment: (proposalId: string, content: string) => void;
@@ -72,6 +75,7 @@ export function ProposalCard({
   canDelete,
   isWinner,
   freeProposal,
+  presentIds,
   onVote,
   onDelete,
   onAddComment,
@@ -81,6 +85,11 @@ export function ProposalCard({
   const ownVote = votes.find((vote) => vote.user_id === userId)?.vote;
   const creator = members[proposal.created_by];
   const creatorName = creator?.name ?? "—";
+  // When we know who's actually present, the tally counts only them ("3/5").
+  const present =
+    presentIds && presentIds.size > 0
+      ? presentTally(votes, presentIds)
+      : null;
 
   return (
     <article
@@ -157,13 +166,17 @@ export function ProposalCard({
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         {VOTE_VALUES.map((value) => {
-          const count = votes
-            .filter((vote) => vote.vote === value)
-            .reduce(
-              (sum, vote) =>
-                sum + voteWeight(members[vote.user_id]?.name ?? ""),
-              0,
-            );
+          const label = present
+            ? `${present.counts[value]}/${present.total}`
+            : formatTally(
+                votes
+                  .filter((vote) => vote.vote === value)
+                  .reduce(
+                    (sum, vote) =>
+                      sum + voteWeight(members[vote.user_id]?.name ?? ""),
+                    0,
+                  ),
+              );
           return (
             <Button
               key={value}
@@ -175,11 +188,16 @@ export function ProposalCard({
             >
               <span aria-hidden>{VOTE_EMOJI[value]}</span>
               {copy.proposals.votes[value]}
-              <span className="tabular-nums">{formatTally(count)}</span>
+              <span className="tabular-nums">{label}</span>
             </Button>
           );
         })}
       </div>
+      {present && (
+        <p className="mt-1 text-center text-[11px] text-muted-foreground">
+          {copy.proposals.votes.presentBasis(present.total)}
+        </p>
+      )}
 
       <Voters votes={votes} members={members} />
 
