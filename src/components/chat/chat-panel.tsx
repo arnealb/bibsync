@@ -22,6 +22,7 @@ interface ChatPanelProps {
   roomId: string;
   userId: string;
   members: MemberMap;
+  canManage: boolean;
   initialMessages: ChatMessage[];
   initialHasMore: boolean;
   initialReactions: MessageReaction[];
@@ -42,6 +43,7 @@ export function ChatPanel({
   roomId,
   userId,
   members,
+  canManage,
   initialMessages,
   initialHasMore,
   initialReactions,
@@ -237,6 +239,8 @@ export function ChatPanel({
       <ChatInput
         roomId={roomId}
         userId={userId}
+        members={members}
+        canManage={canManage}
         onSend={handleSend}
         pending={sending}
       />

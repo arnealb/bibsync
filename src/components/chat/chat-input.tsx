@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
 
@@ -9,32 +9,90 @@ import { PhotoUpload } from "@/components/chat/photo-upload";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toggleLeaderboardCheated } from "@/app/_actions/games";
+import { clearUserTimeout, setUserTimeout } from "@/app/_actions/timeouts";
 import { setAutopilot } from "@/lib/games/snake/autopilot";
 import { copy } from "@/lib/copy";
+import type { MemberMap } from "@/lib/members";
 import { applyRainbow } from "@/lib/rainbow";
+import { cn } from "@/lib/utils";
 import {
   MESSAGE_COUNTER_THRESHOLD,
   MESSAGE_MAX_LENGTH,
 } from "@/lib/validation/messages";
 
+/** `/timeout <naam>` or `/untimeout <naam>` (the name part may be partial). */
+const TIMEOUT_CMD = /^\/(timeout|untimeout)\s+(.*)$/i;
+
 export function ChatInput({
   roomId,
   userId,
+  members,
+  canManage,
   onSend,
   pending,
 }: {
   roomId: string;
   userId: string;
+  members: MemberMap;
+  canManage: boolean;
   onSend: (content: string) => void;
   pending: boolean;
 }) {
   const [value, setValue] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const memberList = useMemo(
+    () => Object.entries(members).map(([id, m]) => ({ id, name: m.name })),
+    [members],
+  );
+
+  // Name-completion state for the /timeout command.
+  const cmdMatch = canManage ? value.match(TIMEOUT_CMD) : null;
+  const partial = cmdMatch ? cmdMatch[2].trim().toLowerCase() : "";
+  const cmd = cmdMatch ? cmdMatch[1].toLowerCase() : "";
+  const exactMatch = memberList.some((m) => m.name.toLowerCase() === partial);
+  const suggestions =
+    cmdMatch && !exactMatch
+      ? memberList
+          .filter((m) => m.name.toLowerCase().includes(partial))
+          .slice(0, 6)
+      : [];
+  const showSuggestions = suggestions.length > 0;
+  const clampedIndex = Math.max(0, Math.min(activeIndex, suggestions.length - 1));
+
+  function complete(name: string) {
+    setValue(`/${cmd} ${name} `);
+    setActiveIndex(0);
+  }
+
+  function runTimeoutCommand(kind: string, name: string) {
+    const member = memberList.find(
+      (m) => m.name.toLowerCase() === name.trim().toLowerCase(),
+    );
+    if (!member) {
+      toast.error(copy.timeout.unknownUser);
+      return;
+    }
+    const run = kind === "timeout" ? setUserTimeout : clearUserTimeout;
+    void run(roomId, member.id).then((res) => {
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success(
+        kind === "timeout"
+          ? copy.timeout.set(member.name)
+          : copy.timeout.cleared(member.name),
+      );
+    });
+    setValue("");
+  }
 
   function submit() {
     const trimmed = value.trim();
     if (!trimmed) return;
-    // Easter eggs: /alan → full rainbow mode, /boobs → back to normal.
     const command = trimmed.toLowerCase();
+
     if (command === "/alan") {
       applyRainbow(true);
       toast.success(copy.chat.rainbowOn);
@@ -47,7 +105,6 @@ export function ChatInput({
       setValue("");
       return;
     }
-    // Hidden: /cheatcodes activates the Snake autopilot, /cheatcodes-stop ends it.
     if (command === "/cheatcodes" || command === "/cheatcodes-stop") {
       const on = command === "/cheatcodes";
       setAutopilot(on);
@@ -55,7 +112,6 @@ export function ChatInput({
       setValue("");
       return;
     }
-    // /honest flips the shared leaderboard view for the whole room.
     if (command === "/honest") {
       void toggleLeaderboardCheated(roomId).then((result) => {
         if (!result.ok) {
@@ -69,8 +125,39 @@ export function ChatInput({
       setValue("");
       return;
     }
+
+    const tm = canManage ? trimmed.match(TIMEOUT_CMD) : null;
+    if (tm) {
+      runTimeoutCommand(tm[1].toLowerCase(), tm[2]);
+      return;
+    }
+
     onSend(trimmed);
     setValue("");
+  }
+
+  function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (showSuggestions) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setActiveIndex((i) => Math.min(suggestions.length - 1, i + 1));
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setActiveIndex((i) => Math.max(0, i - 1));
+        return;
+      }
+      if (event.key === "Tab" || event.key === "Enter") {
+        event.preventDefault();
+        complete(suggestions[clampedIndex]?.name ?? suggestions[0]!.name);
+        return;
+      }
+    }
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      submit();
+    }
   }
 
   return (
@@ -88,15 +175,34 @@ export function ChatInput({
         onUploaded={(url) => onSend(url)}
       />
       <div className="relative flex-1">
+        {showSuggestions && (
+          <ul className="absolute bottom-full mb-1 w-full overflow-hidden rounded-md border bg-popover shadow-md">
+            {suggestions.map((m, i) => (
+              <li key={m.id}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    complete(m.name);
+                  }}
+                  className={cn(
+                    "flex w-full items-center px-3 py-1.5 text-left text-sm",
+                    i === clampedIndex ? "bg-accent" : "hover:bg-accent/50",
+                  )}
+                >
+                  {m.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         <Textarea
           value={value}
-          onChange={(event) => setValue(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              submit();
-            }
+          onChange={(event) => {
+            setValue(event.target.value);
+            setActiveIndex(0);
           }}
+          onKeyDown={onKeyDown}
           rows={1}
           maxLength={MESSAGE_MAX_LENGTH}
           placeholder={copy.chat.placeholder}

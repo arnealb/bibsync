@@ -726,6 +726,30 @@ export interface Database {
         };
         Relationships: [];
       };
+      room_timeouts: {
+        Row: {
+          room_id: string;
+          user_id: string;
+          created_by: string | null;
+          reason: string | null;
+          created_at: Timestamp;
+        };
+        Insert: {
+          room_id: string;
+          user_id: string;
+          created_by?: string | null;
+          reason?: string | null;
+          created_at?: Timestamp;
+        };
+        Update: {
+          room_id?: string;
+          user_id?: string;
+          created_by?: string | null;
+          reason?: string | null;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
       step_sessions: {
         Row: {
           id: string;

@@ -219,6 +219,13 @@ export const copy = {
     triggeredBy: (name: string) => `afgedwongen door ${name}`,
     failed: "Kon je pauze-stem niet doorgeven. Probeer opnieuw.",
   },
+  timeout: {
+    banner: "🚨 Je zit in timeout — bied je excuses aan!",
+    bannerSub: "Gedraag je. Een beheerder heft je timeout weer op.",
+    set: (name: string) => `${name} zit nu in timeout 😤`,
+    cleared: (name: string) => `${name} mag weer meedoen.`,
+    unknownUser: "Geen lid met die naam — kies uit de lijst.",
+  },
   poker: {
     nav: "Poker",
     title: "Poker",

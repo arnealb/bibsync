@@ -54,6 +54,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
         roomId={access.room.id}
         userId={access.userId}
         members={memberMap}
+        canManage={access.canManage}
         initialMessages={messagesData.messages}
         initialHasMore={messagesData.hasMore}
         initialReactions={reactions}
