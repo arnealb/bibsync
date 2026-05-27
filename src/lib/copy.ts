@@ -310,6 +310,12 @@ export const copy = {
     empty: "Nog niemand aan tafel. Ga zitten 👇",
     betLabel: "Inzet",
     placeBet: "Inzetten",
+    quickBet: {
+      label: "Snel:",
+      half: "½",
+      double: "×2",
+      allIn: "All-in",
+    },
     deal: "Deel de kaarten",
     waitingDeal: "Wachten tot er gedeeld wordt…",
     bettingOpen: "Plaats je inzet voor deze ronde.",

@@ -132,6 +132,22 @@
   }
 }
 
+/* Blackjack: cards fly out of the deck (top-right) into place, staggered, so a
+   deal looks dealt instead of cards just appearing. */
+@keyframes bj-deal {
+  from {
+    opacity: 0;
+    transform: translate(46px, -92px) rotate(-12deg) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.bj-deal {
+  animation: bj-deal 0.45s cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
+
 /* Premium name effects (shop cosmetics, type "effect"). */
 @keyframes fx-gradient-move {
   to {

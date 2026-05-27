@@ -42,16 +42,34 @@ const RESULT_STYLE: Record<string, string> = {
   lose: "bg-red-600/90 text-white",
 };
 
-function CardFan({ cards, hidden }: { cards: Card[]; hidden?: boolean }) {
+const DEAL_STEP_S = 0.18;
+
+function CardFan({
+  cards,
+  hidden,
+  startDelay = 0,
+}: {
+  cards: Card[];
+  hidden?: boolean;
+  /** Seconds before this fan starts dealing, so seats cascade one after another. */
+  startDelay?: number;
+}) {
   return (
     <div className="flex">
       {cards.map((card, i) => (
-        <div key={`${card}-${i}`} className={i > 0 ? "-ml-3.5" : ""}>
+        <div
+          key={`${card}-${i}`}
+          className={cn("bj-deal", i > 0 && "-ml-3.5")}
+          style={{ animationDelay: `${startDelay + i * DEAL_STEP_S}s` }}
+        >
           <PlayingCard card={card} size="sm" />
         </div>
       ))}
       {hidden && (
-        <div className="-ml-3.5">
+        <div
+          className="bj-deal -ml-3.5"
+          style={{ animationDelay: `${startDelay + cards.length * DEAL_STEP_S}s` }}
+        >
           <PlayingCard size="sm" />
         </div>
       )}
@@ -72,7 +90,15 @@ function TotalBadge({ total, bust }: { total: number | null; bust?: boolean }) {
   );
 }
 
-function HandView({ hand, showLabel }: { hand: PublicHand; showLabel?: number }) {
+function HandView({
+  hand,
+  showLabel,
+  startDelay = 0,
+}: {
+  hand: PublicHand;
+  showLabel?: number;
+  startDelay?: number;
+}) {
   return (
     <div className="flex flex-col items-center gap-1">
       {showLabel != null && (
@@ -81,7 +107,7 @@ function HandView({ hand, showLabel }: { hand: PublicHand; showLabel?: number })
         </span>
       )}
       <TotalBadge total={hand.total} bust={hand.total > 21} />
-      <CardFan cards={hand.cards} />
+      <CardFan cards={hand.cards} startDelay={startDelay} />
       {hand.result && (
         <span
           className={cn(
@@ -101,11 +127,13 @@ function SeatView({
   members,
   isYou,
   isActive,
+  dealDelay = 0,
 }: {
   seat: PublicSeat;
   members: MemberMap;
   isYou: boolean;
   isActive: boolean;
+  dealDelay?: number;
 }) {
   const name = members[seat.userId]?.name ?? "—";
   return (
@@ -138,6 +166,7 @@ function SeatView({
               key={i}
               hand={hand}
               showLabel={seat.hands.length > 1 ? i + 1 : undefined}
+              startDelay={dealDelay}
             />
           ))}
         </div>
@@ -234,7 +263,25 @@ export function BlackjackPanel({
       </div>
 
       {/* Felt */}
-      <div className="space-y-5 rounded-xl border bg-gradient-to-b from-emerald-900/20 to-muted/20 p-4 sm:p-6">
+      <div className="relative space-y-5 rounded-xl border bg-gradient-to-b from-emerald-900/20 to-muted/20 p-4 sm:p-6">
+        {/* The deck/shoe — cards deal out of here. */}
+        <div
+          className="pointer-events-none absolute top-3 right-3 hidden sm:block"
+          aria-hidden
+        >
+          <div className="relative h-10 w-7">
+            {[3, 2, 1, 0].map((i) => (
+              <div
+                key={i}
+                className="absolute inset-0"
+                style={{ transform: `translate(${i * 1.5}px, ${i * -1.5}px)` }}
+              >
+                <PlayingCard size="sm" />
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="flex flex-col items-center gap-1.5">
           <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             {copy.blackjack.dealer}
@@ -245,7 +292,11 @@ export function BlackjackPanel({
                 total={table.dealerTotal}
                 bust={(table.dealerTotal ?? 0) > 21}
               />
-              <CardFan cards={table.dealer} hidden={phase === "player"} />
+              <CardFan
+                cards={table.dealer}
+                hidden={phase === "player"}
+                startDelay={0.1}
+              />
             </>
           ) : (
             <div className="flex">
@@ -268,6 +319,7 @@ export function BlackjackPanel({
                 members={members}
                 isYou={seat.userId === userId}
                 isActive={phase === "player" && table?.toActIndex === i}
+                dealDelay={i * 0.15}
               />
             ))
           ) : (
@@ -355,24 +407,58 @@ export function BlackjackPanel({
               {copy.blackjack.betChip(myBet)} ✓
             </p>
           ) : (
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                min={MIN_BLACKJACK_BET}
-                max={balance}
-                step={MIN_BLACKJACK_BET}
-                value={bet}
-                onChange={(e) => setBet(Number(e.target.value))}
-                className="flex-1 font-mono tabular-nums"
-              />
-              <Button
-                disabled={pending || bet < MIN_BLACKJACK_BET || bet > balance}
-                onClick={() =>
-                  run(() => placeBlackjackBet({ roomId, amount: clampBet(bet) }))
-                }
-              >
-                {copy.blackjack.placeBet}
-              </Button>
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {copy.blackjack.quickBet.label}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => setBet((b) => clampBet(Math.floor(b / 2)))}
+                >
+                  {copy.blackjack.quickBet.half}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={pending || bet >= balance}
+                  onClick={() => setBet((b) => clampBet(b * 2))}
+                >
+                  {copy.blackjack.quickBet.double}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={pending || bet >= balance}
+                  onClick={() => setBet(clampBet(balance))}
+                >
+                  {copy.blackjack.quickBet.allIn}
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min={MIN_BLACKJACK_BET}
+                  max={balance}
+                  step={MIN_BLACKJACK_BET}
+                  value={bet}
+                  onChange={(e) => setBet(Number(e.target.value))}
+                  className="flex-1 font-mono tabular-nums"
+                />
+                <Button
+                  disabled={pending || bet < MIN_BLACKJACK_BET || bet > balance}
+                  onClick={() =>
+                    run(() => placeBlackjackBet({ roomId, amount: clampBet(bet) }))
+                  }
+                >
+                  {copy.blackjack.placeBet}
+                </Button>
+              </div>
             </div>
           )}
 
