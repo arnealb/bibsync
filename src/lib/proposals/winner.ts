@@ -20,3 +20,47 @@ export function pickWinnerId(
   }
   return bestId;
 }
+
+/**
+ * The break time the most people back for a fixed slot. A person backs a time
+ * by preferring it (their own suggestion) or voting "yes" on a suggestion at
+ * that time; backers are de-duplicated and weighted by `weightOf`. Ties resolve
+ * to the earliest time. Returns null when there are no suggestions yet.
+ */
+export function decideSlotTime(
+  suggestions: { id: string; start_time: string; created_by: string }[],
+  votes: { proposal_id: string; user_id: string; vote: string }[],
+  weightOf: (userId: string) => number,
+): string | null {
+  if (suggestions.length === 0) return null;
+
+  const timeOf = new Map(
+    suggestions.map((s) => [s.id, s.start_time.slice(0, 5)]),
+  );
+  const backers = new Map<string, Set<string>>();
+  const back = (time: string, userId: string) => {
+    const set = backers.get(time);
+    if (set) set.add(userId);
+    else backers.set(time, new Set([userId]));
+  };
+
+  for (const s of suggestions) back(s.start_time.slice(0, 5), s.created_by);
+  for (const v of votes) {
+    if (v.vote !== "yes") continue;
+    const time = timeOf.get(v.proposal_id);
+    if (time) back(time, v.user_id);
+  }
+
+  let bestTime: string | null = null;
+  let bestScore = -1;
+  // Ascending time order so the earliest time wins any tie.
+  for (const time of [...backers.keys()].sort()) {
+    let score = 0;
+    for (const userId of backers.get(time)!) score += weightOf(userId);
+    if (score > bestScore) {
+      bestScore = score;
+      bestTime = time;
+    }
+  }
+  return bestTime;
+}

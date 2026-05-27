@@ -442,7 +442,8 @@ export const copy = {
     slots: {
       title: "Vaste momenten",
       free: "Vrije voorstellen",
-      average: "Gemiddeld",
+      breakAt: "Pauze om",
+      defaultNote: "standaard — nog geen voorkeuren",
       defaultLabel: "standaard",
       yourPref: "Jouw voorkeur",
       save: "Opslaan",

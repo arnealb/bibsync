@@ -38,8 +38,8 @@ import {
 import { dateLabelGroups } from "@/lib/proposals/group";
 import { voteWeight } from "@/lib/proposals/joke";
 import { isProposalVisible } from "@/lib/proposals/visibility";
-import { pickWinnerId } from "@/lib/proposals/winner";
-import { averageTime, BREAK_SLOTS } from "@/lib/slots";
+import { decideSlotTime, pickWinnerId } from "@/lib/proposals/winner";
+import { BREAK_SLOTS } from "@/lib/slots";
 import { formatClock, formatDateLong, isoDatePlus } from "@/lib/time";
 import type {
   BreakProposal,
@@ -256,10 +256,10 @@ export function ProposalsPanel({
     const suggestions = proposals.filter(
       (p) => p.slot_key === slot.key && p.proposal_date === anchor,
     );
-    const effective = averageTime(
-      suggestions.map((s) => s.start_time),
-      slot.defaultTime,
-    );
+    const effective =
+      decideSlotTime(suggestions, votes, (uid) =>
+        voteWeight(members[uid]?.name ?? ""),
+      ) ?? slot.defaultTime.slice(0, 5);
     const passed =
       anchor < todayIso || (anchor === todayIso && effective < nowClock);
     return { slot, suggestions, passed };

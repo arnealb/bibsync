@@ -18,8 +18,8 @@ import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
 import { toRoutePoints, type RoutePoint } from "@/lib/routes/types";
 import { voteWeight } from "@/lib/proposals/joke";
-import { pickWinnerId } from "@/lib/proposals/winner";
-import { averageTime, type BreakSlot } from "@/lib/slots";
+import { decideSlotTime } from "@/lib/proposals/winner";
+import { type BreakSlot } from "@/lib/slots";
 import type {
   BreakProposal,
   ProposalComment,
@@ -85,33 +85,33 @@ export function SlotCard({
   const [routePoints, setRoutePoints] = useState<RoutePoint[]>(
     toRoutePoints(mySuggestion?.route_points),
   );
-  const average = averageTime(
-    suggestions.map((s) => s.start_time),
-    slot.defaultTime,
-  );
-
   const ordered = [...suggestions].sort((a, b) =>
     a.start_time.localeCompare(b.start_time),
   );
 
-  const winnerId = pickWinnerId(
-    ordered.map((s) => s.id),
-    (id) =>
-      votes
-        .filter((v) => v.proposal_id === id && v.vote === "yes")
-        .reduce((sum, v) => sum + voteWeight(members[v.user_id]?.name ?? ""), 0),
-  );
+  // The break is simply the time the most people back; no averaging.
+  const decidedTime =
+    decideSlotTime(suggestions, votes, (uid) =>
+      voteWeight(members[uid]?.name ?? ""),
+    ) ?? slot.defaultTime.slice(0, 5);
+  const isDefault = suggestions.length === 0;
 
   return (
     <div className="space-y-3 rounded-lg border p-4">
-      <div className="flex items-baseline justify-between gap-2">
-        <h3 className="font-semibold">{slot.label}</h3>
-        <div className="text-right">
-          <span className="text-lg font-bold tabular-nums">{average}</span>
-          <span className="ml-1 text-xs text-muted-foreground">
-            {copy.proposals.slots.defaultLabel} {slot.defaultTime}
-          </span>
-        </div>
+      <h3 className="font-semibold">{slot.label}</h3>
+
+      <div className="rounded-lg border-2 border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-center">
+        <p className="text-[11px] font-semibold tracking-wide text-emerald-700 uppercase dark:text-emerald-400">
+          {copy.proposals.slots.breakAt}
+        </p>
+        <p className="text-5xl leading-tight font-black tabular-nums text-emerald-700 dark:text-emerald-400">
+          {decidedTime}
+        </p>
+        {isDefault && (
+          <p className="text-xs text-muted-foreground">
+            {copy.proposals.slots.defaultNote}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap items-end gap-2">
@@ -231,7 +231,7 @@ export function SlotCard({
               members={members}
               userId={userId}
               canDelete={suggestion.created_by === userId}
-              isWinner={suggestion.id === winnerId}
+              isWinner={suggestion.start_time.slice(0, 5) === decidedTime}
               onVote={(value) => onVote(suggestion.id, value)}
               onDelete={() => onDelete(suggestion.id)}
               onAddComment={onAddComment}
