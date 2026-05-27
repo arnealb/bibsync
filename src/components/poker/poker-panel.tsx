@@ -49,8 +49,11 @@ export function PokerPanel({
 
   usePokerRealtime(roomId, (state) => setTable(state));
 
-  // Leaving the page cashes you out — no lingering empty seat at the table.
-  useAutoLeaveTable("poker", roomId, () => leavePokerTable(roomId));
+  // Leaving the page — or sitting idle for 3 min — cashes you out so an AFK
+  // player can't block the table.
+  useAutoLeaveTable("poker", roomId, () => leavePokerTable(roomId), {
+    armed: Boolean(table?.players.some((p) => p.userId === userId)),
+  });
 
   const handNo = table?.handNo ?? 0;
   const status = table?.status ?? "waiting";

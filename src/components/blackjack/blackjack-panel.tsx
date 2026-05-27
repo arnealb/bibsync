@@ -193,8 +193,11 @@ export function BlackjackPanel({
 
   useBlackjackRealtime(roomId, setTable);
 
-  // Leaving the page frees your seat — no lingering "still at the table".
-  useAutoLeaveTable("blackjack", roomId, () => leaveBlackjack(roomId));
+  // Leaving the page — or sitting idle for 3 min — frees your seat so an AFK
+  // player can't block the table.
+  useAutoLeaveTable("blackjack", roomId, () => leaveBlackjack(roomId), {
+    armed: Boolean(table?.seats.some((s) => s.userId === userId)),
+  });
 
   // When a round resolves, refresh server-rendered balance (payouts may have
   // landed via someone else's final move).
