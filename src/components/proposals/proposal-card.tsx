@@ -55,6 +55,8 @@ interface ProposalCardProps {
   userId: string;
   canDelete: boolean;
   isWinner?: boolean;
+  /** A free-form proposal (not a fixed slot) — gets a distinct accent. */
+  freeProposal?: boolean;
   onVote: (value: VoteValue) => void;
   onDelete: () => void;
   onAddComment: (proposalId: string, content: string) => void;
@@ -69,6 +71,7 @@ export function ProposalCard({
   userId,
   canDelete,
   isWinner,
+  freeProposal,
   onVote,
   onDelete,
   onAddComment,
@@ -83,6 +86,7 @@ export function ProposalCard({
     <article
       className={cn(
         "rounded-lg border p-4",
+        freeProposal && "border-amber-500/60 bg-amber-500/5",
         isWinner && "border-emerald-500/50 ring-1 ring-emerald-500/30",
       )}
     >
@@ -92,8 +96,13 @@ export function ProposalCard({
             <Icon className="size-4.5" />
           </span>
           <div>
-            <p className="flex items-center gap-1.5 font-medium">
+            <p className="flex flex-wrap items-center gap-1.5 font-medium">
               {copy.proposals.types[proposal.proposal_type]}
+              {freeProposal && (
+                <Badge className="border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                  💡 {copy.proposals.freeProposal}
+                </Badge>
+              )}
               {isWinner && (
                 <Badge className="bg-emerald-600 text-white">
                   🏆 {copy.proposals.winner}

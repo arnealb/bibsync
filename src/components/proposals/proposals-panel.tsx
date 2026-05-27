@@ -73,7 +73,7 @@ export function ProposalsPanel({
   const [comments, setComments] = useState(initialComments);
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-  const [view, setView] = useState<CalendarView>("week");
+  const [view, setView] = useState<CalendarView>("day");
   const [anchor, setAnchor] = useState(() => isoDatePlus(0));
   const [showEarlier, setShowEarlier] = useState(false);
   const [, startTransition] = useTransition();
@@ -239,17 +239,11 @@ export function ProposalsPanel({
   }
 
   const range = rangeFor(view, anchor);
-  // Free-form proposals only (slot suggestions render in the slot cards).
   const freeForm = proposals.filter(
     (p) => !p.slot_key && isProposalVisible(p, now),
   );
-  const groups = dateLabelGroups(
-    freeForm.filter(
-      (p) => p.proposal_date >= range.start && p.proposal_date <= range.end,
-    ),
-  );
 
-  // Split the fixed slots into upcoming and already-passed (today only).
+  // Fixed slots for the anchor day, each with the decided time it'll happen.
   const todayIso = isoDatePlus(0);
   const nowClock = formatClock(now);
   const slotEntries = BREAK_SLOTS.map((slot) => {
@@ -262,10 +256,41 @@ export function ProposalsPanel({
       ) ?? slot.defaultTime.slice(0, 5);
     const passed =
       anchor < todayIso || (anchor === todayIso && effective < nowClock);
-    return { slot, suggestions, passed };
+    return { slot, suggestions, passed, effective };
   });
-  const upcomingSlots = slotEntries.filter((e) => !e.passed);
   const earlierSlots = slotEntries.filter((e) => e.passed);
+
+  // Free proposals on the anchor day are interleaved into the day's timeline at
+  // their own time (so they aren't missed in a separate section); free
+  // proposals on other days in the range get their own list below.
+  const yesWeight = (id: string) =>
+    votes
+      .filter((v) => v.proposal_id === id && v.vote === "yes")
+      .reduce((sum, v) => sum + voteWeight(members[v.user_id]?.name ?? ""), 0);
+  const anchorFree = freeForm.filter((p) => p.proposal_date === anchor);
+  const freeWinner = pickWinnerId(anchorFree.map((p) => p.id), yesWeight);
+  const otherGroups = dateLabelGroups(
+    freeForm.filter(
+      (p) =>
+        p.proposal_date !== anchor &&
+        p.proposal_date >= range.start &&
+        p.proposal_date <= range.end,
+    ),
+  );
+
+  type TimelineItem =
+    | { kind: "slot"; time: string; entry: (typeof slotEntries)[number] }
+    | { kind: "free"; time: string; proposal: BreakProposal };
+  const timeline: TimelineItem[] = [
+    ...slotEntries
+      .filter((e) => !e.passed)
+      .map((entry) => ({ kind: "slot" as const, time: entry.effective, entry })),
+    ...anchorFree.map((proposal) => ({
+      kind: "free" as const,
+      time: proposal.start_time.slice(0, 5),
+      proposal,
+    })),
+  ].sort((a, b) => a.time.localeCompare(b.time));
 
   const renderSlot = (entry: (typeof slotEntries)[number]) => (
     <SlotCard
@@ -287,6 +312,24 @@ export function ProposalsPanel({
     />
   );
 
+  const renderFree = (proposal: BreakProposal, winnerId: string | null) => (
+    <ProposalCard
+      key={proposal.id}
+      proposal={proposal}
+      votes={votes.filter((v) => v.proposal_id === proposal.id)}
+      comments={comments.filter((c) => c.proposal_id === proposal.id)}
+      members={members}
+      userId={userId}
+      canDelete={proposal.created_by === userId}
+      isWinner={proposal.id === winnerId}
+      freeProposal
+      onVote={(value) => handleVote(proposal.id, value)}
+      onDelete={() => handleDelete(proposal.id)}
+      onAddComment={handleAddComment}
+      onDeleteComment={handleDeleteComment}
+    />
+  );
+
   return (
     <div className="space-y-6">
       <ProposalCalendarBar
@@ -298,13 +341,46 @@ export function ProposalsPanel({
       />
 
       <section className="space-y-3">
-        <h2 className="font-semibold">
-          {copy.proposals.slots.title}{" "}
-          <span className="font-normal text-muted-foreground capitalize">
-            · {formatDateLong(anchor)}
-          </span>
-        </h2>
-        <div className="space-y-3">{upcomingSlots.map(renderSlot)}</div>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-semibold">
+            {copy.proposals.slots.title}{" "}
+            <span className="font-normal text-muted-foreground capitalize">
+              · {formatDateLong(anchor)}
+            </span>
+          </h2>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger render={<Button size="sm" variant="outline" />}>
+              <Plus />
+              {copy.proposals.new}
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{copy.proposals.form.title}</DialogTitle>
+              </DialogHeader>
+              <ProposalForm
+                roomId={roomId}
+                places={initialPlaces}
+                onCreated={(proposal) => {
+                  setProposals((prev) =>
+                    prev.some((item) => item.id === proposal.id)
+                      ? prev
+                      : [...prev, proposal],
+                  );
+                  setOpen(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Fixed slots and the day's free proposals, interleaved by time. */}
+        <div className="space-y-3">
+          {timeline.map((item) =>
+            item.kind === "slot"
+              ? renderSlot(item.entry)
+              : renderFree(item.proposal, freeWinner),
+          )}
+        </div>
 
         {earlierSlots.length > 0 && (
           <div className="space-y-3">
@@ -331,53 +407,14 @@ export function ProposalsPanel({
         )}
       </section>
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">{copy.proposals.slots.free}</h2>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger render={<Button size="sm" variant="outline" />}>
-              <Plus />
-              {copy.proposals.new}
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{copy.proposals.form.title}</DialogTitle>
-              </DialogHeader>
-              <ProposalForm
-                roomId={roomId}
-                places={initialPlaces}
-                onCreated={(proposal) => {
-                  setProposals((prev) =>
-                    prev.some((item) => item.id === proposal.id)
-                      ? prev
-                      : [...prev, proposal],
-                  );
-                  setOpen(false);
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {groups.length === 0 ? (
-          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            {freeForm.length === 0
-              ? copy.proposals.empty
-              : copy.proposals.calendar.emptyRange}
-          </p>
-        ) : (
+      {otherGroups.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-semibold">{copy.proposals.slots.otherDays}</h2>
           <div className="space-y-5">
-            {groups.map((group) => {
+            {otherGroups.map((group) => {
               const groupWinner = pickWinnerId(
                 group.items.map((p) => p.id),
-                (id) =>
-                  votes
-                    .filter((v) => v.proposal_id === id && v.vote === "yes")
-                    .reduce(
-                      (sum, v) =>
-                        sum + voteWeight(members[v.user_id]?.name ?? ""),
-                      0,
-                    ),
+                yesWeight,
               );
               return (
                 <section key={group.date} className="space-y-2">
@@ -385,33 +422,16 @@ export function ProposalsPanel({
                     {group.label}
                   </h3>
                   <div className="space-y-3">
-                    {group.items.map((proposal) => (
-                      <ProposalCard
-                        key={proposal.id}
-                        proposal={proposal}
-                        votes={votes.filter(
-                          (v) => v.proposal_id === proposal.id,
-                        )}
-                        comments={comments.filter(
-                          (c) => c.proposal_id === proposal.id,
-                        )}
-                        members={members}
-                        userId={userId}
-                        canDelete={proposal.created_by === userId}
-                        isWinner={proposal.id === groupWinner}
-                        onVote={(value) => handleVote(proposal.id, value)}
-                        onDelete={() => handleDelete(proposal.id)}
-                        onAddComment={handleAddComment}
-                        onDeleteComment={handleDeleteComment}
-                      />
-                    ))}
+                    {group.items.map((proposal) =>
+                      renderFree(proposal, groupWinner),
+                    )}
                   </div>
                 </section>
               );
             })}
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }
