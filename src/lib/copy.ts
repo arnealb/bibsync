@@ -634,6 +634,14 @@ export const copy = {
     yourBest: "Jouw beste",
     noBest: "—",
     leaderboard: "Leaderboard",
+    sessionBoard: {
+      title: "Laatste sessie 🎲",
+      subtitle:
+        "Netto winst/verlies van ieders recentste goksessie (roulette, blackjack & poker).",
+      empty: "Nog niemand heeft recent gegokt.",
+      meta: (rounds: number, when: string) =>
+        `${rounds} ${rounds === 1 ? "ronde" : "rondes"} · ${when}`,
+    },
     noScores: "Nog niemand heeft gespeeld.",
     submitError: "Score kon niet opgeslagen worden.",
     honestView: "eerlijke weergave",

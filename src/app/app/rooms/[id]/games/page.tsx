@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { GameCard } from "@/components/games/game-card";
 import { Leaderboard } from "@/components/games/leaderboard";
+import { SessionLeaderboard } from "@/components/games/session-leaderboard";
 import { copy } from "@/lib/copy";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import {
@@ -10,6 +11,7 @@ import {
   getRoomLeaderboard,
   getShowCheated,
 } from "@/lib/games/queries";
+import { getSessionStandings } from "@/lib/games/session-queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 
 interface GamesPageProps {
@@ -31,13 +33,14 @@ export default async function GamesPage({ params }: GamesPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [snakeBest, snakeBoard, showCheated, balance, petBest] =
+  const [snakeBest, snakeBoard, showCheated, balance, petBest, sessions] =
     await Promise.all([
       getMyBestScore(id, access.userId, "snake"),
       getRoomLeaderboard(id, "snake"),
       getShowCheated(id),
       getBibcoins(access.userId),
       getMyBestScore(id, access.userId, "petconnect"),
+      getSessionStandings(id),
     ]);
 
   return (
@@ -90,6 +93,8 @@ export default async function GamesPage({ params }: GamesPageProps) {
           statLabel={copy.petconnect.stat}
         />
       </div>
+
+      <SessionLeaderboard standings={sessions} />
 
       <Leaderboard
         title={`${copy.games.leaderboard} — ${copy.games.snake.title}`}
