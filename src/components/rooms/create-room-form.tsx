@@ -1,21 +1,59 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { createRoom } from "@/app/_actions/rooms";
+import { checkJoinCode, createRoom } from "@/app/_actions/rooms";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { copy } from "@/lib/copy";
+import { isValidCustomCode, normalizeJoinCode } from "@/lib/rooms/join-code";
+import { cn } from "@/lib/utils";
+
+type CodeStatus = "idle" | "invalid" | "checking" | "available" | "taken";
 
 export function CreateRoomForm() {
   const [state, formAction] = useActionState(createRoom, null);
+  const [status, setStatus] = useState<CodeStatus>("idle");
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (state && !state.ok) toast.error(state.error);
   }, [state]);
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  // Debounced availability check, driven from the change handler (not an
+  // effect) so we never set state synchronously during an effect.
+  function onCodeChange(value: string) {
+    const code = normalizeJoinCode(value);
+    if (timer.current) clearTimeout(timer.current);
+    if (code === "") {
+      setStatus("idle");
+      return;
+    }
+    if (!isValidCustomCode(code)) {
+      setStatus("invalid");
+      return;
+    }
+    setStatus("checking");
+    timer.current = setTimeout(async () => {
+      const { available } = await checkJoinCode(code);
+      setStatus(available ? "available" : "taken");
+    }, 400);
+  }
+
+  const statusText: Record<CodeStatus, string> = {
+    idle: copy.rooms.new.codeHint,
+    invalid: copy.rooms.new.codeHint,
+    checking: copy.rooms.new.codeChecking,
+    available: copy.rooms.new.codeAvailable,
+    taken: copy.rooms.new.codeTaken,
+  };
 
   return (
     <form action={formAction} className="space-y-4">
@@ -41,6 +79,31 @@ export function CreateRoomForm() {
           rows={3}
           placeholder={copy.rooms.new.descriptionPlaceholder}
         />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="room-code">{copy.rooms.new.codeLabel}</Label>
+        <Input
+          id="room-code"
+          name="joinCode"
+          maxLength={12}
+          placeholder={copy.rooms.new.codePlaceholder}
+          autoCapitalize="characters"
+          autoComplete="off"
+          className="font-mono uppercase tracking-widest"
+          onChange={(e) => onCodeChange(e.target.value)}
+        />
+        <p
+          className={cn(
+            "text-xs",
+            status === "available" && "text-emerald-600 dark:text-emerald-500",
+            status === "taken" && "text-destructive",
+            status === "invalid" && "text-destructive",
+            (status === "idle" || status === "checking") &&
+              "text-muted-foreground",
+          )}
+        >
+          {statusText[status]}
+        </p>
       </div>
       {state && !state.ok && (
         <p

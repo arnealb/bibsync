@@ -8,7 +8,7 @@ import { SubmitButton } from "@/components/auth/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { copy } from "@/lib/copy";
-import { JOIN_CODE_LENGTH } from "@/lib/rooms/join-code";
+import { CUSTOM_CODE_MAX } from "@/lib/rooms/join-code";
 
 export function JoinRoomForm() {
   const [state, formAction] = useActionState(joinRoom, null);
@@ -24,12 +24,12 @@ export function JoinRoomForm() {
         <Input
           id="join-code"
           name="joinCode"
-          maxLength={JOIN_CODE_LENGTH}
+          maxLength={CUSTOM_CODE_MAX}
           placeholder={copy.rooms.join.codePlaceholder}
           autoCapitalize="characters"
           autoComplete="off"
           spellCheck={false}
-          className="text-center text-lg font-medium tracking-[0.4em] uppercase"
+          className="text-center text-lg font-medium tracking-[0.3em] uppercase"
           required
           autoFocus
         />

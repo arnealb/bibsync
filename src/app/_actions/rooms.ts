@@ -5,12 +5,18 @@ import { redirect } from "next/navigation";
 
 import type { ActionResult } from "@/app/_actions/types";
 import { copy } from "@/lib/copy";
-import { generateJoinCode } from "@/lib/rooms/join-code";
+import {
+  generateJoinCode,
+  isValidCustomCode,
+  normalizeJoinCode,
+} from "@/lib/rooms/join-code";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   createRoomSchema,
   joinRoomSchema,
   renameRoomSchema,
+  setJoinCodeSchema,
 } from "@/lib/validation/rooms";
 
 const UNIQUE_VIOLATION = "23505";
@@ -57,6 +63,7 @@ export async function createRoom(
   const parsed = createRoomSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description") || undefined,
+    joinCode: formData.get("joinCode") || undefined,
   });
   if (!parsed.success) {
     return {
@@ -69,25 +76,44 @@ export async function createRoom(
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: copy.common.notAuthenticated };
 
+  const customCode = parsed.data.joinCode;
+  const base = {
+    name: parsed.data.name,
+    description: parsed.data.description ?? null,
+    owner_id: userId,
+  };
+
   let roomId: string | null = null;
-  for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
+  if (customCode) {
+    // A chosen code: one shot — a clash means "taken", not "try another".
     const { data, error } = await supabase
       .from("rooms")
-      .insert({
-        name: parsed.data.name,
-        description: parsed.data.description ?? null,
-        join_code: generateJoinCode(),
-        owner_id: userId,
-      })
+      .insert({ ...base, join_code: customCode })
       .select("id")
       .single();
-    if (!error && data) {
-      roomId = data.id;
-      break;
-    }
-    if (error && error.code !== UNIQUE_VIOLATION) {
+    if (error) {
+      if (error.code === UNIQUE_VIOLATION) {
+        return { ok: false, error: copy.rooms.validation.codeTaken };
+      }
       console.error("[createRoom]", error);
       return { ok: false, error: copy.common.genericError };
+    }
+    roomId = data.id;
+  } else {
+    for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
+      const { data, error } = await supabase
+        .from("rooms")
+        .insert({ ...base, join_code: generateJoinCode() })
+        .select("id")
+        .single();
+      if (!error && data) {
+        roomId = data.id;
+        break;
+      }
+      if (error && error.code !== UNIQUE_VIOLATION) {
+        console.error("[createRoom]", error);
+        return { ok: false, error: copy.common.genericError };
+      }
     }
   }
   if (!roomId) return { ok: false, error: copy.common.genericError };
@@ -205,6 +231,66 @@ export async function regenerateJoinCode(roomId: string): Promise<ActionResult> 
     }
   }
   return { ok: false, error: copy.common.genericError };
+}
+
+/**
+ * Live availability check for a custom join code. Uses the service role so it
+ * can see rooms the caller isn't a member of (the rooms RLS hides those).
+ * Degrades to "available" without the service key — the unique constraint is
+ * still the source of truth on insert/update.
+ */
+export async function checkJoinCode(
+  code: string,
+): Promise<{ available: boolean }> {
+  const normalized = normalizeJoinCode(code);
+  if (!isValidCustomCode(normalized)) return { available: false };
+
+  const admin = createAdminClient();
+  if (!admin) return { available: true };
+
+  const { data } = await admin
+    .from("rooms")
+    .select("id")
+    .eq("join_code", normalized)
+    .maybeSingle();
+  return { available: !data };
+}
+
+/** Sets a room's join code to a chosen value (owner/admin only). */
+export async function setJoinCode(
+  roomId: string,
+  code: string,
+): Promise<ActionResult> {
+  const parsed = setJoinCodeSchema.safeParse({ roomId, joinCode: code });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? copy.common.genericError,
+    };
+  }
+
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: copy.common.notAuthenticated };
+  if (!(await canManageRoom(parsed.data.roomId, userId))) {
+    return { ok: false, error: copy.rooms.onlyOwner };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("rooms")
+    .update({ join_code: parsed.data.joinCode })
+    .eq("id", parsed.data.roomId);
+  if (error) {
+    if (error.code === UNIQUE_VIOLATION) {
+      return { ok: false, error: copy.rooms.validation.codeTaken };
+    }
+    console.error("[setJoinCode]", error);
+    return { ok: false, error: copy.common.genericError };
+  }
+
+  revalidatePath(`/app/rooms/${parsed.data.roomId}/settings`);
+  revalidatePath(`/app/rooms/${parsed.data.roomId}`);
+  return { ok: true };
 }
 
 export async function renameRoom(

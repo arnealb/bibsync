@@ -5,6 +5,7 @@ import { DeleteRoom } from "@/components/rooms/settings/delete-room";
 import { MemberList } from "@/components/rooms/settings/member-list";
 import { RegenerateCode } from "@/components/rooms/settings/regenerate-code";
 import { RenameRoomForm } from "@/components/rooms/settings/rename-room-form";
+import { SetCode } from "@/components/rooms/settings/set-code";
 import {
   Card,
   CardContent,
@@ -66,8 +67,14 @@ export default async function RoomSettingsPage({ params }: SettingsPageProps) {
             {copy.rooms.settings.regenerateHint}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <RegenerateCode roomId={id} joinCode={access.room.join_code} />
+          <div className="border-t pt-4">
+            <p className="mb-2 text-sm font-medium">
+              {copy.rooms.settings.customCode}
+            </p>
+            <SetCode roomId={id} />
+          </div>
         </CardContent>
       </Card>
 
