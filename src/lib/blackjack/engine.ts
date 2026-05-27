@@ -54,7 +54,7 @@ export interface PublicBlackjack {
   totalPayout: number;
 }
 
-function cardScore(card: Card): number {
+export function cardScore(card: Card): number {
   const rank = cardRankChar(card);
   if (rank === "A") return 11;
   if (rank === "T" || rank === "J" || rank === "Q" || rank === "K") return 10;

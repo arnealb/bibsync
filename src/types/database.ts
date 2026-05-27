@@ -678,6 +678,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      blackjack_tables: {
+        Row: {
+          room_id: string;
+          state: Record<string, unknown>;
+          version: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          room_id: string;
+          state: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          room_id?: string;
+          state?: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      blackjack_private: {
+        Row: { room_id: string; full: Record<string, unknown> };
+        Insert: { room_id: string; full: Record<string, unknown> };
+        Update: { room_id?: string; full?: Record<string, unknown> };
+        Relationships: [];
+      };
       step_sessions: {
         Row: {
           id: string;

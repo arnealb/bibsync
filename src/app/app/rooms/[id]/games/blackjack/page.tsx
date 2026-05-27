@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 
 import { BlackjackPanel } from "@/components/blackjack/blackjack-panel";
 import { getBibcoins } from "@/lib/bibcoins/queries";
-import { getBlackjackPublic } from "@/lib/blackjack/queries";
+import { getBlackjackTable } from "@/lib/blackjack/queries";
 import { copy } from "@/lib/copy";
-import { requireRoomAccess } from "@/lib/rooms/queries";
+import type { MemberMap } from "@/lib/members";
+import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
 interface BlackjackPageProps {
   params: Promise<{ id: string }>;
@@ -28,10 +29,21 @@ export default async function BlackjackPage({ params }: BlackjackPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [state, balance] = await Promise.all([
-    getBlackjackPublic(access.userId),
+  const [table, balance, members] = await Promise.all([
+    getBlackjackTable(id),
     getBibcoins(access.userId),
+    getRoomMembers(id),
   ]);
+
+  const memberMap: MemberMap = Object.fromEntries(
+    members.map((member) => [
+      member.user_id,
+      {
+        name: member.profile?.display_name ?? "—",
+        avatarUrl: member.profile?.avatar_url ?? null,
+      },
+    ]),
+  );
 
   return (
     <div className="space-y-4">
@@ -43,7 +55,13 @@ export default async function BlackjackPage({ params }: BlackjackPageProps) {
           {copy.blackjack.subtitle}
         </p>
       </div>
-      <BlackjackPanel initialState={state} initialBalance={balance} />
+      <BlackjackPanel
+        roomId={id}
+        userId={access.userId}
+        members={memberMap}
+        initialState={table}
+        initialBalance={balance}
+      />
     </div>
   );
 }
