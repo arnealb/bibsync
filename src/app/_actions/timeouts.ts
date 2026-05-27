@@ -15,13 +15,15 @@ export async function setUserTimeout(
   if (!access.canManage) return { ok: false, error: copy.rooms.onlyOwner };
 
   const supabase = await createClient();
+  // ON CONFLICT DO NOTHING (re-timeout is a no-op) so only an INSERT policy is
+  // needed — no UPDATE policy on room_timeouts.
   const { error } = await supabase.from("room_timeouts").upsert(
     {
       room_id: roomId,
       user_id: targetUserId,
       created_by: access.userId,
     },
-    { onConflict: "room_id,user_id" },
+    { onConflict: "room_id,user_id", ignoreDuplicates: true },
   );
   if (error) {
     console.error("[setUserTimeout]", error);
