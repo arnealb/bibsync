@@ -129,7 +129,7 @@ export function InstantBreakPanel({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-3 shadow-sm">
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">
           {count > 0 && otherNames.length > 0

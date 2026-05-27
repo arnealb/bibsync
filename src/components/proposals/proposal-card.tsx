@@ -85,7 +85,7 @@ export function ProposalCard({
   return (
     <article
       className={cn(
-        "rounded-lg border p-4",
+        "rounded-lg border bg-card p-4 shadow-sm",
         freeProposal && "border-amber-500/60 bg-amber-500/5",
         isWinner && "border-emerald-500/50 ring-1 ring-emerald-500/30",
       )}

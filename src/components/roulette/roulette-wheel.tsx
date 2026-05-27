@@ -1,5 +1,6 @@
 "use client";
 
+import { ROULETTE_SPIN_MS } from "@/lib/roulette/config";
 import { WHEEL_ORDER, colorOf } from "@/lib/roulette/engine";
 
 const SEG = 360 / 37;
@@ -34,7 +35,7 @@ export function RouletteWheel({ rotation }: { rotation: number }) {
         style={{
           background: CONIC,
           transform: `rotate(${rotation}deg)`,
-          transition: "transform 4s cubic-bezier(0.15, 0.85, 0.2, 1)",
+          transition: `transform ${ROULETTE_SPIN_MS}ms cubic-bezier(0.15, 0.85, 0.2, 1)`,
         }}
       >
         {WHEEL_ORDER.map((n, i) => (

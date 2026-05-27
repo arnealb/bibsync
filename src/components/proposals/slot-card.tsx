@@ -97,7 +97,7 @@ export function SlotCard({
   );
 
   return (
-    <div className="space-y-3 rounded-lg border p-4">
+    <div className="space-y-3 rounded-lg border bg-card p-4 shadow-sm">
       <h3 className="font-semibold">{slot.label}</h3>
 
       {decidedTime ? (

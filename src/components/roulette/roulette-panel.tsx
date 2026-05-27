@@ -13,7 +13,11 @@ import { RouletteWheel, rotationFor } from "@/components/roulette/roulette-wheel
 import { UserAvatar } from "@/components/user-avatar";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
-import { ROULETTE_CHIPS, ROULETTE_RESULT_MS } from "@/lib/roulette/config";
+import {
+  ROULETTE_CHIPS,
+  ROULETTE_RESULT_MS,
+  ROULETTE_SPIN_MS,
+} from "@/lib/roulette/config";
 import { colorOf, type BetType } from "@/lib/roulette/engine";
 import { useRouletteRealtime } from "@/hooks/use-roulette-realtime";
 import {
@@ -88,6 +92,11 @@ export function RoulettePanel({
   const [chip, setChip] = useState<number>(50);
   const [rotation, setRotation] = useState(0);
   const [nowTs, setNowTs] = useState(0);
+  // Which round's outcome has finished spinning and may be shown. A state we
+  // load straight into (mid-result) counts as revealed — there's no spin to wait for.
+  const [revealedRound, setRevealedRound] = useState<number | null>(
+    initialState?.phase === "result" ? initialState.roundNo : null,
+  );
   const [pending, start] = useTransition();
 
   const animatedRound = useRef<number | null>(null);
@@ -118,6 +127,8 @@ export function RoulettePanel({
   const phase = table?.phase ?? "betting";
   const endsAt = table?.bettingEndsAt ? Date.parse(table.bettingEndsAt) : null;
   const roundNo = table?.roundNo ?? 0;
+  // The outcome is only shown once the wheel has stopped on this round.
+  const revealed = phase === "result" && revealedRound === roundNo;
   const secondsLeft =
     endsAt != null && nowTs > 0 ? Math.max(0, Math.ceil((endsAt - nowTs) / 1000)) : null;
 
@@ -134,6 +145,17 @@ export function RoulettePanel({
       void resolveRoulette(roomId);
     }
   }, [phase, endsAt, nowTs, roundNo, roomId]);
+
+  // Reveal the outcome only after the wheel has finished spinning, so you
+  // can't tell whether you've won before it stops.
+  useEffect(() => {
+    if (phase !== "result" || revealedRound === roundNo) return;
+    const id = window.setTimeout(
+      () => setRevealedRound(roundNo),
+      ROULETTE_SPIN_MS,
+    );
+    return () => window.clearTimeout(id);
+  }, [phase, roundNo, revealedRound]);
 
   // After showing the result, open the next round (idempotent server-side).
   useEffect(() => {
@@ -188,7 +210,7 @@ export function RoulettePanel({
         <span className="font-mono tabular-nums text-muted-foreground">
           {copy.bibcoins.balance(balance)}
         </span>
-        {phase === "result" && table?.winningNumber != null ? (
+        {revealed && table?.winningNumber != null ? (
           <span
             className={cn(
               "font-medium",
@@ -204,6 +226,10 @@ export function RoulettePanel({
                 ? copy.roulette.yourResultLose
                 : ""}
           </span>
+        ) : phase === "result" ? (
+          <span className="font-mono font-semibold tabular-nums text-amber-500">
+            {copy.roulette.spinning}
+          </span>
         ) : secondsLeft != null ? (
           <span className="font-mono font-semibold tabular-nums text-amber-500">
             {copy.roulette.bettingEndsIn(secondsLeft)}
@@ -215,7 +241,7 @@ export function RoulettePanel({
         )}
       </div>
 
-      {phase === "result" &&
+      {revealed &&
         table?.results &&
         table.results.length > 0 && (
           <ul className="space-y-1 rounded-lg border p-2 text-sm">
@@ -243,7 +269,7 @@ export function RoulettePanel({
           </ul>
         )}
 
-      {phase === "result" && (
+      {revealed && (
         <p className="text-center text-xs text-muted-foreground">
           {copy.roulette.nextRound}
         </p>
