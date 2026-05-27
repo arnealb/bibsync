@@ -68,6 +68,9 @@ export interface Database {
           join_code: string;
           owner_id: string;
           created_at: Timestamp;
+          lat: number | null;
+          lng: number | null;
+          radius_m: number;
         };
         Insert: {
           id?: string;
@@ -76,6 +79,9 @@ export interface Database {
           join_code: string;
           owner_id: string;
           created_at?: Timestamp;
+          lat?: number | null;
+          lng?: number | null;
+          radius_m?: number;
         };
         Update: {
           id?: string;
@@ -84,6 +90,9 @@ export interface Database {
           join_code?: string;
           owner_id?: string;
           created_at?: Timestamp;
+          lat?: number | null;
+          lng?: number | null;
+          radius_m?: number;
         };
         Relationships: [];
       };
@@ -211,6 +220,8 @@ export interface Database {
           status: PresenceStatus;
           back_at: TimeString | null;
           updated_at: Timestamp;
+          at_location: boolean | null;
+          location_checked_at: Timestamp | null;
         };
         Insert: {
           room_id: string;
@@ -218,6 +229,8 @@ export interface Database {
           status: PresenceStatus;
           back_at?: TimeString | null;
           updated_at?: Timestamp;
+          at_location?: boolean | null;
+          location_checked_at?: Timestamp | null;
         };
         Update: {
           room_id?: string;
@@ -225,6 +238,8 @@ export interface Database {
           status?: PresenceStatus;
           back_at?: TimeString | null;
           updated_at?: Timestamp;
+          at_location?: boolean | null;
+          location_checked_at?: Timestamp | null;
         };
         Relationships: [];
       };

@@ -49,6 +49,14 @@ export const setJoinCodeSchema = z.object({
   joinCode: customJoinCode,
 });
 
+/** The room's geofence centre + radius (metres), set by an owner/admin. */
+export const setRoomLocationSchema = z.object({
+  roomId: z.string().uuid(),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  radiusM: z.number().int().min(20).max(5000),
+});
+
 export const joinRoomSchema = z.object({
   joinCode: z
     .string()
@@ -60,4 +68,5 @@ export const joinRoomSchema = z.object({
 
 export type CreateRoomInput = z.infer<typeof createRoomSchema>;
 export type SetJoinCodeInput = z.infer<typeof setJoinCodeSchema>;
+export type SetRoomLocationInput = z.infer<typeof setRoomLocationSchema>;
 export type JoinRoomInput = z.infer<typeof joinRoomSchema>;

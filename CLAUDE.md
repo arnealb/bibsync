@@ -131,6 +131,10 @@ teammate merge, so the sequence jumps `0011 → 0014`):
     proposal_type) where slot_key is null`; slot prefs `(room_id,
     proposal_date, slot_key, created_by) where slot_key is not null`.
     `createProposal` pre-checks and maps `23505` → friendly "tijd al ingevuld".
+22. `0029_room_location.sql` — **location-based presence**: rooms get an
+    optional geofence (`lat`/`lng`/`radius_m`, default 150m); presence rows get
+    `at_location` + `location_checked_at`. No new RLS (members already update
+    their own presence row; owners/admins their room).
 
 **RLS recursion is avoided with `SECURITY DEFINER` helpers**
 (`is_room_member`, `is_room_owner`, `can_access_proposal`, `is_admin`): they
@@ -205,6 +209,14 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   voorstel") instead of a separate section. The calendar defaults to **day** view.
 - Presence: daily lazy reset (anything before today 04:00 → "studying");
   >4h idle shows "last seen".
+- **Location presence:** owners/admins set a room geofence (centre + radius)
+  in settings (`RoomLocationSettings`, reuses the leaflet map). The browser
+  `LocationReporter` periodically (3 min) sends its position to `reportLocation`,
+  which compares it to the geofence **server-side** and stores only the verdict
+  (`at_location` + `location_checked_at`) — never raw coordinates. The sidebar
+  shows "📍 ter plaatse / niet ter plaatse" via `locationStatus` (fresh ≤10 min,
+  else unknown) and ranks confirmed-present members first. Manual status is
+  untouched; location reports never bump `updated_at`.
 - **Inside joke:** users whose display name matches `/alan|chakalaka/i` have a
   half vote (weight 0.5) — see `src/lib/proposals/joke.ts`.
 - **Admin:** owners *or* admins can manage a room (`canManageRoom`,

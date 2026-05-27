@@ -17,6 +17,7 @@ import {
   joinRoomSchema,
   renameRoomSchema,
   setJoinCodeSchema,
+  setRoomLocationSchema,
 } from "@/lib/validation/rooms";
 
 const UNIQUE_VIOLATION = "23505";
@@ -330,6 +331,71 @@ export async function renameRoom(
 
   revalidatePath(`/app/rooms/${parsed.data.roomId}/settings`);
   revalidatePath(`/app/rooms/${parsed.data.roomId}`);
+  return { ok: true };
+}
+
+/** Sets the room geofence (centre + radius). Owner/admin only. */
+export async function setRoomLocation(input: {
+  roomId: string;
+  lat: number;
+  lng: number;
+  radiusM: number;
+}): Promise<ActionResult> {
+  const parsed = setRoomLocationSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? copy.common.genericError,
+    };
+  }
+
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: copy.common.notAuthenticated };
+  if (!(await canManageRoom(parsed.data.roomId, userId))) {
+    return { ok: false, error: copy.rooms.onlyOwner };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("rooms")
+    .update({
+      lat: parsed.data.lat,
+      lng: parsed.data.lng,
+      radius_m: parsed.data.radiusM,
+    })
+    .eq("id", parsed.data.roomId);
+  if (error) {
+    console.error("[setRoomLocation]", error);
+    return { ok: false, error: copy.common.genericError };
+  }
+
+  revalidatePath(`/app/rooms/${parsed.data.roomId}/settings`);
+  revalidatePath(`/app/rooms/${parsed.data.roomId}`);
+  return { ok: true };
+}
+
+/** Removes the room geofence. Owner/admin only. */
+export async function clearRoomLocation(
+  roomId: string,
+): Promise<ActionResult> {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: copy.common.notAuthenticated };
+  if (!(await canManageRoom(roomId, userId))) {
+    return { ok: false, error: copy.rooms.onlyOwner };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("rooms")
+    .update({ lat: null, lng: null })
+    .eq("id", roomId);
+  if (error) {
+    console.error("[clearRoomLocation]", error);
+    return { ok: false, error: copy.common.genericError };
+  }
+
+  revalidatePath(`/app/rooms/${roomId}/settings`);
+  revalidatePath(`/app/rooms/${roomId}`);
   return { ok: true };
 }
 

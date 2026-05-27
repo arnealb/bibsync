@@ -5,6 +5,7 @@ import { DeleteRoom } from "@/components/rooms/settings/delete-room";
 import { MemberList } from "@/components/rooms/settings/member-list";
 import { RegenerateCode } from "@/components/rooms/settings/regenerate-code";
 import { RenameRoomForm } from "@/components/rooms/settings/rename-room-form";
+import { RoomLocationSettings } from "@/components/rooms/settings/room-location";
 import { SetCode } from "@/components/rooms/settings/set-code";
 import {
   Card,
@@ -75,6 +76,20 @@ export default async function RoomSettingsPage({ params }: SettingsPageProps) {
             </p>
             <SetCode roomId={id} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{copy.rooms.settings.location}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RoomLocationSettings
+            roomId={id}
+            initialLat={access.room.lat}
+            initialLng={access.room.lng}
+            initialRadiusM={access.room.radius_m}
+          />
         </CardContent>
       </Card>
 

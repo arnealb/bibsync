@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Circle,
   CircleMarker,
   MapContainer,
   Polyline,
@@ -28,11 +29,14 @@ export function RouteMap({
   editable = false,
   onAdd,
   height = 280,
+  circleRadiusM,
 }: {
   points: RoutePoint[];
   editable?: boolean;
   onAdd?: (p: RoutePoint) => void;
   height?: number;
+  /** Draws a radius circle around the first point (room geofence preview). */
+  circleRadiusM?: number;
 }) {
   const positions = points.map((p) => [p.lat, p.lng] as [number, number]);
   const center = positions[0] ?? DEFAULT_CENTER;
@@ -48,6 +52,13 @@ export function RouteMap({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      {circleRadiusM != null && positions[0] && (
+        <Circle
+          center={positions[0]}
+          radius={circleRadiusM}
+          pathOptions={{ color: "#10b981", fillColor: "#10b981", fillOpacity: 0.12 }}
+        />
+      )}
       {positions.length > 1 && (
         <Polyline positions={positions} pathOptions={{ color: "#10b981", weight: 4 }} />
       )}

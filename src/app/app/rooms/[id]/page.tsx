@@ -98,6 +98,8 @@ export default async function RoomPage({ params }: RoomPageProps) {
             userId={access.userId}
             members={memberOptions}
             initialPresence={presenceRows}
+            hasLocation={access.room.lat != null && access.room.lng != null}
+            canManage={access.canManage}
           />
         }
       />

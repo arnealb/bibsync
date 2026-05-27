@@ -20,3 +20,12 @@ export const setPresenceSchema = z.object({
 });
 
 export type SetPresenceInput = z.infer<typeof setPresenceSchema>;
+
+/** A browser location reading sent to compare against the room geofence. */
+export const reportLocationSchema = z.object({
+  roomId: z.string().uuid(),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
+
+export type ReportLocationInput = z.infer<typeof reportLocationSchema>;
