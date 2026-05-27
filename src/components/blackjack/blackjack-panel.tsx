@@ -17,6 +17,7 @@ import { PlayingCard } from "@/components/poker/playing-card";
 import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAutoLeaveTable } from "@/hooks/use-auto-leave-table";
 import { useBlackjackRealtime } from "@/hooks/use-blackjack-realtime";
 import { cardScore } from "@/lib/blackjack/engine";
 import type { PublicHand, PublicSeat, PublicTable } from "@/lib/blackjack/table";
@@ -162,6 +163,9 @@ export function BlackjackPanel({
   const lastPhase = useRef(initialState?.phase);
 
   useBlackjackRealtime(roomId, setTable);
+
+  // Leaving the page frees your seat — no lingering "still at the table".
+  useAutoLeaveTable("blackjack", roomId, () => leaveBlackjack(roomId));
 
   // When a round resolves, refresh server-rendered balance (payouts may have
   // landed via someone else's final move).

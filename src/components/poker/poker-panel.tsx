@@ -13,6 +13,7 @@ import {
 import { PlayingCard } from "@/components/poker/playing-card";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
+import { useAutoLeaveTable } from "@/hooks/use-auto-leave-table";
 import { usePokerRealtime } from "@/hooks/use-poker-realtime";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
@@ -47,6 +48,9 @@ export function PokerPanel({
   const [pending, startAction] = useTransition();
 
   usePokerRealtime(roomId, (state) => setTable(state));
+
+  // Leaving the page cashes you out — no lingering empty seat at the table.
+  useAutoLeaveTable("poker", roomId, () => leavePokerTable(roomId));
 
   const handNo = table?.handNo ?? 0;
   const status = table?.status ?? "waiting";

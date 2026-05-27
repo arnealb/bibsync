@@ -238,6 +238,12 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   "busy" error and the client does not advance). Hidden state (decks, hole/
   dealer cards) lives in service-only `*_private` tables with RLS and no
   policies. Pure, unit-tested engines in `src/lib/<game>/`.
+- **Leaving a table frees the seat:** blackjack/poker panels use
+  `useAutoLeaveTable` — SPA navigation away unmounts the panel and calls the
+  (idempotent) leave action after a debounced tick (StrictMode-remount-safe);
+  tab close/refresh fires a `sendBeacon` to `POST /api/games/leave`. No more
+  ghosts "still sitting" after they've gone. Roulette has no seats (bets are
+  per-round), so nothing to leave there.
 - **Steps:** daily total per user per room. `health` rows carry the running
   daily total (take the **max**), `browser` pedometer rows are increments
   (**sum**) — see `src/lib/steps/aggregate.ts`; never just sum all rows.
