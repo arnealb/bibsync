@@ -89,30 +89,36 @@ export function SlotCard({
     a.start_time.localeCompare(b.start_time),
   );
 
-  // The break is simply the time the most people back; no averaging.
-  const decidedTime =
-    decideSlotTime(suggestions, votes, (uid) =>
-      voteWeight(members[uid]?.name ?? ""),
-    ) ?? slot.defaultTime.slice(0, 5);
-  const isDefault = suggestions.length === 0;
+  // The break is simply the time the most people back; no averaging. It's only
+  // shown once someone has actually expressed a preference or voted — until
+  // then there's no certainty anyone wants a break at all.
+  const decidedTime = decideSlotTime(suggestions, votes, (uid) =>
+    voteWeight(members[uid]?.name ?? ""),
+  );
 
   return (
     <div className="space-y-3 rounded-lg border p-4">
       <h3 className="font-semibold">{slot.label}</h3>
 
-      <div className="rounded-lg border-2 border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-center">
-        <p className="text-[11px] font-semibold tracking-wide text-emerald-700 uppercase dark:text-emerald-400">
-          {copy.proposals.slots.breakAt}
-        </p>
-        <p className="text-5xl leading-tight font-black tabular-nums text-emerald-700 dark:text-emerald-400">
-          {decidedTime}
-        </p>
-        {isDefault && (
-          <p className="text-xs text-muted-foreground">
-            {copy.proposals.slots.defaultNote}
+      {decidedTime ? (
+        <div className="rounded-lg border-2 border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-center">
+          <p className="text-[11px] font-semibold tracking-wide text-emerald-700 uppercase dark:text-emerald-400">
+            {copy.proposals.slots.breakAt}
           </p>
-        )}
-      </div>
+          <p className="text-5xl leading-tight font-black tabular-nums text-emerald-700 dark:text-emerald-400">
+            {decidedTime}
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed px-4 py-3 text-center">
+          <p className="font-medium text-muted-foreground">
+            {copy.proposals.slots.notDecided}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {copy.proposals.slots.notDecidedSub}
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
