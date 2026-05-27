@@ -30,6 +30,19 @@ unchecked item top-to-bottom.
 
 ## Now
 
+- [ ] **Stappen-feature afwerken (Apple Health)** — gebouwd & live: dagtotaal
+      vergelijken i.p.v. scherm openhouden (`step_sessions`, health=max /
+      browser=som, geen dubbeltelling), per-room ranglijst (realtime),
+      bibcoins per 1000 stappen + achievements, browser-teller als fallback,
+      `POST /api/steps` met één-plak **koppelcode** (`token~roomId`), en de
+      knoppen "Kopieer koppelcode" + "Voeg toe aan Shortcuts" op de
+      **Stappen**-tab. **Te checken (morgen):**
+      (a) shortcut 1× bouwen op iPhone (Vind Gezondheidsmonsters → Som →
+      `POST /api/steps` met `code`+`steps`) met een **importvraag** voor de
+      koppelcode; (b) iCloud-link delen → in Vercel `NEXT_PUBLIC_SHORTCUT_URL`
+      zetten (of de link naar mij sturen) zodat de één-tik-knop verschijnt;
+      (c) end-to-end testen: code plakken → dagtotaal springt op de ranglijst.
+      Migratie `0024_step_sessions.sql` is al uitgevoerd.
 - [ ] **Snake-polish (post-MVP)** — (a) `getRoomLeaderboard` server-side
       aggregeren (RPC of view) i.p.v. alle rijen ophalen, (b) bij eindscore = 0
       een korte info-toast i.p.v. stille no-op, (c) `myBest` na elke succesvolle

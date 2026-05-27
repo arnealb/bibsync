@@ -10,8 +10,9 @@ import {
 
 import type { RoutePoint } from "@/lib/routes/types";
 
-// Default view: roughly Belgium (the app's home turf) when no points yet.
-const DEFAULT_CENTER: [number, number] = [50.85, 4.35];
+// Default view when no points yet: De Therminal (UGent, Hoveniersberg 24, Gent),
+// the group's home base — so route planning starts right where they study.
+const DEFAULT_CENTER: [number, number] = [51.0444, 3.7276];
 
 function ClickCapture({ onAdd }: { onAdd: (p: RoutePoint) => void }) {
   useMapEvents({
@@ -39,7 +40,7 @@ export function RouteMap({
   return (
     <MapContainer
       center={center}
-      zoom={positions.length > 0 ? 15 : 13}
+      zoom={15}
       scrollWheelZoom
       style={{ height, width: "100%", borderRadius: 8 }}
     >
