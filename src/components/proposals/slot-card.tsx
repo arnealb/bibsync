@@ -231,7 +231,6 @@ export function SlotCard({
               members={members}
               userId={userId}
               canDelete={suggestion.created_by === userId}
-              isWinner={suggestion.start_time.slice(0, 5) === decidedTime}
               onVote={(value) => onVote(suggestion.id, value)}
               onDelete={() => onDelete(suggestion.id)}
               onAddComment={onAddComment}

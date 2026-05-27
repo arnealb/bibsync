@@ -50,6 +50,7 @@ export async function createProposal(
     .eq("room_id", parsed.data.roomId)
     .eq("proposal_date", parsed.data.proposalDate)
     .eq("start_time", parsed.data.startTime)
+    .eq("proposal_type", parsed.data.proposalType)
     .is("slot_key", null)
     .limit(1);
   if (clash && clash.length > 0) {
@@ -85,6 +86,12 @@ export async function createProposal(
       .insert(base)
       .select("*")
       .single());
+  }
+
+  // The unique index (0028) rejects an identical proposal that slipped past the
+  // pre-check (e.g. a race).
+  if (error?.code === "23505") {
+    return { ok: false, error: copy.proposals.validation.slotTaken };
   }
 
   if (error || !data) {
