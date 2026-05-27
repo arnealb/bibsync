@@ -120,6 +120,17 @@ teammate merge, so the sequence jumps `0011 → 0014`):
 19. `0025_blackjack_multi.sql` + `0026_roulette.sql` — **shared-table
     multiplayer** blackjack & roulette (`blackjack_tables`+`blackjack_private`,
     `roulette_tables`), mirroring poker's design.
+20. `0027_timeouts.sql` — **room timeouts** (`room_timeouts`, PK
+    `(room_id,user_id)`): members SELECT; owner/admin INSERT+DELETE only (no
+    UPDATE policy, so `setUserTimeout` upserts with `ignoreDuplicates` →
+    `ON CONFLICT DO NOTHING`). Realtime. Drives the red `TimeoutBanner`; set via
+    the `/timeout <naam>` / `/untimeout` chat commands (name completion).
+21. `0028_proposal_dedup.sql` — **forbids duplicate proposals for all types**:
+    de-dupes existing rows (keep most-voted, then earliest) then adds partial
+    unique indexes — free proposals `(room_id, proposal_date, start_time,
+    proposal_type) where slot_key is null`; slot prefs `(room_id,
+    proposal_date, slot_key, created_by) where slot_key is not null`.
+    `createProposal` pre-checks and maps `23505` → friendly "tijd al ingevuld".
 
 **RLS recursion is avoided with `SECURITY DEFINER` helpers**
 (`is_room_member`, `is_room_owner`, `can_access_proposal`, `is_admin`): they
@@ -151,6 +162,13 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   the server's next state. Realtime delivery needs the JWT on the socket
   (`client.ts` sets `realtime.setAuth`); without it RLS-scoped events never
   arrive. Use a singleton browser client.
+- **Unread chat badge** (iPhone-homescreen style): `useUnreadChat` lives in the
+  always-mounted `RoomTabs`, so it keeps counting on every tab. Read-state is a
+  per-room localStorage ISO marker (`bibsync:chat-read:<roomId>`); on mount it
+  counts messages since the marker (minus your own), realtime inserts bump it
+  live. The chat page calls `markChatRead` (enter/leave/new message) which
+  resets the badge via the in-tab `onChatRead` pub/sub — no DB table needed.
+  Reset happens in the event callback, never as sync setState in an effect body.
 
 ## Routing
 
@@ -163,16 +181,28 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   `/app/rooms/[id]/games` (Snake, poker, blackjack, roulette, Pet Connect under
   `/games/*`), `/app/rooms/[id]/stappen` (steps),
   `/app/rooms/[id]/settings` (owner **or admin**), `/app/admin` (admin only),
-  `/app/profile`. Room sub-tabs live in `RoomTabs`.
+  `/app/profile`. Room sub-tabs live in `RoomTabs`, which also renders the
+  unread-chat badge on the Chat tab.
 - `POST /api/steps` — token-authed endpoint for an Apple Shortcut to send a
   user's daily step total (`code` = `token~roomId`).
 
 ## Domain rules worth knowing
 
-- Join codes: 6 chars from `A–Z2–9` excluding `0/O/1/I/L`.
+- Join codes: auto-generated = 6 chars from `A–Z2–9` excluding `0/O/1/I/L`.
+  **Custom codes** (set at room creation or in settings via `setJoinCode`) are
+  4–12 chars, stored upper-cased; `checkJoinCode` (admin client) tests
+  availability and `23505` maps to "code al in gebruik". See
+  `src/lib/rooms/join-code.ts`.
 - Proposals: date today…+7, start time on the quarter, duration ∈
-  {15,30,45,60,90,120}. **One proposal per (room, date, start_time)** —
-  duplicates are rejected in `createProposal`.
+  {15,30,45,60,90,120}. **No duplicate proposals** (enforced by 0028 partial
+  unique indexes, all types): one free proposal per (room, date, time, type);
+  one slot preference per (room, date, slot, user) — multiple users may still
+  prefer the same slot time, that's how consensus forms.
+- **Fixed slots ("vaste momenten"):** the break time is simply the most-backed
+  time (`decideSlotTime` — preferences + yes-votes, weighted, earliest wins
+  ties), shown big in `SlotCard`; **no averaging**. Free proposals are
+  **interleaved** into the day timeline at their time (amber accent, "💡 Vrij
+  voorstel") instead of a separate section. The calendar defaults to **day** view.
 - Presence: daily lazy reset (anything before today 04:00 → "studying");
   >4h idle shows "last seen".
 - **Inside joke:** users whose display name matches `/alan|chakalaka/i` have a
@@ -198,6 +228,9 @@ Hooks in `src/hooks/use-*-realtime.ts`:
 - **Inside joke (poker/games chips were bibcoins):** poker buy-in moves your
   whole balance to chips; blackjack/roulette bet per round straight from the
   wallet.
+- **Timeouts:** owners/admins (`canManage`) can put a member in timeout via the
+  `/timeout <naam>` chat command (name completion) or `/untimeout`; the target
+  sees a red `TimeoutBanner`. Backed by `room_timeouts` (see migration 0027).
 
 ## Gotchas
 
@@ -214,5 +247,9 @@ Hooks in `src/hooks/use-*-realtime.ts`:
 - **Reserved SQL words can't be column names** — e.g. `full` (from `FULL JOIN`)
   errors in `CREATE TABLE`; the Supabase SQL editor runs each migration in one
   transaction, so an error rolls back the whole script.
+- **`vercel.json` pins functions to `fra1`** (Frankfurt) to match Supabase in
+  `eu-central-1` — the default `iad1` (US) added cross-Atlantic latency to every
+  query. This was the main "app feels slow" fix; per-tab `loading.tsx` skeletons
+  (`games`/`chat`/`eten`/`stappen`) smooth perceived load.
 
 @AGENTS.md

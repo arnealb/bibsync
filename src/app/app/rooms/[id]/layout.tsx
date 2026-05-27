@@ -41,7 +41,7 @@ export default async function RoomLayout({
         isOwner={access.isOwner}
         memberCount={members.length}
       />
-      <RoomTabs roomId={access.room.id} />
+      <RoomTabs roomId={access.room.id} userId={access.userId} />
       {children}
     </div>
   );

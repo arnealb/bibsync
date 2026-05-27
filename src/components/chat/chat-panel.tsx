@@ -10,6 +10,7 @@ import { MessageList } from "@/components/chat/message-list";
 import { Button } from "@/components/ui/button";
 import { useMessagesRealtime } from "@/hooks/use-messages-realtime";
 import { useReactionsRealtime } from "@/hooks/use-reactions-realtime";
+import { markChatRead } from "@/lib/chat/unread";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
 import type { ReactionEmoji } from "@/lib/chat/reactions";
@@ -79,7 +80,15 @@ export function ChatPanel({
     }
   }, [messages]);
 
+  // Viewing the chat clears the tab's unread badge — on open, on leave, and as
+  // each new message arrives while it's open.
+  useEffect(() => {
+    markChatRead(roomId);
+    return () => markChatRead(roomId);
+  }, [roomId]);
+
   useMessagesRealtime(roomId, (incoming) => {
+    markChatRead(roomId);
     setMessages((prev) =>
       prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming],
     );

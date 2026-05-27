@@ -445,6 +445,8 @@ export const copy = {
       breakAt: "Pauze om",
       defaultNote: "standaard — nog geen voorkeuren",
       defaultLabel: "standaard",
+      notDecided: "Nog geen pauze",
+      notDecidedSub: "Niemand heeft gestemd — geef je voorkeur of stem hieronder.",
       otherDays: "Voorstellen op andere dagen",
       yourPref: "Jouw voorkeur",
       save: "Opslaan",
@@ -560,6 +562,8 @@ export const copy = {
     loadMore: "Laad oudere berichten",
     newMessages: (n: number) =>
       `${n} ${n === 1 ? "nieuw bericht" : "nieuwe berichten"} ↓`,
+    unreadLabel: (n: number) =>
+      `${n} ongelezen ${n === 1 ? "bericht" : "berichten"}`,
     error: "Bericht niet verzonden. Probeer opnieuw.",
     rainbowOn: "🌈 Full rainbow mode aan!",
     rainbowOff: "Rainbow mode uit.",
