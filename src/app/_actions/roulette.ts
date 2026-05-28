@@ -12,6 +12,7 @@ import {
   addBet,
   initialRouletteTable,
   resolveRound,
+  stakeFor,
   startBetting,
   type RouletteTable,
 } from "@/lib/roulette/table";
@@ -150,6 +151,33 @@ export async function placeRouletteBet(
   return { ok: true, balance: await getBibcoins(auth.userId) };
 }
 
+/** Spins the wheel and pays out winners. Version-guarded, so only the first
+ *  caller to flip the version actually resolves; the rest no-op. */
+async function spinAndSettle(
+  admin: SupabaseClient,
+  roomId: string,
+  state: RouletteTable,
+  version: number,
+): Promise<void> {
+  const number = pickNumber(cryptoRng);
+  const next = resolveRound(state, number);
+
+  const ok = await persist(admin, roomId, version, next);
+  if (!ok) return; // another client resolved it first
+
+  for (const result of next.results ?? []) {
+    if (result.payout > 0) {
+      await awardBibcoins(
+        result.userId,
+        result.payout,
+        "roulette_payout",
+        `${roomId}:${next.roundNo}:${result.userId}`,
+      );
+      await unlockAchievement(result.userId, "roulette_win");
+    }
+  }
+}
+
 /**
  * Resolve the round once the timer is up. Idempotent and safe to call from
  * every client (only the first to flip the version actually spins + pays out).
@@ -165,23 +193,28 @@ export async function resolveRoulette(
   if (state.phase !== "betting" || !state.bettingEndsAt) return { ok: true };
   if (Date.now() < Date.parse(state.bettingEndsAt)) return { ok: true };
 
-  const number = pickNumber(cryptoRng);
-  const next = resolveRound(state, number);
+  await spinAndSettle(auth.admin, roomId, state, version);
+  return { ok: true };
+}
 
-  const ok = await persist(auth.admin, roomId, version, next);
-  if (!ok) return { ok: true }; // another client resolved it first
+/**
+ * Spin immediately, skipping the betting countdown. Any player who has staked
+ * this round may trigger it — handy when nobody wants to wait the full timer.
+ */
+export async function spinRouletteNow(
+  roomId: string,
+): Promise<RouletteActionResult> {
+  const auth = await authorize(roomId);
+  if (!auth.ok) return auth;
 
-  for (const result of next.results ?? []) {
-    if (result.payout > 0) {
-      await awardBibcoins(
-        result.userId,
-        result.payout,
-        "roulette_payout",
-        `${roomId}:${next.roundNo}:${result.userId}`,
-      );
-      await unlockAchievement(result.userId, "roulette_win");
-    }
+  const loaded = await loadOrCreate(auth.admin, roomId);
+  const { state, version } = loaded;
+  if (state.phase !== "betting") return { ok: true };
+  if (stakeFor(state.bets, auth.userId) <= 0) {
+    return { ok: false, error: copy.roulette.noBets };
   }
+
+  await spinAndSettle(auth.admin, roomId, state, version);
   return { ok: true };
 }
 

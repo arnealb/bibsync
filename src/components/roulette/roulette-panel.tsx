@@ -6,11 +6,13 @@ import { toast } from "sonner";
 import {
   placeRouletteBet,
   resolveRoulette,
+  spinRouletteNow,
   startRouletteRound,
   type RouletteActionResult,
 } from "@/app/_actions/roulette";
 import { RouletteWheel, rotationFor } from "@/components/roulette/roulette-wheel";
 import { ProfileLink } from "@/components/profile/profile-link";
+import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
@@ -241,6 +243,17 @@ export function RoulettePanel({
           </span>
         )}
       </div>
+
+      {/* Skip the countdown: any player who has staked can spin right away. */}
+      {betting && myStake > 0 && secondsLeft !== 0 && (
+        <Button
+          className="w-full"
+          disabled={pending}
+          onClick={() => run(() => spinRouletteNow(roomId))}
+        >
+          🎡 {copy.roulette.spinNow}
+        </Button>
+      )}
 
       {revealed &&
         table?.results &&

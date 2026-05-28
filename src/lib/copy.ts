@@ -375,6 +375,7 @@ export const copy = {
     betsLocked: "Inzetten gesloten — het wiel draait.",
     tableFull: "De tafel zit vol inzetten voor deze ronde.",
     spin: "Draai!",
+    spinNow: "Spin nu",
     spinning: "Het wiel draait…",
     clear: "Wissen",
     chip: "Fiche",
