@@ -145,7 +145,7 @@
   }
 }
 .bj-deal {
-  animation: bj-deal 0.45s cubic-bezier(0.2, 0.75, 0.2, 1) both;
+  animation: bj-deal 0.55s cubic-bezier(0.2, 0.75, 0.2, 1) both;
 }
 
 /* Premium name effects (shop cosmetics, type "effect"). */

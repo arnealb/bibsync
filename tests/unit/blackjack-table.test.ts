@@ -65,13 +65,33 @@ describe("multiplayer blackjack — naturals", () => {
     expect(s.seats[0]!.hands[0]!.payout).toBe(250); // floor(100 * 2.5)
   });
 
-  it("dealer blackjack ends the round at once: naturals push, others lose", () => {
-    const deck = ["Tc", "8c", "Ad", "Kd", "As", "Ks"] as Card[];
-    const s = deal(seated([["a", 100], ["b", 100]]), deck);
+  it("dealer blackjack no longer ends the round early — players still draw, and a hit-to-21 pushes", () => {
+    const deck = ["7c", "4c", "Ad", "Kd", "Td"] as Card[];
+    let s = deal(seated([["a", 100]]), deck);
 
+    // Dealer has a natural (Ad,Kd) but the round keeps going so a can play.
+    expect(s.phase).toBe("player");
+    expect(s.toActIndex).toBe(0);
+
+    s = applyAction(s, "a", "hit"); // 11 → 21 (three cards, not a natural)
+    expect(s.seats[0]!.hands[0]!.cards).toEqual(["7c", "4c", "Td"]);
+
+    s = applyAction(s, "a", "stand");
     expect(s.phase).toBe("done");
-    expect(s.toActIndex).toBeNull();
-    expect(s.seats[0]!.hands[0]!.result).toBe("lose"); // 18 vs dealer BJ
+    expect(s.seats[0]!.hands[0]!.result).toBe("push"); // 21 vs dealer 21
+    expect(s.seats[0]!.hands[0]!.payout).toBe(100);
+  });
+
+  it("dealer blackjack: a stiff hand still loses, a natural still pushes", () => {
+    const deck = ["Tc", "8c", "Ad", "Kd", "As", "Ks"] as Card[];
+    let s = deal(seated([["a", 100], ["b", 100]]), deck);
+
+    expect(s.phase).toBe("player"); // a must still act
+    expect(s.seats[1]!.done).toBe(true); // b's natural auto-stands
+
+    s = applyAction(s, "a", "stand");
+    expect(s.phase).toBe("done");
+    expect(s.seats[0]!.hands[0]!.result).toBe("lose"); // 18 vs dealer 21
     expect(s.seats[1]!.hands[0]!.result).toBe("push"); // natural vs dealer BJ
     expect(s.seats[1]!.hands[0]!.payout).toBe(100);
   });

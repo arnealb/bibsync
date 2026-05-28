@@ -196,7 +196,10 @@ export function deal(state: TableState, deck: Card[]): TableState {
 
   s.phase = "player";
   const first = firstActionable(s);
-  if (first === null || isBlackjack(s.dealer)) {
+  // A dealer blackjack does NOT end the round early: players still draw, so
+  // someone can also reach 21 and push. The hole card stays masked until the
+  // dealer plays, and resolveAll compares totals (21 vs 21 = push).
+  if (first === null) {
     toDealerAndResolve(s);
   } else {
     s.toActIndex = first;
@@ -255,9 +258,6 @@ function resolveAll(state: TableState): void {
       } else if (natural && !dealerBJ) {
         hand.result = "blackjack";
         hand.payout = Math.floor(hand.bet * 2.5); // 3:2 + stake
-      } else if (dealerBJ) {
-        hand.result = natural ? "push" : "lose";
-        hand.payout = natural ? hand.bet : 0;
       } else if (dealerTotal > 21 || total > dealerTotal) {
         hand.result = "win";
         hand.payout = hand.bet * 2;

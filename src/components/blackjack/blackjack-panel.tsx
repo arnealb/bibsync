@@ -43,7 +43,7 @@ const RESULT_STYLE: Record<string, string> = {
   lose: "bg-red-600/90 text-white",
 };
 
-const DEAL_STEP_S = 0.18;
+const DEAL_STEP_S = 0.35;
 
 function CardFan({
   cards,
@@ -60,7 +60,7 @@ function CardFan({
       {cards.map((card, i) => (
         <div
           key={`${card}-${i}`}
-          className={cn("bj-deal", i > 0 && "-ml-3.5")}
+          className={cn("bj-deal", i > 0 && "-ml-2")}
           style={{ animationDelay: `${startDelay + i * DEAL_STEP_S}s` }}
         >
           <PlayingCard card={card} size="sm" />
@@ -68,7 +68,7 @@ function CardFan({
       ))}
       {hidden && (
         <div
-          className="bj-deal -ml-3.5"
+          className="bj-deal -ml-2"
           style={{ animationDelay: `${startDelay + cards.length * DEAL_STEP_S}s` }}
         >
           <PlayingCard size="sm" />
@@ -308,7 +308,7 @@ export function BlackjackPanel({
           ) : (
             <div className="flex">
               <PlayingCard size="sm" />
-              <div className="-ml-3.5">
+              <div className="-ml-2">
                 <PlayingCard size="sm" />
               </div>
             </div>
@@ -326,7 +326,7 @@ export function BlackjackPanel({
                 members={members}
                 isYou={seat.userId === userId}
                 isActive={phase === "player" && table?.toActIndex === i}
-                dealDelay={i * 0.15}
+                dealDelay={i * 0.3}
               />
             ))
           ) : (
