@@ -8,6 +8,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 
+import { ProfileLink } from "@/components/profile/profile-link";
 import { ProposalComments } from "@/components/proposals/proposal-comments";
 import { RouteField } from "@/components/routes/route-field";
 import { Badge } from "@/components/ui/badge";
@@ -141,13 +142,16 @@ export function ProposalCard({
       </div>
 
       <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <UserAvatar
-          name={creatorName}
-          avatarUrl={creator?.avatarUrl}
-          className="size-5"
-          fallbackClassName="text-[10px]"
-        />
-        {copy.proposals.by} {creatorName}
+        <ProfileLink userId={proposal.created_by} className="shrink-0">
+          <UserAvatar
+            name={creatorName}
+            avatarUrl={creator?.avatarUrl}
+            className="size-5"
+            fallbackClassName="text-[10px]"
+          />
+        </ProfileLink>
+        {copy.proposals.by}{" "}
+        <ProfileLink userId={proposal.created_by}>{creatorName}</ProfileLink>
       </div>
 
       {proposal.destination && (
@@ -235,14 +239,21 @@ function Voters({
   return (
     <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
       {VOTE_VALUES.map((value) => {
-        const names = votes
-          .filter((vote) => vote.vote === value)
-          .map((vote) => members[vote.user_id]?.name ?? "—");
-        if (names.length === 0) return null;
+        const voters = votes.filter((vote) => vote.vote === value);
+        if (voters.length === 0) return null;
         return (
           <li key={value} className={cn("flex gap-1.5")}>
             <span aria-hidden>{VOTE_EMOJI[value]}</span>
-            <span>{names.join(", ")}</span>
+            <span>
+              {voters.map((vote, i) => (
+                <span key={vote.user_id}>
+                  {i > 0 && ", "}
+                  <ProfileLink userId={vote.user_id}>
+                    {members[vote.user_id]?.name ?? "—"}
+                  </ProfileLink>
+                </span>
+              ))}
+            </span>
           </li>
         );
       })}

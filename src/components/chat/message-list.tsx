@@ -2,6 +2,7 @@
 
 import { ChatImage } from "@/components/chat/chat-image";
 import { MessageReactions } from "@/components/chat/message-reactions";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
 import { isGifUrl } from "@/lib/chat/gif";
 import { copy } from "@/lib/copy";
@@ -31,16 +32,18 @@ export function MessageList({
         const isOwn = group.authorId === userId;
         return (
           <div key={group.key} className="flex gap-2.5">
-            <UserAvatar
-              name={name}
-              avatarUrl={members[group.authorId]?.avatarUrl}
-              className="mt-0.5 size-7 shrink-0"
-              fallbackClassName="text-[11px]"
-            />
+            <ProfileLink userId={group.authorId} className="mt-0.5 shrink-0">
+              <UserAvatar
+                name={name}
+                avatarUrl={members[group.authorId]?.avatarUrl}
+                className="size-7"
+                fallbackClassName="text-[11px]"
+              />
+            </ProfileLink>
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm font-medium">
-                  {name}
+                  <ProfileLink userId={group.authorId}>{name}</ProfileLink>
                   {isOwn && (
                     <span className="text-muted-foreground">
                       {" "}

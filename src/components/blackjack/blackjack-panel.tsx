@@ -14,6 +14,7 @@ import {
   type BlackjackActionResult,
 } from "@/app/_actions/blackjack";
 import { PlayingCard } from "@/components/poker/playing-card";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,7 +144,10 @@ function SeatView({
         isActive && "bg-emerald-500/10 ring-1 ring-emerald-500/50",
       )}
     >
-      <div className="flex items-center gap-1.5">
+      <ProfileLink
+        userId={seat.userId}
+        className="flex items-center gap-1.5"
+      >
         <UserAvatar
           name={name}
           avatarUrl={members[seat.userId]?.avatarUrl}
@@ -153,7 +157,7 @@ function SeatView({
         <span className="max-w-20 truncate text-xs font-medium">
           {isYou ? copy.blackjack.you : name}
         </span>
-      </div>
+      </ProfileLink>
       {seat.bet > 0 && (
         <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 tabular-nums dark:text-amber-500">
           {copy.blackjack.betChip(seat.bet)}

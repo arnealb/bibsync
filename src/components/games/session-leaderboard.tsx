@@ -1,3 +1,4 @@
+import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
 import type { SessionStanding } from "@/lib/games/session-queries";
 import { copy } from "@/lib/copy";
@@ -28,14 +29,20 @@ export function SessionLeaderboard({
               <span className="w-5 shrink-0 text-center text-sm font-semibold tabular-nums text-muted-foreground">
                 {index + 1}
               </span>
-              <UserAvatar
-                name={standing.name}
-                avatarUrl={standing.avatarUrl}
-                className="size-7"
-                fallbackClassName="text-[11px]"
-              />
+              <ProfileLink userId={standing.userId} className="shrink-0">
+                <UserAvatar
+                  name={standing.name}
+                  avatarUrl={standing.avatarUrl}
+                  className="size-7"
+                  fallbackClassName="text-[11px]"
+                />
+              </ProfileLink>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{standing.name}</p>
+                <p className="truncate text-sm font-medium">
+                  <ProfileLink userId={standing.userId}>
+                    {standing.name}
+                  </ProfileLink>
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {copy.games.sessionBoard.meta(
                     standing.rounds,

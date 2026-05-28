@@ -10,6 +10,7 @@ import {
   type RouletteActionResult,
 } from "@/app/_actions/roulette";
 import { RouletteWheel, rotationFor } from "@/components/roulette/roulette-wheel";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
@@ -247,14 +248,18 @@ export function RoulettePanel({
           <ul className="space-y-1 rounded-lg border p-2 text-sm">
             {table.results.map((r) => (
               <li key={r.userId} className="flex items-center gap-2">
-                <UserAvatar
-                  name={members[r.userId]?.name ?? "—"}
-                  avatarUrl={members[r.userId]?.avatarUrl}
-                  className="size-5"
-                  fallbackClassName="text-[9px]"
-                />
+                <ProfileLink userId={r.userId} className="shrink-0">
+                  <UserAvatar
+                    name={members[r.userId]?.name ?? "—"}
+                    avatarUrl={members[r.userId]?.avatarUrl}
+                    className="size-5"
+                    fallbackClassName="text-[9px]"
+                  />
+                </ProfileLink>
                 <span className="min-w-0 flex-1 truncate">
-                  {members[r.userId]?.name ?? "—"}
+                  <ProfileLink userId={r.userId}>
+                    {members[r.userId]?.name ?? "—"}
+                  </ProfileLink>
                 </span>
                 <span
                   className={cn(

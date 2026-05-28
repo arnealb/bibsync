@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { refreshStepsBoard } from "@/app/_actions/steps";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
 import {
   Card,
@@ -29,14 +30,16 @@ function Board({ title, entries }: { title: string; entries: StepsEntry[] }) {
               <span className="w-5 shrink-0 text-center text-sm tabular-nums">
                 {MEDALS[i] ?? i + 1}
               </span>
-              <UserAvatar
-                name={entry.name}
-                avatarUrl={entry.avatarUrl}
-                className="size-6 shrink-0"
-                fallbackClassName="text-[10px]"
-              />
+              <ProfileLink userId={entry.userId} className="shrink-0">
+                <UserAvatar
+                  name={entry.name}
+                  avatarUrl={entry.avatarUrl}
+                  className="size-6"
+                  fallbackClassName="text-[10px]"
+                />
+              </ProfileLink>
               <span className="min-w-0 flex-1 truncate text-sm">
-                {entry.name}
+                <ProfileLink userId={entry.userId}>{entry.name}</ProfileLink>
               </span>
               <span className="shrink-0 font-mono text-sm tabular-nums">
                 {copy.steps.board.unit(entry.steps)} 👟

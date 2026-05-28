@@ -11,6 +11,7 @@ import {
   startPokerHand,
 } from "@/app/_actions/poker";
 import { PlayingCard } from "@/components/poker/playing-card";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { useAutoLeaveTable } from "@/hooks/use-auto-leave-table";
@@ -166,15 +167,19 @@ export function PokerPanel({
                 p.status === "folded" && "opacity-50",
               )}
             >
-              <UserAvatar
-                name={members[p.userId]?.name ?? "—"}
-                avatarUrl={members[p.userId]?.avatarUrl}
-                className="size-8 shrink-0"
-                fallbackClassName="text-[11px]"
-              />
+              <ProfileLink userId={p.userId} className="shrink-0">
+                <UserAvatar
+                  name={members[p.userId]?.name ?? "—"}
+                  avatarUrl={members[p.userId]?.avatarUrl}
+                  className="size-8"
+                  fallbackClassName="text-[11px]"
+                />
+              </ProfileLink>
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1 truncate text-sm font-medium">
-                  {members[p.userId]?.name ?? "—"}
+                  <ProfileLink userId={p.userId}>
+                    {members[p.userId]?.name ?? "—"}
+                  </ProfileLink>
                   {isMe && (
                     <span className="text-muted-foreground">
                       ({copy.rooms.you})

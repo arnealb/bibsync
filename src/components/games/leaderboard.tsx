@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
 import { useLeaderboardSettingsRealtime } from "@/hooks/use-leaderboard-settings-realtime";
 import { copy } from "@/lib/copy";
@@ -49,13 +50,15 @@ export function Leaderboard({
               <span className="w-6 text-sm font-mono tabular-nums text-muted-foreground">
                 {index + 1}.
               </span>
-              <UserAvatar
-                name={entry.name}
-                avatarUrl={entry.avatarUrl}
-                className="size-7"
-              />
+              <ProfileLink userId={entry.userId} className="shrink-0">
+                <UserAvatar
+                  name={entry.name}
+                  avatarUrl={entry.avatarUrl}
+                  className="size-7"
+                />
+              </ProfileLink>
               <span className="flex flex-1 items-center gap-1.5 truncate text-sm">
-                {entry.name}
+                <ProfileLink userId={entry.userId}>{entry.name}</ProfileLink>
                 {entry.cheated && (
                   <span
                     title={copy.games.cheatedTag}

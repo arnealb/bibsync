@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MessageSquare, Send, X } from "lucide-react";
 
+import { ProfileLink } from "@/components/profile/profile-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/user-avatar";
@@ -73,16 +74,24 @@ export function ProposalComments({
                   key={comment.id}
                   className="group flex items-start gap-2 text-sm"
                 >
-                  <UserAvatar
-                    name={members[comment.author_id]?.name ?? "—"}
-                    avatarUrl={members[comment.author_id]?.avatarUrl}
-                    className="mt-0.5 size-5"
-                    fallbackClassName="text-[9px]"
-                  />
+                  <ProfileLink
+                    userId={comment.author_id}
+                    className="mt-0.5 shrink-0"
+                  >
+                    <UserAvatar
+                      name={members[comment.author_id]?.name ?? "—"}
+                      avatarUrl={members[comment.author_id]?.avatarUrl}
+                      className="size-5"
+                      fallbackClassName="text-[9px]"
+                    />
+                  </ProfileLink>
                   <div className="min-w-0 flex-1">
-                    <span className="font-medium">
+                    <ProfileLink
+                      userId={comment.author_id}
+                      className="font-medium"
+                    >
                       {members[comment.author_id]?.name ?? "—"}
-                    </span>{" "}
+                    </ProfileLink>{" "}
                     <span className="break-words">{comment.content}</span>
                   </div>
                   {comment.author_id === userId && (

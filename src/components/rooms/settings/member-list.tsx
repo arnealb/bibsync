@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { X } from "lucide-react";
 
 import { kickMember } from "@/app/_actions/rooms";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,10 @@ export function MemberList({
           key={member.userId}
           className="flex items-center justify-between gap-3 py-2.5"
         >
-          <div className="flex min-w-0 items-center gap-2.5">
+          <ProfileLink
+            userId={member.userId}
+            className="flex min-w-0 items-center gap-2.5"
+          >
             <UserAvatar
               name={member.name}
               avatarUrl={member.avatarUrl}
@@ -52,7 +56,7 @@ export function MemberList({
             {member.isOwner && (
               <Badge variant="secondary">{copy.rooms.owner}</Badge>
             )}
-          </div>
+          </ProfileLink>
           {!member.isOwner && (
             <Button
               variant="ghost"
