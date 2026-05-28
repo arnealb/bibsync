@@ -2,6 +2,12 @@
 
 export const BIBCOINS_START = 2000;
 
+/** Once-a-day login bonus (mirrors `claim_daily_bibcoins` in SQL — display only). */
+export const DAILY_BONUS = 100;
+
+/** Passive trickle per hour (mirrors `claim_hourly_bibcoins` in SQL — display only). */
+export const HOURLY_TRICKLE = 15;
+
 /** Reward amounts per earning event. */
 export const REWARD = {
   /** First (and only) vote on a given proposal. */

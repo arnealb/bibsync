@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Coins } from "lucide-react";
+import { Coins, Sparkles } from "lucide-react";
 
 import { ShopPanel } from "@/components/bibcoins/shop-panel";
+import { Button } from "@/components/ui/button";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { getLoadout, getOwnedCosmetics } from "@/lib/cosmetics/queries";
 import { copy } from "@/lib/copy";
@@ -36,6 +38,15 @@ export default async function ShopPage() {
           {balance}
         </span>
       </div>
+      <Button
+        variant="outline"
+        className="w-full"
+        render={<Link href="/app/shop/earn" />}
+        nativeButton={false}
+      >
+        <Sparkles className="size-4 text-amber-500" />
+        {copy.bibcoins.earn.button}
+      </Button>
       <ShopPanel balance={balance} owned={owned} loadout={loadout} />
     </div>
   );
