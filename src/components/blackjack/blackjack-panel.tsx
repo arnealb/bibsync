@@ -13,6 +13,7 @@ import {
   startBlackjackRound,
   type BlackjackActionResult,
 } from "@/app/_actions/blackjack";
+import { BlackjackStrategy } from "@/components/blackjack/blackjack-strategy";
 import { PlayingCard } from "@/components/poker/playing-card";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
@@ -189,6 +190,7 @@ export function BlackjackPanel({
   const router = useRouter();
   const [table, setTable] = useState<PublicTable | null>(initialState);
   const [balance, setBalance] = useState(initialBalance);
+  const [showStrategy, setShowStrategy] = useState(false);
   const [bet, setBet] = useState(() =>
     Math.max(MIN_BLACKJACK_BET, Math.min(100, initialBalance)),
   );
@@ -478,6 +480,22 @@ export function BlackjackPanel({
           </Button>
         </div>
       )}
+
+      <div className="space-y-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          aria-expanded={showStrategy}
+          onClick={() => setShowStrategy((v) => !v)}
+        >
+          📋{" "}
+          {showStrategy
+            ? copy.blackjack.strategy.hide
+            : copy.blackjack.strategy.toggle}
+        </Button>
+        {showStrategy && <BlackjackStrategy />}
+      </div>
     </div>
   );
 }

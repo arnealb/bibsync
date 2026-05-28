@@ -348,6 +348,22 @@ export const copy = {
       blackjack: "Blackjack! 🃏",
     },
     payoutNote: (n: number) => `+${n} bibcoins uitbetaald`,
+    strategy: {
+      toggle: "Spiekkaart",
+      hide: "Verberg spiekkaart",
+      hint: "Statistisch de beste zet: jouw hand vs. de open kaart van de dealer.",
+      dealerHeader: "Dealer",
+      hard: "Harde hand",
+      soft: "Zachte hand (met aas)",
+      pairs: "Paren (splitsen)",
+      legend: {
+        H: "Kaart",
+        S: "Pas",
+        D: "Verdubbel (anders kaart)",
+        Ds: "Verdubbel (anders pas)",
+        P: "Split",
+      },
+    },
   },
   roulette: {
     title: "Roulette",
