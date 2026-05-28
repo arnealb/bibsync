@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -207,7 +208,10 @@ export function PresenceSidebar({
                 verdict === "away" && "opacity-60",
               )}
             >
-              <div className="flex min-w-0 items-center gap-2">
+              <Link
+                href={`/app/users/${member.id}`}
+                className="flex min-w-0 items-center gap-2 rounded-md hover:opacity-80"
+              >
                 <UserAvatar
                   name={member.name}
                   avatarUrl={member.avatarUrl}
@@ -238,7 +242,7 @@ export function PresenceSidebar({
                     </span>
                   )}
                 </span>
-              </div>
+              </Link>
               <div className="flex shrink-0 flex-col items-end gap-0.5 text-xs">
                 {view.kind === "lastSeen" ? (
                   <span className="text-muted-foreground">

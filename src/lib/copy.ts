@@ -76,6 +76,15 @@ export const copy = {
     emailLabel: "E-mailadres",
     displayNameLabel: "Weergavenaam",
     memberSince: "Lid sinds",
+    public: {
+      coins: "Bibcoins",
+      proposals: "Voorstellen",
+      comments: "Reacties",
+      messages: "Chatberichten",
+      cosmeticsTitle: "Gekocht in de shop",
+      noCosmetics: "Nog niets gekocht in de shop.",
+      notFound: "Deze gebruiker bestaat niet.",
+    },
     avatar: {
       upload: "Foto uploaden",
       remove: "Verwijderen",

@@ -779,6 +779,15 @@ export interface Database {
         Args: { _user_id: string };
         Returns: number;
       };
+      get_profile_stats: {
+        Args: { _user_id: string };
+        Returns: {
+          bibcoins: number;
+          proposals: number;
+          comments: number;
+          messages: number;
+        }[];
+      };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
