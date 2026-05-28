@@ -3,7 +3,7 @@
  * "yes" weight. Returns null when nobody voted yes. Ties keep the first id.
  *
  * The caller supplies `yesWeight` (sum of vote weights of the "yes" voters) so
- * this stays generic over break proposals and food proposals.
+ * this stays generic over the different proposal kinds.
  */
 export function pickWinnerId(
   ids: string[],

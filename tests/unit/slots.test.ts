@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { averageTime, BREAK_SLOTS, FOOD_SLOTS } from "@/lib/slots";
+import { averageTime, BREAK_SLOTS } from "@/lib/slots";
 
 describe("averageTime", () => {
   it("returns the fallback when there are no times", () => {
@@ -34,9 +34,5 @@ describe("slot definitions", () => {
     for (const slot of BREAK_SLOTS) {
       expect(slot.defaultTime).toMatch(/^([01]\d|2[0-3]):(00|15|30|45)$/);
     }
-  });
-
-  it("defaults both food slots to Brug", () => {
-    expect(FOOD_SLOTS.every((s) => s.defaultChoice === "Brug")).toBe(true);
   });
 });

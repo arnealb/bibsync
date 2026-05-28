@@ -14,13 +14,43 @@ import { todayInBrussels } from "@/lib/time";
  * rewards are keyed so they pay out once. No-op without the service key.
  */
 
-/** First vote on a proposal/food item pays out once — switching vote earns nothing. */
+/** First vote on a proposal pays out once — switching vote earns nothing. */
 export async function earnFromVote(
   userId: string,
   itemId: string,
 ): Promise<void> {
   await awardBibcoins(userId, REWARD.vote, "vote", itemId);
   await unlockAchievement(userId, "first_vote");
+}
+
+/**
+ * Proposing a break pays out once per (room, day) — keyed on the day, not the
+ * proposal, so making 100 proposals still earns the reward only once. Free
+ * proposals and slot preferences share the key, so they can't both pay out.
+ */
+export async function earnFromProposal(
+  userId: string,
+  roomId: string,
+): Promise<void> {
+  await awardBibcoins(
+    userId,
+    REWARD.createProposal,
+    "proposal",
+    `${roomId}:${todayInBrussels()}`,
+  );
+}
+
+/** Commenting on a proposal pays out once per (room, day), not per comment. */
+export async function earnFromComment(
+  userId: string,
+  roomId: string,
+): Promise<void> {
+  await awardBibcoins(
+    userId,
+    REWARD.comment,
+    "comment",
+    `${roomId}:${todayInBrussels()}`,
+  );
 }
 
 /** First message ever, and the once-a-day "20 messages" reward. */

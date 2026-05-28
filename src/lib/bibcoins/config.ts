@@ -4,8 +4,16 @@ export const BIBCOINS_START = 2000;
 
 /** Reward amounts per earning event. */
 export const REWARD = {
-  /** First (and only) vote on a given proposal/food item. */
+  /** First (and only) vote on a given proposal. */
   vote: 5,
+  /**
+   * Proposing a break — paid once per (room, day), NOT per proposal, so you
+   * can't farm coins by spamming proposals. Free proposals and slot
+   * preferences share this daily key.
+   */
+  createProposal: 200,
+  /** Commenting on a proposal — paid once per (room, day), not per comment. */
+  comment: 100,
   /** Sending 20 chat messages in a day (once/day). */
   dailyChat: 25,
   /** Per +1 of a new honest Snake personal best. */

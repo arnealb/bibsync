@@ -58,7 +58,7 @@ async function sendToTargets(targets: Target[], payload: PushPayload) {
  */
 export async function sendRoomPush(
   roomId: string,
-  pref: "proposals" | "food" | "chat",
+  pref: "proposals" | "chat",
   payload: PushPayload,
 ): Promise<void> {
   if (!ensureConfigured()) return;

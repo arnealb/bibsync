@@ -100,7 +100,6 @@ export default async function ProfilePage() {
       <NotificationSettings
         prefs={{
           proposals: ctx.profile?.notify_proposals ?? true,
-          food: ctx.profile?.notify_food ?? true,
           chat: ctx.profile?.notify_chat ?? true,
           comments: ctx.profile?.notify_comments ?? true,
           votes: ctx.profile?.notify_votes ?? true,

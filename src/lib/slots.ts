@@ -16,19 +16,6 @@ export const BREAK_SLOTS: BreakSlot[] = [
   { key: "avondpauze", label: "Avondpauze", type: "coffee", defaultTime: "21:30" },
 ];
 
-export interface FoodSlot {
-  key: string;
-  label: string;
-  defaultChoice: string;
-  defaultTime: string;
-}
-
-/** The fixed daily food slots. */
-export const FOOD_SLOTS: FoodSlot[] = [
-  { key: "middageten", label: "Middageten", defaultChoice: "Brug", defaultTime: "12:00" },
-  { key: "avondeten", label: "Avondeten", defaultChoice: "Brug", defaultTime: "18:30" },
-];
-
 function toMinutes(time: string): number {
   const [h, m] = time.slice(0, 5).split(":").map(Number);
   return h * 60 + m;

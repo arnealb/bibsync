@@ -54,7 +54,6 @@ export async function removePushSubscription(
 
 export interface NotificationPrefs {
   notifyProposals: boolean;
-  notifyFood: boolean;
   notifyChat: boolean;
   notifyComments: boolean;
   notifyVotes: boolean;
@@ -73,7 +72,6 @@ export async function updateNotificationPrefs(
     .from("profiles")
     .update({
       notify_proposals: prefs.notifyProposals,
-      notify_food: prefs.notifyFood,
       notify_chat: prefs.notifyChat,
       notify_comments: prefs.notifyComments,
       notify_votes: prefs.notifyVotes,

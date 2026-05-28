@@ -28,7 +28,6 @@ export interface Database {
           avatar_url: string | null;
           is_admin: boolean;
           notify_proposals: boolean;
-          notify_food: boolean;
           notify_chat: boolean;
           notify_comments: boolean;
           notify_votes: boolean;
@@ -40,7 +39,6 @@ export interface Database {
           avatar_url?: string | null;
           is_admin?: boolean;
           notify_proposals?: boolean;
-          notify_food?: boolean;
           notify_chat?: boolean;
           notify_comments?: boolean;
           notify_votes?: boolean;
@@ -52,7 +50,6 @@ export interface Database {
           avatar_url?: string | null;
           is_admin?: boolean;
           notify_proposals?: boolean;
-          notify_food?: boolean;
           notify_chat?: boolean;
           notify_comments?: boolean;
           notify_votes?: boolean;
@@ -297,90 +294,6 @@ export interface Database {
         };
         Relationships: [];
       };
-      food_proposals: {
-        Row: {
-          id: string;
-          room_id: string;
-          created_by: string;
-          food_date: DateString;
-          food_time: TimeString | null;
-          choice: string;
-          note: string | null;
-          slot_key: string | null;
-          created_at: Timestamp;
-        };
-        Insert: {
-          id?: string;
-          room_id: string;
-          created_by: string;
-          food_date: DateString;
-          food_time?: TimeString | null;
-          choice: string;
-          note?: string | null;
-          slot_key?: string | null;
-          created_at?: Timestamp;
-        };
-        Update: {
-          id?: string;
-          room_id?: string;
-          created_by?: string;
-          food_date?: DateString;
-          food_time?: TimeString | null;
-          choice?: string;
-          note?: string | null;
-          slot_key?: string | null;
-          created_at?: Timestamp;
-        };
-        Relationships: [];
-      };
-      food_votes: {
-        Row: {
-          food_proposal_id: string;
-          user_id: string;
-          vote: VoteValue;
-          voted_at: Timestamp;
-        };
-        Insert: {
-          food_proposal_id: string;
-          user_id: string;
-          vote: VoteValue;
-          voted_at?: Timestamp;
-        };
-        Update: {
-          food_proposal_id?: string;
-          user_id?: string;
-          vote?: VoteValue;
-          voted_at?: Timestamp;
-        };
-        Relationships: [];
-      };
-      food_comments: {
-        Row: {
-          id: string;
-          food_proposal_id: string;
-          room_id: string;
-          author_id: string;
-          content: string;
-          created_at: Timestamp;
-        };
-        Insert: {
-          id?: string;
-          food_proposal_id: string;
-          room_id: string;
-          author_id: string;
-          content: string;
-          created_at?: Timestamp;
-        };
-        Update: {
-          id?: string;
-          food_proposal_id?: string;
-          room_id?: string;
-          author_id?: string;
-          content?: string;
-          created_at?: Timestamp;
-        };
-        Relationships: [];
-      };
       push_subscriptions: {
         Row: {
           endpoint: string;
@@ -581,16 +494,19 @@ export interface Database {
           user_id: string;
           bibcoins: number;
           last_hourly_at: Timestamp;
+          last_daily_on: string | null;
         };
         Insert: {
           user_id: string;
           bibcoins?: number;
           last_hourly_at?: Timestamp;
+          last_daily_on?: string | null;
         };
         Update: {
           user_id?: string;
           bibcoins?: number;
           last_hourly_at?: Timestamp;
+          last_daily_on?: string | null;
         };
         Relationships: [];
       };
@@ -859,6 +775,10 @@ export interface Database {
         Args: { _user_id: string };
         Returns: number;
       };
+      claim_daily_bibcoins: {
+        Args: { _user_id: string };
+        Returns: number;
+      };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
@@ -878,11 +798,6 @@ export type Presence = Database["public"]["Tables"]["presence"]["Row"];
 export type Message = Database["public"]["Tables"]["messages"]["Row"];
 export type ProposalComment =
   Database["public"]["Tables"]["proposal_comments"]["Row"];
-export type FoodProposal =
-  Database["public"]["Tables"]["food_proposals"]["Row"];
-export type FoodVote = Database["public"]["Tables"]["food_votes"]["Row"];
-export type FoodComment =
-  Database["public"]["Tables"]["food_comments"]["Row"];
 export type MessageReaction =
   Database["public"]["Tables"]["message_reactions"]["Row"];
 export type InstantBreakPush =

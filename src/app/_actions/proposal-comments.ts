@@ -1,6 +1,7 @@
 "use server";
 
 import type { ActionResult } from "@/app/_actions/types";
+import { earnFromComment } from "@/lib/bibcoins/earn";
 import { copy } from "@/lib/copy";
 import { isUserPresent } from "@/lib/presence/queries";
 import { sendUserPush } from "@/lib/push/send";
@@ -60,6 +61,8 @@ export async function addProposalComment(
     url: `/app/rooms/${proposal.room_id}`,
     tag: `comment-${parsed.data.proposalId}`,
   });
+
+  await earnFromComment(user.id, proposal.room_id);
 
   return { ok: true, comment: data };
 }

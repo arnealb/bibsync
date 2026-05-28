@@ -1,7 +1,7 @@
 "use server";
 
 import type { ActionResult } from "@/app/_actions/types";
-import { earnFromVote } from "@/lib/bibcoins/earn";
+import { earnFromProposal, earnFromVote } from "@/lib/bibcoins/earn";
 import { copy } from "@/lib/copy";
 import { isUserPresent } from "@/lib/presence/queries";
 import { sendRoomPush, sendUserPush } from "@/lib/push/send";
@@ -126,6 +126,8 @@ export async function createProposal(
     url: `/app/rooms/${parsed.data.roomId}`,
     tag: `proposal-${data.id}`,
   });
+
+  await earnFromProposal(user.id, parsed.data.roomId);
 
   return { ok: true, proposal: data };
 }
@@ -274,6 +276,9 @@ export async function setSlotPreference(input: {
       { onConflict: "room_id,name", ignoreDuplicates: true },
     );
   }
+
+  await earnFromProposal(user.id, parsed.data.roomId);
+
   return { ok: true };
 }
 

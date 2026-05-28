@@ -10,7 +10,7 @@ import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
 import { COMMENT_MAX_LENGTH } from "@/lib/validation/comments";
 
-/** Minimal comment shape — works for both proposal and food comments. */
+/** Minimal comment shape — works for any proposal comment. */
 export interface CommentLike {
   id: string;
   author_id: string;

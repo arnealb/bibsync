@@ -53,7 +53,7 @@ export async function spendBibcoins(
   return data === true;
 }
 
-/** Credit the +5/hour passive trickle (capped). Returns the amount granted. */
+/** Credit the hourly passive trickle (capped). Returns the amount granted. */
 export async function claimHourlyBibcoins(userId: string): Promise<number> {
   const admin = createAdminClient();
   if (!admin) return 0;
@@ -62,6 +62,20 @@ export async function claimHourlyBibcoins(userId: string): Promise<number> {
   });
   if (error) {
     console.error("[claimHourlyBibcoins]", error);
+    return 0;
+  }
+  return typeof data === "number" ? data : 0;
+}
+
+/** Credit the once-a-day login bonus. Returns the amount granted (0 if already claimed today). */
+export async function claimDailyBibcoins(userId: string): Promise<number> {
+  const admin = createAdminClient();
+  if (!admin) return 0;
+  const { data, error } = await admin.rpc("claim_daily_bibcoins", {
+    _user_id: userId,
+  });
+  if (error) {
+    console.error("[claimDailyBibcoins]", error);
     return 0;
   }
   return typeof data === "number" ? data : 0;

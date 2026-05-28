@@ -43,11 +43,6 @@ export function RoomTabs({ roomId, userId }: RoomTabsProps) {
       onSelect: () => markChatRead(roomId),
     },
     {
-      href: `${base}/eten`,
-      label: copy.rooms.tabs.food,
-      matches: (p) => p === `${base}/eten`,
-    },
-    {
       href: `${base}/games`,
       label: copy.rooms.tabs.games,
       matches: (p) => p.startsWith(`${base}/games`),
