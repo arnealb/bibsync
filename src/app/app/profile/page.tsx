@@ -17,9 +17,7 @@ import { getUnlockedAchievements } from "@/lib/bibcoins/queries";
 import { getAuthContext } from "@/lib/auth";
 import { copy } from "@/lib/copy";
 import { cn } from "@/lib/utils";
-import { formatDateTime, TIME_ZONE } from "@/lib/time";
-import { format } from "date-fns";
-import { tz } from "@date-fns/tz";
+import { formatDateTime, todayInBrussels } from "@/lib/time";
 
 export const metadata: Metadata = { title: copy.profile.title };
 
@@ -37,8 +35,8 @@ export default async function ProfilePage() {
   if (!ctx) redirect("/login");
 
   const name = ctx.profile?.display_name ?? "—";
-  const today = format(new Date(), "yyyy-MM-dd", { ...tz(TIME_ZONE) });
-  const changedToday = ctx.profile?.display_name_changed_on === today;
+  const changedToday =
+    ctx.profile?.display_name_changed_on === todayInBrussels();
   const unlocked = new Set(await getUnlockedAchievements(ctx.user.id));
 
   return (

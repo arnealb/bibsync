@@ -2,15 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { format } from "date-fns";
-import { tz } from "@date-fns/tz";
 
 import type { ActionResult } from "@/app/_actions/types";
-import { getWallet } from "@/lib/bibcoins/queries";
+import { spendBibcoins } from "@/lib/bibcoins/award";
 import { copy } from "@/lib/copy";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { TIME_ZONE } from "@/lib/time";
+import { todayInBrussels } from "@/lib/time";
 import {
   DISPLAY_NAME_CHANGE_COST,
   displayNameSchema,
@@ -46,8 +44,9 @@ export async function updateAvatar(
 
 /**
  * Change the user's display name. Costs {@link DISPLAY_NAME_CHANGE_COST}
- * bibcoins and is capped to once per Brussels day. The spend ref is keyed on
- * the day so a raced double-submit can't charge twice.
+ * bibcoins and is capped to once per Brussels day (tracked by
+ * `display_name_changed_on`). The spend ref is keyed on the day so a raced
+ * double-submit can't charge twice.
  */
 export async function updateDisplayName(name: string): Promise<ActionResult> {
   const parsed = displayNameSchema.safeParse(name);
@@ -79,13 +78,18 @@ export async function updateDisplayName(name: string): Promise<ActionResult> {
     return { ok: false, error: copy.profile.nameEdit.unchanged };
   }
 
-  const today = format(new Date(), "yyyy-MM-dd", { ...tz(TIME_ZONE) });
+  const today = todayInBrussels();
   if (profile.display_name_changed_on === today) {
     return { ok: false, error: copy.profile.nameEdit.alreadyToday };
   }
 
-  const wallet = await getWallet(user.id);
-  if (!wallet || wallet.balance < DISPLAY_NAME_CHANGE_COST) {
+  const paid = await spendBibcoins(
+    user.id,
+    DISPLAY_NAME_CHANGE_COST,
+    "name-change",
+    `name-change:${user.id}:${today}`,
+  );
+  if (!paid) {
     return {
       ok: false,
       error: copy.profile.nameEdit.insufficient(DISPLAY_NAME_CHANGE_COST),
@@ -93,19 +97,7 @@ export async function updateDisplayName(name: string): Promise<ActionResult> {
   }
 
   const admin = createAdminClient();
-  const { error: spendError } = await admin.rpc("spend_bibcoins", {
-    p_user_id: user.id,
-    p_amount: DISPLAY_NAME_CHANGE_COST,
-    p_reason: "name-change",
-    p_ref: `name-change:${user.id}:${today}`,
-  });
-  if (spendError) {
-    console.error("[updateDisplayName] spend", spendError);
-    return {
-      ok: false,
-      error: copy.profile.nameEdit.insufficient(DISPLAY_NAME_CHANGE_COST),
-    };
-  }
+  if (!admin) return { ok: false, error: copy.profile.nameEdit.error };
 
   const { error: updateError } = await admin
     .from("profiles")

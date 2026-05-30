@@ -76,6 +76,16 @@ export const copy = {
     emailLabel: "E-mailadres",
     displayNameLabel: "Weergavenaam",
     memberSince: "Lid sinds",
+    nameEdit: {
+      save: "Opslaan",
+      cost: (n: number) => `Kost ${n} bibcoins · max 1× per dag`,
+      updated: "Weergavenaam bijgewerkt.",
+      unchanged: "Dat is al je weergavenaam.",
+      alreadyToday: "Je kan je weergavenaam maar 1× per dag wijzigen.",
+      insufficient: (n: number) =>
+        `Je hebt niet genoeg bibcoins (${n} nodig).`,
+      error: "Wijzigen mislukt. Probeer opnieuw.",
+    },
     public: {
       coins: "Bibcoins",
       proposals: "Voorstellen",
