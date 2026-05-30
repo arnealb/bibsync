@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { InstallAppCard } from "@/components/install-app-card";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
+import { DisplayNameEdit } from "@/components/profile/display-name-edit";
 import { NotificationSettings } from "@/components/profile/notification-settings";
 import {
   Card,
@@ -16,7 +17,9 @@ import { getUnlockedAchievements } from "@/lib/bibcoins/queries";
 import { getAuthContext } from "@/lib/auth";
 import { copy } from "@/lib/copy";
 import { cn } from "@/lib/utils";
-import { formatDateTime } from "@/lib/time";
+import { formatDateTime, TIME_ZONE } from "@/lib/time";
+import { format } from "date-fns";
+import { tz } from "@date-fns/tz";
 
 export const metadata: Metadata = { title: copy.profile.title };
 
@@ -34,6 +37,8 @@ export default async function ProfilePage() {
   if (!ctx) redirect("/login");
 
   const name = ctx.profile?.display_name ?? "—";
+  const today = format(new Date(), "yyyy-MM-dd", { ...tz(TIME_ZONE) });
+  const changedToday = ctx.profile?.display_name_changed_on === today;
   const unlocked = new Set(await getUnlockedAchievements(ctx.user.id));
 
   return (
@@ -49,7 +54,7 @@ export default async function ProfilePage() {
             avatarUrl={ctx.profile?.avatar_url ?? null}
           />
           <div className="space-y-4">
-            <Field label={copy.profile.displayNameLabel} value={name} />
+            <DisplayNameEdit currentName={name} changedToday={changedToday} />
             <Field label={copy.profile.emailLabel} value={ctx.user.email ?? "—"} />
             {ctx.profile?.created_at && (
               <Field
