@@ -45,12 +45,16 @@ export function dropBall(
   return { path, slot };
 }
 
-/** Whole-bibcoin payout for landing in `slot`. */
+/**
+ * Whole-bibcoin payout for landing in `slot`. Rounds (not floors) so the
+ * integer currency doesn't quietly add a house edge on top of the multiplier
+ * table — with `floor`, any sub-1 multiplier on a small bet pays nothing.
+ */
 export function plinkoPayout(
   bet: number,
   rows: PlinkoRows,
   risk: PlinkoRisk,
   slot: number,
 ): number {
-  return Math.floor(bet * plinkoMultipliers(rows, risk)[slot]);
+  return Math.round(bet * plinkoMultipliers(rows, risk)[slot]);
 }

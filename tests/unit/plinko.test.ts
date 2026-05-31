@@ -55,9 +55,14 @@ describe("dropBall", () => {
 });
 
 describe("plinkoPayout", () => {
-  it("floors bet × the landed slot's multiplier", () => {
+  it("rounds bet × the landed slot's multiplier", () => {
     const m = plinkoMultipliers(12, "medium")[0];
-    expect(plinkoPayout(100, 12, "medium", 0)).toBe(Math.floor(100 * m));
+    expect(plinkoPayout(100, 12, "medium", 0)).toBe(Math.round(100 * m));
+  });
+
+  it("a sub-1 multiplier still pays out at the minimum bet (no floor-to-zero)", () => {
+    // 0.2× × 10 = 2 — would be floor(2)=2 here, but floor(0.2×1)=0 was the bug.
+    expect(plinkoPayout(10, 16, "high", 8)).toBe(2);
   });
 
   it("a center hit on a <1 slot loses coins", () => {

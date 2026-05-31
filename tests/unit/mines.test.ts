@@ -45,8 +45,8 @@ describe("minesMultiplier", () => {
 });
 
 describe("minesPayout", () => {
-  it("floors bet × multiplier to a whole coin", () => {
-    expect(minesPayout(100, 3, 1)).toBe(Math.floor(100 * minesMultiplier(3, 1)));
+  it("rounds bet × multiplier to a whole coin", () => {
+    expect(minesPayout(100, 3, 1)).toBe(Math.round(100 * minesMultiplier(3, 1)));
   });
 
   it("returns the stake when nothing is opened", () => {

@@ -448,6 +448,7 @@ export const copy = {
     stat: "Jouw bibcoins",
     cantAfford: "Niet genoeg bibcoins voor deze inzet.",
     unavailable: "Plinko is even niet beschikbaar.",
+    minBet: (n: number) => `Minimuminzet is ${n} bibcoins.`,
     betLabel: "Inzet",
     rowsLabel: "Rijen",
     riskLabel: "Risico",

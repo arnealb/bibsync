@@ -9,6 +9,12 @@ export type PlinkoRisk = (typeof PLINKO_RISKS)[number];
 /** Bet ceiling (anti-abuse / overflow guard). */
 export const PLINKO_MAX_BET = 1_000_000;
 
+/**
+ * Bet floor. The lowest multiplier is 0.2×, so a bet under 5 would round some
+ * payouts to 0 — a minimum of 10 keeps every slot's payout meaningful.
+ */
+export const PLINKO_MIN_BET = 10;
+
 /** Quick-bet chip denominations. */
 export const PLINKO_CHIPS = [10, 50, 100, 500] as const;
 

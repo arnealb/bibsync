@@ -19,6 +19,7 @@ import {
   PLINKO_BALL_COUNTS,
   PLINKO_CHIPS,
   PLINKO_MAX_BALLS,
+  PLINKO_MIN_BET,
   PLINKO_RISKS,
   PLINKO_ROWS_OPTIONS,
   plinkoMultiplierColor,
@@ -131,7 +132,10 @@ export function PlinkoPanel({
 
   /** Launch `ballCount` balls staggered, so they cascade instead of dumping. */
   function onDrop() {
-    if (bet < 1) return;
+    if (bet < PLINKO_MIN_BET) {
+      toast.error(copy.plinko.minBet(PLINKO_MIN_BET));
+      return;
+    }
     if (balanceRef.current < bet) {
       toast.error(copy.plinko.cantAfford);
       return;
@@ -261,7 +265,7 @@ export function PlinkoPanel({
             <Input
               id="plinko-bet"
               type="number"
-              min={1}
+              min={PLINKO_MIN_BET}
               value={bet}
               onChange={(e) =>
                 setBet(Math.max(0, Math.floor(Number(e.target.value) || 0)))

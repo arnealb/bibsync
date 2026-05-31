@@ -5,6 +5,9 @@ import { MINES_GRID_SIZE, MINES_HOUSE_EDGE } from "@/lib/mines/config";
 export type MinesStatus = "active" | "busted" | "cashed";
 
 export interface MinesState {
+  /** Unique per game — keeps the cash-out payout ref from colliding across
+   *  games (the row's `version` resets to 0 each game, so it can't be used). */
+  id: string;
   status: MinesStatus;
   /** Bibcoins staked when the game started. */
   bet: number;
@@ -46,13 +49,17 @@ export function minesMultiplier(mineCount: number, revealed: number): number {
   return Math.round((1 - MINES_HOUSE_EDGE) * fair * 100) / 100;
 }
 
-/** Whole-bibcoin payout for cashing out at `revealed` safe tiles. */
+/**
+ * Whole-bibcoin payout for cashing out at `revealed` safe tiles. Rounds (not
+ * floors) so the integer currency doesn't quietly add a house edge on top of
+ * the one already baked into the multiplier.
+ */
 export function minesPayout(
   bet: number,
   mineCount: number,
   revealed: number,
 ): number {
-  return Math.floor(bet * minesMultiplier(mineCount, revealed));
+  return Math.round(bet * minesMultiplier(mineCount, revealed));
 }
 
 /**

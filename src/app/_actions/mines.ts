@@ -128,12 +128,14 @@ export async function startMines(
   const balance = await getBibcoins(auth.userId);
   if (bet > balance) return { ok: false, error: copy.mines.cantAfford };
 
-  const ref = `${roomId}:${auth.userId}:${crypto.randomUUID()}`;
+  const gameId = crypto.randomUUID();
+  const ref = `${roomId}:${auth.userId}:${gameId}`;
   const paid = await spendBibcoins(auth.userId, bet, "mines_bet", ref);
   if (!paid) return { ok: false, error: copy.mines.cantAfford };
 
   const mines = generateMines(mineCount, cryptoRng);
   const state: MinesState = {
+    id: gameId,
     status: "active",
     bet,
     mineCount,
@@ -275,12 +277,8 @@ async function cashOut(
   const ok = await persist(admin, roomId, userId, version, next);
   if (!ok) return { ok: false, error: copy.mines.busy };
 
-  // Version is unique per transition, so award_bibcoins stays idempotent.
-  await awardBibcoins(
-    userId,
-    payout,
-    "mines_payout",
-    `${roomId}:${userId}:cashout:${version}`,
-  );
+  // Ref is unique per game (state.id) so award_bibcoins stays idempotent
+  // within a game (double cash-out) without colliding across games.
+  await awardBibcoins(userId, payout, "mines_payout", `mines:${state.id}:cashout`);
   return { ok: true, state: next, balance: await getBibcoins(userId) };
 }
