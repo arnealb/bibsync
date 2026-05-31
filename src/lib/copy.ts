@@ -888,6 +888,7 @@ export const copy = {
     submitError: "Score kon niet opgeslagen worden.",
     honestView: "eerlijke weergave",
     cheatedTag: "Met cheats behaald",
+    snakeMaster: (n: number) => `Snake master · +${n} bibcoins/dag 👑`,
     snake: {
       title: "Snake",
       subtitle: "Klassiek — pijltjes of WASD om te draaien",

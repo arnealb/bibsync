@@ -16,6 +16,8 @@ interface LeaderboardProps {
   honest: LeaderboardEntry[];
   /** Shared room setting: show all scores (true) or honest-only (false). */
   initialShowCheated: boolean;
+  /** If set, the honest #1 is the daily "master" earning this many coins/day. */
+  masterReward?: number;
 }
 
 export function Leaderboard({
@@ -24,6 +26,7 @@ export function Leaderboard({
   full,
   honest,
   initialShowCheated,
+  masterReward,
 }: LeaderboardProps) {
   const [showCheated, setShowCheated] = useState(initialShowCheated);
   useLeaderboardSettingsRealtime(roomId, setShowCheated);
@@ -69,6 +72,14 @@ export function Leaderboard({
                     aria-label={copy.games.cheatedTag}
                   >
                     🤖
+                  </span>
+                )}
+                {masterReward != null && !showCheated && index === 0 && (
+                  <span
+                    title={copy.games.snakeMaster(masterReward)}
+                    aria-label={copy.games.snakeMaster(masterReward)}
+                  >
+                    👑
                   </span>
                 )}
               </span>

@@ -146,6 +146,7 @@ export default async function GamesPage({ params }: GamesPageProps) {
         full={snakeBoard.full}
         honest={snakeBoard.honest}
         initialShowCheated={showCheated}
+        masterReward={75}
       />
     </div>
   );
