@@ -487,6 +487,23 @@ export const copy = {
     recent: "Laatste",
     hint: "Kies je inzet en lanceer de raket.",
   },
+  quests: {
+    title: "Dagelijkse quests",
+    subtitle: "Voltooi mini-doelen en pak je bibcoins. Reset elke dag.",
+    unavailable: "Quests zijn even niet beschikbaar.",
+    error: "Er ging iets mis. Probeer opnieuw.",
+    notReady: "Nog niet voltooid (of al geclaimd).",
+    claim: (n: number) => `Claim +${n}`,
+    claimed: "Geclaimd ✅",
+    reward: (n: number) => `+${n}`,
+    progress: (done: number, goal: number) =>
+      `${Math.min(done, goal)}/${goal}`,
+    claimedToast: (n: number) => `Quest voltooid: +${n} bibcoins 🎉`,
+    streakTitle: "Login-streak",
+    streakDays: (n: number) => `${n} ${n === 1 ? "dag" : "dagen"} 🔥`,
+    streakNext: (n: number) => `Morgen: +${n}`,
+    streakNone: "Open de app elke dag voor een oplopende bonus (tot +500).",
+  },
   marketplace: {
     title: "Klussenmarkt",
     subtitle:

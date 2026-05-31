@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { Coins, Sparkles } from "lucide-react";
 
 import { ShopPanel } from "@/components/bibcoins/shop-panel";
+import { QuestBoard } from "@/components/quests/quest-board";
 import { Button } from "@/components/ui/button";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { getLoadout, getOwnedCosmetics } from "@/lib/cosmetics/queries";
 import { copy } from "@/lib/copy";
+import { getDailyQuests, getDailyStreak } from "@/lib/quests/queries";
 import { getAuthContext } from "@/lib/auth";
 
 export const metadata: Metadata = { title: copy.bibcoins.shop.title };
@@ -16,10 +18,12 @@ export default async function ShopPage() {
   const ctx = await getAuthContext();
   if (!ctx) redirect("/login");
 
-  const [balance, owned, loadout] = await Promise.all([
+  const [balance, owned, loadout, quests, streak] = await Promise.all([
     getBibcoins(ctx.user.id),
     getOwnedCosmetics(ctx.user.id),
     getLoadout(ctx.user.id),
+    getDailyQuests(ctx.user.id),
+    getDailyStreak(ctx.user.id),
   ]);
 
   return (
@@ -47,6 +51,7 @@ export default async function ShopPage() {
         <Sparkles className="size-4 text-amber-500" />
         {copy.bibcoins.earn.button}
       </Button>
+      <QuestBoard initialQuests={quests} streak={streak} />
       <ShopPanel balance={balance} owned={owned} loadout={loadout} />
     </div>
   );

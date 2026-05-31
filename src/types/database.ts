@@ -504,18 +504,21 @@ export interface Database {
           bibcoins: number;
           last_hourly_at: Timestamp;
           last_daily_on: string | null;
+          daily_streak: number;
         };
         Insert: {
           user_id: string;
           bibcoins?: number;
           last_hourly_at?: Timestamp;
           last_daily_on?: string | null;
+          daily_streak?: number;
         };
         Update: {
           user_id?: string;
           bibcoins?: number;
           last_hourly_at?: Timestamp;
           last_daily_on?: string | null;
+          daily_streak?: number;
         };
         Relationships: [];
       };
