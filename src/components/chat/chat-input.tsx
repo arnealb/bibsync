@@ -29,6 +29,7 @@ export function ChatInput({
   members,
   canManage,
   onSend,
+  onTyping,
   pending,
 }: {
   roomId: string;
@@ -36,6 +37,7 @@ export function ChatInput({
   members: MemberMap;
   canManage: boolean;
   onSend: (content: string) => void;
+  onTyping?: () => void;
   pending: boolean;
 }) {
   const [value, setValue] = useState("");
@@ -201,6 +203,9 @@ export function ChatInput({
           onChange={(event) => {
             setValue(event.target.value);
             setActiveIndex(0);
+            if (event.target.value.trim() && !event.target.value.startsWith("/")) {
+              onTyping?.();
+            }
           }}
           onKeyDown={onKeyDown}
           rows={1}

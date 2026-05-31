@@ -21,6 +21,7 @@ export function MessageList({
   groups,
   members,
   userId,
+  online,
   reactions,
   onToggleReaction,
   onEditMessage,
@@ -29,6 +30,7 @@ export function MessageList({
   groups: MessageGroup[];
   members: MemberMap;
   userId: string;
+  online?: Set<string>;
   reactions: MessageReaction[];
   onToggleReaction: (messageId: string, emoji: string) => void;
   onEditMessage: (messageId: string, content: string) => void;
@@ -63,13 +65,19 @@ export function MessageList({
         const isOwn = group.authorId === userId;
         return (
           <div key={group.key} className="flex gap-2.5">
-            <ProfileLink userId={group.authorId} className="mt-0.5 shrink-0">
+            <ProfileLink
+              userId={group.authorId}
+              className="relative mt-0.5 shrink-0"
+            >
               <UserAvatar
                 name={name}
                 avatarUrl={members[group.authorId]?.avatarUrl}
                 className="size-7"
                 fallbackClassName="text-[11px]"
               />
+              {online?.has(group.authorId) && (
+                <span className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-background bg-emerald-500" />
+              )}
             </ProfileLink>
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">

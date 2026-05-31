@@ -741,6 +741,9 @@ export const copy = {
     unreadLabel: (n: number) =>
       `${n} ongelezen ${n === 1 ? "bericht" : "berichten"}`,
     error: "Bericht niet verzonden. Probeer opnieuw.",
+    typing: (name: string) => `${name} is aan het typen…`,
+    typingTwo: (a: string, b: string) => `${a} en ${b} zijn aan het typen…`,
+    typingMany: "Meerdere mensen zijn aan het typen…",
     edit: "Bewerk",
     delete: "Verwijder",
     edited: "bewerkt",

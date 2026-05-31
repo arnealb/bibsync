@@ -13,6 +13,7 @@ import { toggleMessageReaction } from "@/app/_actions/reactions";
 import { ChatInput } from "@/components/chat/chat-input";
 import { MessageList } from "@/components/chat/message-list";
 import { Button } from "@/components/ui/button";
+import { useChatPresence } from "@/hooks/use-chat-presence";
 import { useMessagesRealtime } from "@/hooks/use-messages-realtime";
 import { useReactionsRealtime } from "@/hooks/use-reactions-realtime";
 import { markChatRead } from "@/lib/chat/unread";
@@ -61,6 +62,9 @@ export function ChatPanel({
   const [newCount, setNewCount] = useState(0);
   const [sending, startSending] = useTransition();
   const [loadingMore, startLoadingMore] = useTransition();
+
+  const myName = members[userId]?.name ?? "—";
+  const { online, typing, setTyping } = useChatPresence(roomId, userId, myName);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(true);
@@ -269,6 +273,7 @@ export function ChatPanel({
             groups={groups}
             members={members}
             userId={userId}
+            online={online}
             reactions={reactions}
             onToggleReaction={handleToggleReaction}
             onEditMessage={handleEditMessage}
@@ -290,12 +295,23 @@ export function ChatPanel({
         </button>
       )}
 
+      {typing.length > 0 && (
+        <p className="px-3 pb-0.5 text-xs italic text-muted-foreground">
+          {typing.length === 1
+            ? copy.chat.typing(typing[0].name)
+            : typing.length === 2
+              ? copy.chat.typingTwo(typing[0].name, typing[1].name)
+              : copy.chat.typingMany}
+        </p>
+      )}
+
       <ChatInput
         roomId={roomId}
         userId={userId}
         members={members}
         canManage={canManage}
         onSend={handleSend}
+        onTyping={setTyping}
         pending={sending}
       />
     </div>
