@@ -959,6 +959,7 @@ export const copy = {
     balance: (n: number) => `${n} bibcoins`,
     hourlyGranted: (n: number) => `+${n} bibcoins ⏳`,
     dailyGranted: (n: number) => `Dagbonus: +${n} bibcoins 🎁`,
+    strijderGranted: (n: number) => `Strijder bonus: +${n} bibcoins 🌙⚔️`,
     transfer: {
       button: "Stuur bibcoins",
       title: (name: string) => `Stuur bibcoins naar ${name}`,
@@ -991,6 +992,9 @@ export const copy = {
         hourlyTitle: "Elk uur",
         hourlyDesc:
           "Automatisch voor elk uur dat voorbijgaat (tot 48 uur sparen).",
+        strijderTitle: "Strijder bonus 🌙",
+        strijderDesc:
+          "Wees online tussen 00:30 en 01:30 — voor de echte nacht-strijders. Eén keer per dag.",
         proposalTitle: "Een pauze voorstellen",
         proposalDesc:
           "Doe een voorstel in een room. Eén keer per dag per room — spammen helpt niet.",

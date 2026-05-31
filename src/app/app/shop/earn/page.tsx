@@ -34,6 +34,12 @@ const METHODS: EarnMethod[] = [
     amount: c.perHour(HOURLY_TRICKLE),
   },
   {
+    emoji: "🌙",
+    title: c.methods.strijderTitle,
+    desc: c.methods.strijderDesc,
+    amount: c.flat(1000),
+  },
+  {
     emoji: "💡",
     title: c.methods.proposalTitle,
     desc: c.methods.proposalDesc,

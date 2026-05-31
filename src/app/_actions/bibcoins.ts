@@ -3,6 +3,7 @@
 import {
   claimDailyBibcoins,
   claimHourlyBibcoins,
+  claimStrijderBonus,
   transferBibcoins,
 } from "@/lib/bibcoins/award";
 import { getBibcoins } from "@/lib/bibcoins/queries";
@@ -61,5 +62,13 @@ export async function claimDaily(): Promise<ClaimResult> {
   const ctx = await getAuthContext();
   if (!ctx) return { ok: false };
   const granted = await claimDailyBibcoins(ctx.user.id);
+  return { ok: true, granted };
+}
+
+/** Credits the night-owl "Strijder" bonus (only 00:30–01:30 Brussels). */
+export async function claimStrijder(): Promise<ClaimResult> {
+  const ctx = await getAuthContext();
+  if (!ctx) return { ok: false };
+  const granted = await claimStrijderBonus(ctx.user.id);
   return { ok: true, granted };
 }

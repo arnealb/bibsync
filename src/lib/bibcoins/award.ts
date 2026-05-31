@@ -93,6 +93,21 @@ export async function claimHourlyBibcoins(userId: string): Promise<number> {
   return typeof data === "number" ? data : 0;
 }
 
+/** Credit the night-owl "Strijder" bonus (00:30–01:30 Brussels). Returns the
+ *  amount granted (0 outside the window or already claimed today). */
+export async function claimStrijderBonus(userId: string): Promise<number> {
+  const admin = createAdminClient();
+  if (!admin) return 0;
+  const { data, error } = await admin.rpc("claim_strijder_bonus", {
+    _user_id: userId,
+  });
+  if (error) {
+    console.error("[claimStrijderBonus]", error);
+    return 0;
+  }
+  return typeof data === "number" ? data : 0;
+}
+
 /** Credit the once-a-day login bonus. Returns the amount granted (0 if already claimed today). */
 export async function claimDailyBibcoins(userId: string): Promise<number> {
   const admin = createAdminClient();
