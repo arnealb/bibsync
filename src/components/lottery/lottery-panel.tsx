@@ -4,10 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Clock, Ticket } from "lucide-react";
 
-import {
-  buyTickets,
-  type LotteryActionResult,
-} from "@/app/_actions/lottery";
+import { buyTickets } from "@/app/_actions/lottery";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
@@ -81,23 +78,23 @@ export function LotteryPanel({
   const mm = Math.floor((msLeft % 3_600_000) / 60_000);
   const ss = Math.floor((msLeft % 60_000) / 1000);
 
-  function run(fn: () => Promise<LotteryActionResult>) {
+  function buy(count: number) {
+    const cost = count * LOTTERY_TICKET_PRICE;
+    if (cost > balance) {
+      toast.error(copy.lottery.cantAfford);
+      return;
+    }
+    // Drop the balance immediately; revert if the purchase fails.
+    setBalance((b) => b - cost);
     start(async () => {
-      const result = await fn();
+      const result = await buyTickets({ roomId, count });
       if (!result.ok) {
+        setBalance((b) => b + cost);
         toast.error(result.error);
         return;
       }
       if (typeof result.balance === "number") setBalance(result.balance);
     });
-  }
-
-  function buy(count: number) {
-    if (count * LOTTERY_TICKET_PRICE > balance) {
-      toast.error(copy.lottery.cantAfford);
-      return;
-    }
-    run(() => buyTickets({ roomId, count }));
   }
 
   return (
