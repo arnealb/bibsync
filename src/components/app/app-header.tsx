@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Coins, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 
 import { RoomSwitcher } from "@/components/app/room-switcher";
+import { BibcoinsBalance } from "@/components/bibcoins/bibcoins-balance";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
@@ -28,17 +29,7 @@ export async function AppHeader() {
           />
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <Button
-            render={<Link href="/app/shop" />}
-            nativeButton={false}
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 font-mono tabular-nums"
-            aria-label={copy.bibcoins.shop.nav}
-          >
-            <Coins className="size-4 text-amber-500" />
-            {balance}
-          </Button>
+          <BibcoinsBalance userId={ctx?.user.id ?? ""} initialBalance={balance} />
           {ctx?.isAdmin && (
             <Button
               render={<Link href="/app/admin" />}

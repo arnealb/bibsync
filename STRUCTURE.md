@@ -130,7 +130,7 @@ patches. Unique channel topic per subscription (StrictMode-safe). Plus
 
 ```
 proposals · proposal-comments · presence · messages · reactions · timeouts
-instant-break · steps · poker · blackjack · roulette · leaderboard-settings
+instant-break · steps · poker · blackjack · roulette · leaderboard-settings · bibcoins (live header balance)
 ```
 
 ## `src/types/database.ts`
