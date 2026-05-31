@@ -678,6 +678,27 @@ export interface Database {
         };
         Relationships: [];
       };
+      lottery_rounds: {
+        Row: {
+          room_id: string;
+          state: Record<string, unknown>;
+          version: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          room_id: string;
+          state: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          room_id?: string;
+          state?: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
       mines_games: {
         Row: {
           room_id: string;
