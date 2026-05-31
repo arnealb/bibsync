@@ -151,6 +151,16 @@ stakes the bet, rolls the ball server-side and pays out instantly — no table,
 no migration. Pure engine + Stake-style multiplier tables in `src/lib/plinko/`;
 the client only animates the returned path.
 
+**Dice** (`/games/dice`) is likewise **stateless**: `placeDiceBet` stakes,
+rolls 0.00–99.99 and pays out. Pick a target (2.00–98.00) and over/under;
+multiplier = `(1 − houseEdge) / winChance` from the *actual* discrete chance.
+Pure engine in `src/lib/dice/`.
+
+All gok payouts use **`Math.floor`** (never `round`) so they can't exceed
+bet × multiplier — `round` is exploitable (pick a bet where it rounds up on a
+near-certain bet → +EV). Guard tests assert EV ≤ stake / RTP ≤ 1 for every
+parameter combo.
+
 **RLS recursion is avoided with `SECURITY DEFINER` helpers**
 (`is_room_member`, `is_room_owner`, `can_access_proposal`, `is_admin`): they
 bypass RLS but still resolve `auth.uid()`. Never write a `room_members` policy
@@ -197,8 +207,8 @@ Hooks in `src/hooks/use-*-realtime.ts`:
 - `/app/rooms`, `/app/rooms/new`, `/app/rooms/join`,
   `/app/rooms/[id]` (dashboard: proposals / presence / chat),
   `/app/rooms/[id]/chat`, `/app/rooms/[id]/eten` (food),
-  `/app/rooms/[id]/games` (Snake, poker, blackjack, roulette, mines, plinko, Pet
-  Connect under `/games/*`), `/app/rooms/[id]/stappen` (steps),
+  `/app/rooms/[id]/games` (Snake, poker, blackjack, roulette, mines, plinko,
+  dice, Pet Connect under `/games/*`), `/app/rooms/[id]/stappen` (steps),
   `/app/rooms/[id]/settings` (owner **or admin**), `/app/admin` (admin only),
   `/app/profile`. Room sub-tabs live in `RoomTabs`, which also renders the
   unread-chat badge on the Chat tab.

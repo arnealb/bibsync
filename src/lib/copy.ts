@@ -467,6 +467,30 @@ export const copy = {
     recent: "Laatste",
     hint: "Kies je inzet, aantal rijen en risico, en laat de bal vallen.",
   },
+  dice: {
+    title: "Dice",
+    subtitle:
+      "Versleep de grens en gok of de worp eronder of erboven valt. Kleinere kans = hogere multiplier.",
+    stat: "Jouw bibcoins",
+    cantAfford: "Niet genoeg bibcoins voor deze inzet.",
+    unavailable: "Dice is even niet beschikbaar.",
+    betLabel: "Inzet",
+    roll: "Gooi",
+    rolling: "Gooien…",
+    over: "Erboven",
+    under: "Eronder",
+    multiplierLabel: "Multiplier",
+    multiplier: (m: number) => `${m.toFixed(2)}×`,
+    winChanceLabel: "Winkans",
+    winChance: (p: number) => `${p.toFixed(2)}%`,
+    payoutLabel: "Uitbetaling",
+    resultWin: (roll: string, payout: number) =>
+      `${roll} — gewonnen! +${payout} bibcoins 🎉`,
+    resultLose: (roll: string) => `${roll} — helaas, niks deze keer.`,
+    half: "½",
+    double: "2×",
+    hint: "Versleep de grens, kies boven/onder en gooi.",
+  },
   petconnect: {
     title: "Pet Connect",
     subtitle:
