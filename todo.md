@@ -48,9 +48,10 @@ unchecked item top-to-bottom.
       een korte info-toast i.p.v. stille no-op, (c) `myBest` na elke succesvolle
       submit lokaal bijwerken zodat "Nieuwe high score" niet ten onrechte
       triggert binnen één sessie.
-- [ ] **Chatbericht bewerken/verwijderen** — nu ontbreekt edit (en delete).
-- [ ] **@mentions in chat** → push naar de genoemde persoon.
-- [ ] **Online-indicator + "aan het typen…"** via Supabase Realtime presence.
+- [x] **Chatbericht bewerken/verwijderen** — inline edit + delete op eigen
+      berichten (auteur-RLS, `edited_at`, realtime UPDATE/DELETE).
+- [x] **@mentions in chat** → push naar de genoemde persoon (+ highlight).
+- [x] **Online-indicator + "aan het typen…"** via Supabase Realtime presence.
 
 ## Backlog (ideas, unprioritised)
 
