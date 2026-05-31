@@ -140,6 +140,11 @@ teammate merge, so the sequence jumps `0011 → 0014`):
     (animated name styling). Catalogue/prices in `src/lib/cosmetics/catalog.ts`.
 24. `0031_presence_checkin.sql` — `presence.checked_in_on` (date): manual daily
     "I'm here today" check-in, an alternative to location presence.
+25. `0036_mines.sql` — **single-player Mines (gok)**: `mines_games` (public,
+    owner-readable state, PK `(room_id,user_id)`) + `mines_private` (service-only
+    hidden bomb positions, RLS on / no policies). Wallet bet via `spend_/award_`,
+    version-guarded persistence; pure engine in `src/lib/mines/`. (Migrations
+    `0032`–`0035` exist but predate this list — trust the migration files.)
 
 **RLS recursion is avoided with `SECURITY DEFINER` helpers**
 (`is_room_member`, `is_room_owner`, `can_access_proposal`, `is_admin`): they
@@ -187,8 +192,8 @@ Hooks in `src/hooks/use-*-realtime.ts`:
 - `/app/rooms`, `/app/rooms/new`, `/app/rooms/join`,
   `/app/rooms/[id]` (dashboard: proposals / presence / chat),
   `/app/rooms/[id]/chat`, `/app/rooms/[id]/eten` (food),
-  `/app/rooms/[id]/games` (Snake, poker, blackjack, roulette, Pet Connect under
-  `/games/*`), `/app/rooms/[id]/stappen` (steps),
+  `/app/rooms/[id]/games` (Snake, poker, blackjack, roulette, mines, Pet Connect
+  under `/games/*`), `/app/rooms/[id]/stappen` (steps),
   `/app/rooms/[id]/settings` (owner **or admin**), `/app/admin` (admin only),
   `/app/profile`. Room sub-tabs live in `RoomTabs`, which also renders the
   unread-chat badge on the Chat tab.

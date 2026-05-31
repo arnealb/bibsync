@@ -669,6 +669,36 @@ export interface Database {
         };
         Relationships: [];
       };
+      mines_games: {
+        Row: {
+          room_id: string;
+          user_id: string;
+          state: Record<string, unknown>;
+          version: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          room_id: string;
+          user_id: string;
+          state: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          room_id?: string;
+          user_id?: string;
+          state?: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      mines_private: {
+        Row: { room_id: string; user_id: string; mines: number[] };
+        Insert: { room_id: string; user_id: string; mines: number[] };
+        Update: { room_id?: string; user_id?: string; mines?: number[] };
+        Relationships: [];
+      };
       room_timeouts: {
         Row: {
           room_id: string;

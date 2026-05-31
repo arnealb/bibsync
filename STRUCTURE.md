@@ -41,7 +41,7 @@ app/
     chat/               chat tab
     stappen/            steps tab
     settings/           owner/admin settings
-    games/              page (hub) + snake · poker · blackjack · roulette · petconnect
+    games/              page (hub) + snake · poker · blackjack · roulette · mines · petconnect
 api/
   steps/route.ts        token-authed Apple Shortcut endpoint (code = token~roomId)
   games/leave/route.ts  sendBeacon target for freeing a table seat
@@ -114,6 +114,7 @@ cosmetics/   catalog · resolve · effects · queries
 poker/       engine · evaluate · cards · config · queries
 blackjack/   engine · table · queries
 roulette/    engine · table · config · queries
+mines/       engine (multiplier/payout/bomb-gen) · config · queries (single-player gok)
 games/       sessions · session-queries · queries · snake/{engine,bot,autopilot}
 petconnect/  engine
 instant-break/ status · config · queries
@@ -152,6 +153,7 @@ Sequence jumps `0011 → 0014` (0012/0013 renumbered in a merge). Highlights:
 0030 loadout title/effect cosmetics · 0032 coin_earning
 0033 drop_food (the /eten food stack was removed) · 0034 public_profile
 0035 display_name_change (paid once-per-day rename)
+0036 mines (single-player gok: mines_games public + mines_private hidden bombs)
 ```
 
 > Note: CLAUDE.md still references the food stack (migration 0005); it was
