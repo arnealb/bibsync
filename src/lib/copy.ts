@@ -441,6 +441,27 @@ export const copy = {
     safe: (found: number, total: number) => `${found}/${total} veilig`,
     hint: "Kies je inzet en aantal bommen, en start het spel.",
   },
+  plinko: {
+    title: "Plinko",
+    subtitle:
+      "Laat een bal vallen door de pinnen. Hoe dichter bij de rand hij landt, hoe hoger de multiplier.",
+    stat: "Jouw bibcoins",
+    cantAfford: "Niet genoeg bibcoins voor deze inzet.",
+    unavailable: "Plinko is even niet beschikbaar.",
+    betLabel: "Inzet",
+    rowsLabel: "Rijen",
+    riskLabel: "Risico",
+    drop: "Laat vallen",
+    dropping: "Valt…",
+    risks: { low: "Laag", medium: "Middel", high: "Hoog" },
+    rowsValue: (n: number) => `${n} rijen`,
+    multiplier: (m: number) => `${m}×`,
+    landedWin: (m: number, payout: number) =>
+      `${m}× — +${payout} bibcoins 🎉`,
+    landedLose: (m: number) => `${m}× — helaas, niks deze keer.`,
+    recent: "Laatste",
+    hint: "Kies je inzet, aantal rijen en risico, en laat de bal vallen.",
+  },
   petconnect: {
     title: "Pet Connect",
     subtitle:

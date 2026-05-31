@@ -146,6 +146,11 @@ teammate merge, so the sequence jumps `0011 → 0014`):
     version-guarded persistence; pure engine in `src/lib/mines/`. (Migrations
     `0032`–`0035` exist but predate this list — trust the migration files.)
 
+**Plinko** (`/games/plinko`) is a **stateless** gok: one `dropPlinko` action
+stakes the bet, rolls the ball server-side and pays out instantly — no table,
+no migration. Pure engine + Stake-style multiplier tables in `src/lib/plinko/`;
+the client only animates the returned path.
+
 **RLS recursion is avoided with `SECURITY DEFINER` helpers**
 (`is_room_member`, `is_room_owner`, `can_access_proposal`, `is_admin`): they
 bypass RLS but still resolve `auth.uid()`. Never write a `room_members` policy
@@ -192,8 +197,8 @@ Hooks in `src/hooks/use-*-realtime.ts`:
 - `/app/rooms`, `/app/rooms/new`, `/app/rooms/join`,
   `/app/rooms/[id]` (dashboard: proposals / presence / chat),
   `/app/rooms/[id]/chat`, `/app/rooms/[id]/eten` (food),
-  `/app/rooms/[id]/games` (Snake, poker, blackjack, roulette, mines, Pet Connect
-  under `/games/*`), `/app/rooms/[id]/stappen` (steps),
+  `/app/rooms/[id]/games` (Snake, poker, blackjack, roulette, mines, plinko, Pet
+  Connect under `/games/*`), `/app/rooms/[id]/stappen` (steps),
   `/app/rooms/[id]/settings` (owner **or admin**), `/app/admin` (admin only),
   `/app/profile`. Room sub-tabs live in `RoomTabs`, which also renders the
   unread-chat badge on the Chat tab.

@@ -41,7 +41,7 @@ app/
     chat/               chat tab
     stappen/            steps tab
     settings/           owner/admin settings
-    games/              page (hub) + snake · poker · blackjack · roulette · mines · petconnect
+    games/              page (hub) + snake · poker · blackjack · roulette · mines · plinko · petconnect
 api/
   steps/route.ts        token-authed Apple Shortcut endpoint (code = token~roomId)
   games/leave/route.ts  sendBeacon target for freeing a table seat
@@ -115,6 +115,7 @@ poker/       engine · evaluate · cards · config · queries
 blackjack/   engine · table · queries
 roulette/    engine · table · config · queries
 mines/       engine (multiplier/payout/bomb-gen) · config · queries (single-player gok)
+plinko/      engine (drop/multiplier/payout) · config (Stake-style tables) — stateless gok, no DB
 games/       sessions · session-queries · queries · snake/{engine,bot,autopilot}
 petconnect/  engine
 instant-break/ status · config · queries
