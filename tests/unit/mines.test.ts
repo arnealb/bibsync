@@ -45,12 +45,34 @@ describe("minesMultiplier", () => {
 });
 
 describe("minesPayout", () => {
-  it("rounds bet × multiplier to a whole coin", () => {
-    expect(minesPayout(100, 3, 1)).toBe(Math.round(100 * minesMultiplier(3, 1)));
+  it("floors bet × multiplier to a whole coin", () => {
+    expect(minesPayout(100, 3, 1)).toBe(Math.floor(100 * minesMultiplier(3, 1)));
   });
 
   it("returns the stake when nothing is opened", () => {
     expect(minesPayout(100, 3, 0)).toBe(100);
+  });
+});
+
+describe("house edge holds (no +EV strategy)", () => {
+  const N = 25;
+
+  /** Probability of opening `k` safe tiles in a row with `mineCount` bombs. */
+  function survive(mineCount: number, k: number): number {
+    let p = 1;
+    for (let i = 0; i < k; i++) p *= (N - mineCount - i) / (N - i);
+    return p;
+  }
+
+  it("every (mines, reveals, bet) cash-out has EV ≤ the stake", () => {
+    for (let mineCount = 1; mineCount <= 24; mineCount++) {
+      for (let k = 1; k <= N - mineCount; k++) {
+        for (let bet = 1; bet <= 40; bet++) {
+          const ev = survive(mineCount, k) * minesPayout(bet, mineCount, k);
+          expect(ev).toBeLessThanOrEqual(bet + 1e-9);
+        }
+      }
+    }
   });
 });
 

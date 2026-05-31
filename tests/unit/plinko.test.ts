@@ -55,13 +55,13 @@ describe("dropBall", () => {
 });
 
 describe("plinkoPayout", () => {
-  it("rounds bet × the landed slot's multiplier", () => {
+  it("floors bet × the landed slot's multiplier", () => {
     const m = plinkoMultipliers(12, "medium")[0];
-    expect(plinkoPayout(100, 12, "medium", 0)).toBe(Math.round(100 * m));
+    expect(plinkoPayout(100, 12, "medium", 0)).toBe(Math.floor(100 * m));
   });
 
   it("a sub-1 multiplier still pays out at the minimum bet (no floor-to-zero)", () => {
-    // 0.2× × 10 = 2 — would be floor(2)=2 here, but floor(0.2×1)=0 was the bug.
+    // 0.2× × 10 = 2; the 1-coin bet that floored to 0 is blocked by PLINKO_MIN_BET.
     expect(plinkoPayout(10, 16, "high", 8)).toBe(2);
   });
 
@@ -69,6 +69,30 @@ describe("plinkoPayout", () => {
     const mid = Math.floor((16 + 1) / 2);
     expect(plinkoPayout(100, 16, "high", mid)).toBeLessThan(100);
   });
+});
+
+describe("house edge holds (RTP ≤ 1)", () => {
+  /** Binomial C(n, k). */
+  function choose(n: number, k: number): number {
+    let c = 1;
+    for (let i = 0; i < k; i++) c = (c * (n - i)) / (i + 1);
+    return c;
+  }
+
+  for (const rows of PLINKO_ROWS_OPTIONS) {
+    for (const risk of PLINKO_RISKS) {
+      it(`${rows} rows / ${risk} returns ≤ 100% to the player`, () => {
+        const table = PLINKO_MULTIPLIERS[rows][risk];
+        // Slot k has probability C(rows,k) / 2^rows (a fair Galton board).
+        const rtp = table.reduce(
+          (sum, m, k) => sum + (choose(rows, k) / 2 ** rows) * m,
+          0,
+        );
+        expect(rtp).toBeLessThanOrEqual(1);
+        expect(rtp).toBeGreaterThan(0.9); // sane edge, not a rip-off
+      });
+    }
+  }
 });
 
 /** Cycles through a fixed list of [0,1) values. */

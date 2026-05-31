@@ -50,16 +50,18 @@ export function minesMultiplier(mineCount: number, revealed: number): number {
 }
 
 /**
- * Whole-bibcoin payout for cashing out at `revealed` safe tiles. Rounds (not
- * floors) so the integer currency doesn't quietly add a house edge on top of
- * the one already baked into the multiplier.
+ * Whole-bibcoin payout for cashing out at `revealed` safe tiles. Floors (the
+ * casino convention: fractional winnings go to the house). This matters: with
+ * `round`, a player could pick bet sizes where `round(bet × multiplier)` rounds
+ * up enough to beat the ~1% edge on a near-certain single reveal — a +EV
+ * exploit. `floor` keeps payout ≤ bet × multiplier, so the edge always holds.
  */
 export function minesPayout(
   bet: number,
   mineCount: number,
   revealed: number,
 ): number {
-  return Math.round(bet * minesMultiplier(mineCount, revealed));
+  return Math.floor(bet * minesMultiplier(mineCount, revealed));
 }
 
 /**
