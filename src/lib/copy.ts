@@ -741,6 +741,11 @@ export const copy = {
     unreadLabel: (n: number) =>
       `${n} ongelezen ${n === 1 ? "bericht" : "berichten"}`,
     error: "Bericht niet verzonden. Probeer opnieuw.",
+    edit: "Bewerk",
+    delete: "Verwijder",
+    edited: "bewerkt",
+    save: "Opslaan",
+    cancel: "Annuleer",
     rainbowOn: "🌈 Full rainbow mode aan!",
     rainbowOff: "Rainbow mode uit.",
     snakeBotOn: "😈 Cheatcodes aan — open Snake, hij speelt vanzelf perfect.",

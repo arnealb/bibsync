@@ -10,3 +10,10 @@ export const sendMessageSchema = z.object({
 });
 
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
+
+export const editMessageSchema = z.object({
+  messageId: z.string().uuid(),
+  content: z.string().trim().min(1).max(MESSAGE_MAX_LENGTH),
+});
+
+export type EditMessageInput = z.infer<typeof editMessageSchema>;

@@ -5,14 +5,20 @@ import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Message } from "@/types/database";
 
-/** Subscribes to new messages in a room and forwards inserts to the handler. */
+export interface MessagesRealtimeHandlers {
+  onInsert: (message: Message) => void;
+  onUpdate?: (message: Message) => void;
+  onDelete?: (id: string) => void;
+}
+
+/** Subscribes to message inserts, edits and deletes in a room. */
 export function useMessagesRealtime(
   roomId: string,
-  onInsert: (message: Message) => void,
+  handlers: MessagesRealtimeHandlers,
 ) {
-  const ref = useRef(onInsert);
+  const ref = useRef(handlers);
   useEffect(() => {
-    ref.current = onInsert;
+    ref.current = handlers;
   });
 
   useEffect(() => {
@@ -28,7 +34,30 @@ export function useMessagesRealtime(
           table: "messages",
           filter: `room_id=eq.${roomId}`,
         },
-        (payload) => ref.current(payload.new as Message),
+        (payload) => ref.current.onInsert(payload.new as Message),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => ref.current.onUpdate?.(payload.new as Message),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          const old = payload.old as { id?: string };
+          if (old?.id) ref.current.onDelete?.(old.id);
+        },
       )
       .subscribe();
 

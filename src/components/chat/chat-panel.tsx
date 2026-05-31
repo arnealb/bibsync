@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { loadOlderMessages, sendMessage } from "@/app/_actions/messages";
+import {
+  deleteMessage,
+  editMessage,
+  loadOlderMessages,
+  sendMessage,
+} from "@/app/_actions/messages";
 import { toggleMessageReaction } from "@/app/_actions/reactions";
 import { ChatInput } from "@/components/chat/chat-input";
 import { MessageList } from "@/components/chat/message-list";
@@ -87,16 +92,24 @@ export function ChatPanel({
     return () => markChatRead(roomId);
   }, [roomId]);
 
-  useMessagesRealtime(roomId, (incoming) => {
-    markChatRead(roomId);
-    setMessages((prev) =>
-      prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming],
-    );
-    if (incoming.author_id === userId || atBottomRef.current) {
-      pendingScrollRef.current = true;
-    } else {
-      setNewCount((count) => count + 1);
-    }
+  useMessagesRealtime(roomId, {
+    onInsert: (incoming) => {
+      markChatRead(roomId);
+      setMessages((prev) =>
+        prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming],
+      );
+      if (incoming.author_id === userId || atBottomRef.current) {
+        pendingScrollRef.current = true;
+      } else {
+        setNewCount((count) => count + 1);
+      }
+    },
+    onUpdate: (updated) =>
+      setMessages((prev) =>
+        prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)),
+      ),
+    onDelete: (id) =>
+      setMessages((prev) => prev.filter((m) => m.id !== id)),
   });
 
   useReactionsRealtime(roomId, {
@@ -156,6 +169,7 @@ export function ChatPanel({
         author_id: userId,
         content,
         created_at: new Date().toISOString(),
+        edited_at: null,
         pending: true,
       },
     ]);
@@ -170,6 +184,35 @@ export function ChatPanel({
           : [...withoutTemp, result.message];
       });
       if (!result.ok) toast.error(result.error);
+    });
+  }
+
+  function handleEditMessage(messageId: string, content: string) {
+    const previous = messages.find((m) => m.id === messageId);
+    if (!previous || previous.content === content) return;
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, content, edited_at: new Date().toISOString() }
+          : m,
+      ),
+    );
+    void editMessage({ messageId, content }).then((result) => {
+      if (result.ok) return;
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? previous : m)),
+      );
+      toast.error(result.error);
+    });
+  }
+
+  function handleDeleteMessage(messageId: string) {
+    const previous = messages;
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    void deleteMessage(messageId).then((result) => {
+      if (result.ok) return;
+      setMessages(previous);
+      toast.error(result.error);
     });
   }
 
@@ -228,6 +271,8 @@ export function ChatPanel({
             userId={userId}
             reactions={reactions}
             onToggleReaction={handleToggleReaction}
+            onEditMessage={handleEditMessage}
+            onDeleteMessage={handleDeleteMessage}
           />
         )}
       </div>

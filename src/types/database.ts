@@ -253,6 +253,7 @@ export interface Database {
           author_id: string;
           content: string;
           created_at: Timestamp;
+          edited_at: Timestamp | null;
         };
         Insert: {
           id?: string;
@@ -260,6 +261,7 @@ export interface Database {
           author_id: string;
           content: string;
           created_at?: Timestamp;
+          edited_at?: Timestamp | null;
         };
         Update: {
           id?: string;
@@ -267,6 +269,7 @@ export interface Database {
           author_id?: string;
           content?: string;
           created_at?: Timestamp;
+          edited_at?: Timestamp | null;
         };
         Relationships: [];
       };

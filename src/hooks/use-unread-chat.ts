@@ -59,9 +59,11 @@ export function useUnreadChat(
   }, [roomId, userId]);
 
   // Live increments while away from the chat tab.
-  useMessagesRealtime(roomId, (message) => {
-    if (message.author_id === userId || isOnChatRef.current) return;
-    setUnread((count) => count + 1);
+  useMessagesRealtime(roomId, {
+    onInsert: (message) => {
+      if (message.author_id === userId || isOnChatRef.current) return;
+      setUnread((count) => count + 1);
+    },
   });
 
   return unread;
