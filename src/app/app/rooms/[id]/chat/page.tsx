@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { getRoomReactions } from "@/lib/chat/reactions-queries";
 import { copy } from "@/lib/copy";
-import type { MemberMap } from "@/lib/members";
+import { toMemberMap } from "@/lib/members";
 import { getRoomMessages } from "@/lib/messages/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
@@ -33,15 +33,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
     getRoomReactions(id),
   ]);
 
-  const memberMap: MemberMap = Object.fromEntries(
-    members.map((member) => [
-      member.user_id,
-      {
-        name: member.profile?.display_name ?? "—",
-        avatarUrl: member.profile?.avatar_url ?? null,
-      },
-    ]),
-  );
+  const memberMap = toMemberMap(members);
 
   return (
     <div className="space-y-4">

@@ -7,14 +7,17 @@ import { X } from "lucide-react";
 import { kickMember } from "@/app/_actions/rooms";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
+import { UserName } from "@/components/user-name";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
+import type { ResolvedLoadout } from "@/lib/cosmetics/resolve";
 
 export interface MemberItem {
   userId: string;
   name: string;
   avatarUrl: string | null;
+  loadout: ResolvedLoadout | null;
   isOwner: boolean;
 }
 
@@ -51,8 +54,11 @@ export function MemberList({
               avatarUrl={member.avatarUrl}
               className="size-8"
               fallbackClassName="text-xs"
+              loadout={member.loadout}
             />
-            <span className="truncate text-sm">{member.name}</span>
+            <span className="truncate text-sm">
+              <UserName name={member.name} loadout={member.loadout} />
+            </span>
             {member.isOwner && (
               <Badge variant="secondary">{copy.rooms.owner}</Badge>
             )}

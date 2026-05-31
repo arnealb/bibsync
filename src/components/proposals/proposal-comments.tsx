@@ -7,6 +7,7 @@ import { ProfileLink } from "@/components/profile/profile-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/user-avatar";
+import { UserName } from "@/components/user-name";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
 import { COMMENT_MAX_LENGTH } from "@/lib/validation/comments";
@@ -83,6 +84,7 @@ export function ProposalComments({
                       avatarUrl={members[comment.author_id]?.avatarUrl}
                       className="size-5"
                       fallbackClassName="text-[9px]"
+                      loadout={members[comment.author_id]?.loadout}
                     />
                   </ProfileLink>
                   <div className="min-w-0 flex-1">
@@ -90,7 +92,10 @@ export function ProposalComments({
                       userId={comment.author_id}
                       className="font-medium"
                     >
-                      {members[comment.author_id]?.name ?? "—"}
+                      <UserName
+                        name={members[comment.author_id]?.name ?? "—"}
+                        loadout={members[comment.author_id]?.loadout}
+                      />
                     </ProfileLink>{" "}
                     <span className="break-words">{comment.content}</span>
                   </div>

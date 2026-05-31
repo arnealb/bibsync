@@ -1,3 +1,4 @@
+import type { ResolvedLoadout } from "@/lib/cosmetics/resolve";
 import { getRoomMembers } from "@/lib/rooms/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isGamePnL, lastSessionNet } from "@/lib/games/sessions";
@@ -6,6 +7,7 @@ export interface SessionStanding {
   userId: string;
   name: string;
   avatarUrl: string | null;
+  loadout: ResolvedLoadout | null;
   net: number;
   rounds: number;
   endedAt: string;
@@ -63,6 +65,7 @@ export async function getSessionStandings(
       {
         name: member.profile?.display_name ?? "—",
         avatarUrl: member.profile?.avatar_url ?? null,
+        loadout: member.loadout,
       },
     ]),
   );
@@ -76,6 +79,7 @@ export async function getSessionStandings(
       userId,
       name: meta?.name ?? "—",
       avatarUrl: meta?.avatarUrl ?? null,
+      loadout: meta?.loadout ?? null,
       net: session.net,
       rounds: session.rounds,
       endedAt: session.endedAt,

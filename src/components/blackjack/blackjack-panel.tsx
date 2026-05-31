@@ -17,6 +17,7 @@ import { BlackjackStrategy } from "@/components/blackjack/blackjack-strategy";
 import { PlayingCard } from "@/components/poker/playing-card";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
+import { UserName } from "@/components/user-name";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAutoLeaveTable } from "@/hooks/use-auto-leave-table";
@@ -154,9 +155,14 @@ function SeatView({
           avatarUrl={members[seat.userId]?.avatarUrl}
           className="size-5"
           fallbackClassName="text-[9px]"
+          loadout={members[seat.userId]?.loadout}
         />
         <span className="max-w-20 truncate text-xs font-medium">
-          {isYou ? copy.blackjack.you : name}
+          {isYou ? (
+            copy.blackjack.you
+          ) : (
+            <UserName name={name} loadout={members[seat.userId]?.loadout} />
+          )}
         </span>
       </ProfileLink>
       {seat.bet > 0 && (

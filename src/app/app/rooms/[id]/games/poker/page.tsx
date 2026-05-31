@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { PokerPanel } from "@/components/poker/poker-panel";
 import { copy } from "@/lib/copy";
-import type { MemberMap } from "@/lib/members";
+import { toMemberMap } from "@/lib/members";
 import { getMyHoleCards, getPokerTable } from "@/lib/poker/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
@@ -38,15 +38,7 @@ export default async function PokerPage({ params }: PokerPageProps) {
       ? await getMyHoleCards(id, table.handNo, access.userId)
       : null;
 
-  const memberMap: MemberMap = Object.fromEntries(
-    members.map((member) => [
-      member.user_id,
-      {
-        name: member.profile?.display_name ?? "—",
-        avatarUrl: member.profile?.avatar_url ?? null,
-      },
-    ]),
-  );
+  const memberMap = toMemberMap(members);
 
   return (
     <div className="space-y-4">

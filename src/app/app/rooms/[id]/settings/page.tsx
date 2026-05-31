@@ -39,6 +39,7 @@ export default async function RoomSettingsPage({ params }: SettingsPageProps) {
     userId: member.user_id,
     name: member.profile?.display_name ?? "—",
     avatarUrl: member.profile?.avatar_url ?? null,
+    loadout: member.loadout,
     isOwner: member.user_id === access.room.owner_id,
   }));
 

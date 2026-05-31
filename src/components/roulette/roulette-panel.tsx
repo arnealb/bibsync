@@ -14,6 +14,7 @@ import { RouletteWheel, rotationFor } from "@/components/roulette/roulette-wheel
 import { ProfileLink } from "@/components/profile/profile-link";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
+import { UserName } from "@/components/user-name";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
 import {
@@ -267,11 +268,15 @@ export function RoulettePanel({
                     avatarUrl={members[r.userId]?.avatarUrl}
                     className="size-5"
                     fallbackClassName="text-[9px]"
+                    loadout={members[r.userId]?.loadout}
                   />
                 </ProfileLink>
                 <span className="min-w-0 flex-1 truncate">
                   <ProfileLink userId={r.userId}>
-                    {members[r.userId]?.name ?? "—"}
+                    <UserName
+                      name={members[r.userId]?.name ?? "—"}
+                      loadout={members[r.userId]?.loadout}
+                    />
                   </ProfileLink>
                 </span>
                 <span

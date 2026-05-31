@@ -3,6 +3,8 @@ import { Shield } from "lucide-react";
 
 import { RoomSwitcher } from "@/components/app/room-switcher";
 import { BibcoinsBalance } from "@/components/bibcoins/bibcoins-balance";
+import { getLoadout } from "@/lib/cosmetics/queries";
+import { resolveLoadout } from "@/lib/cosmetics/resolve";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
@@ -14,7 +16,9 @@ import { getMyRooms } from "@/lib/rooms/queries";
 export async function AppHeader() {
   const [ctx, rooms] = await Promise.all([getAuthContext(), getMyRooms()]);
   const name = ctx?.profile?.display_name ?? ctx?.user.email ?? "?";
-  const balance = ctx ? await getBibcoins(ctx.user.id) : 0;
+  const [balance, loadout] = ctx
+    ? await Promise.all([getBibcoins(ctx.user.id), getLoadout(ctx.user.id)])
+    : [0, null];
 
   return (
     <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur">
@@ -51,6 +55,7 @@ export async function AppHeader() {
               name={name}
               avatarUrl={ctx?.profile?.avatar_url ?? null}
               className="size-9"
+              loadout={resolveLoadout(loadout)}
             />
           </Link>
         </div>

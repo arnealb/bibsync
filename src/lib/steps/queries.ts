@@ -1,3 +1,4 @@
+import type { ResolvedLoadout } from "@/lib/cosmetics/resolve";
 import { getRoomMembers } from "@/lib/rooms/queries";
 import { aggregateByUser } from "@/lib/steps/aggregate";
 import { createClient } from "@/lib/supabase/server";
@@ -7,6 +8,7 @@ export interface StepsEntry {
   userId: string;
   name: string;
   avatarUrl: string | null;
+  loadout: ResolvedLoadout | null;
   steps: number;
 }
 
@@ -46,6 +48,7 @@ export async function getStepsBoard(
         userId: uid,
         name: memberById.get(uid)?.profile?.display_name ?? "—",
         avatarUrl: memberById.get(uid)?.profile?.avatar_url ?? null,
+        loadout: memberById.get(uid)?.loadout ?? null,
         steps,
       }))
       .sort((a, b) => b.steps - a.steps);

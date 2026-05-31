@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { RoulettePanel } from "@/components/roulette/roulette-panel";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { copy } from "@/lib/copy";
-import type { MemberMap } from "@/lib/members";
+import { toMemberMap } from "@/lib/members";
 import { getRouletteTable } from "@/lib/roulette/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
@@ -35,15 +35,7 @@ export default async function RoulettePage({ params }: RoulettePageProps) {
     getRoomMembers(id),
   ]);
 
-  const memberMap: MemberMap = Object.fromEntries(
-    members.map((member) => [
-      member.user_id,
-      {
-        name: member.profile?.display_name ?? "—",
-        avatarUrl: member.profile?.avatar_url ?? null,
-      },
-    ]),
-  );
+  const memberMap = toMemberMap(members);
 
   return (
     <div className="mx-auto max-w-xl space-y-4">

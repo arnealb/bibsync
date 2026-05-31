@@ -5,7 +5,7 @@ import { BlackjackPanel } from "@/components/blackjack/blackjack-panel";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { getBlackjackTable } from "@/lib/blackjack/queries";
 import { copy } from "@/lib/copy";
-import type { MemberMap } from "@/lib/members";
+import { toMemberMap } from "@/lib/members";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
 interface BlackjackPageProps {
@@ -35,15 +35,7 @@ export default async function BlackjackPage({ params }: BlackjackPageProps) {
     getRoomMembers(id),
   ]);
 
-  const memberMap: MemberMap = Object.fromEntries(
-    members.map((member) => [
-      member.user_id,
-      {
-        name: member.profile?.display_name ?? "—",
-        avatarUrl: member.profile?.avatar_url ?? null,
-      },
-    ]),
-  );
+  const memberMap = toMemberMap(members);
 
   return (
     <div className="space-y-4">

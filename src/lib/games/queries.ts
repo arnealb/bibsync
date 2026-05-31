@@ -1,3 +1,4 @@
+import type { ResolvedLoadout } from "@/lib/cosmetics/resolve";
 import { createClient } from "@/lib/supabase/server";
 import { getRoomMembers } from "@/lib/rooms/queries";
 import type { GameKey } from "@/lib/validation/games";
@@ -6,6 +7,7 @@ export interface LeaderboardEntry {
   userId: string;
   name: string;
   avatarUrl: string | null;
+  loadout: ResolvedLoadout | null;
   bestScore: number;
   /** Whether the shown best score was achieved with the autopilot. */
   cheated: boolean;
@@ -57,12 +59,15 @@ export async function getRoomLeaderboard(
     memberById.get(userId)?.profile?.display_name ?? "—";
   const avatarOf = (userId: string) =>
     memberById.get(userId)?.profile?.avatar_url ?? null;
+  const loadoutOf = (userId: string) =>
+    memberById.get(userId)?.loadout ?? null;
 
   const full: LeaderboardEntry[] = [...bestOverall.entries()]
     .map(([userId, bestScore]) => ({
       userId,
       name: nameOf(userId),
       avatarUrl: avatarOf(userId),
+      loadout: loadoutOf(userId),
       bestScore,
       cheated: bestScore > (bestHonest.get(userId) ?? -1),
     }))
@@ -74,6 +79,7 @@ export async function getRoomLeaderboard(
       userId,
       name: nameOf(userId),
       avatarUrl: avatarOf(userId),
+      loadout: loadoutOf(userId),
       bestScore,
       cheated: false,
     }))

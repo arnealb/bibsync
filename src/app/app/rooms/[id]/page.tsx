@@ -5,14 +5,12 @@ import { InstantBreakPanel } from "@/components/instant-break/instant-break-pane
 import { PresenceSidebar } from "@/components/presence/presence-sidebar";
 import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
-import { getLoadouts } from "@/lib/cosmetics/queries";
-import { resolveLoadout } from "@/lib/cosmetics/resolve";
 import { copy } from "@/lib/copy";
 import {
   getActiveInstantBreak,
   getRecentPushes,
 } from "@/lib/instant-break/queries";
-import type { MemberMap } from "@/lib/members";
+import { toMemberMap } from "@/lib/members";
 import { getRoomPresence } from "@/lib/presence/queries";
 import { getRoomComments } from "@/lib/proposals/comments-queries";
 import { getRoomPlaces, getRoomProposals } from "@/lib/proposals/queries";
@@ -56,22 +54,12 @@ export default async function RoomPage({ params }: RoomPageProps) {
     getRoomPlaces(id),
   ]);
 
-  const memberMap: MemberMap = Object.fromEntries(
-    members.map((member) => [
-      member.user_id,
-      {
-        name: member.profile?.display_name ?? "—",
-        avatarUrl: member.profile?.avatar_url ?? null,
-      },
-    ]),
-  );
-
-  const loadouts = await getLoadouts(members.map((member) => member.user_id));
+  const memberMap = toMemberMap(members);
   const memberOptions = members.map((member) => ({
     id: member.user_id,
     name: member.profile?.display_name ?? "—",
     avatarUrl: member.profile?.avatar_url ?? null,
-    loadout: resolveLoadout(loadouts[member.user_id]),
+    loadout: member.loadout,
   }));
 
   return (

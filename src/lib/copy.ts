@@ -514,7 +514,7 @@ export const copy = {
     posting: "Plaatsen…",
     posted: "Geplaatst 📌",
     // Offer card
-    byline: (name: string) => `door ${name}`,
+    byline: "door",
     coins: (n: number) => `${n} bibcoins`,
     hire: (n: number) => `Huur in · ${n}`,
     cancel: "Intrekken",

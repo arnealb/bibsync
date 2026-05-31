@@ -8,6 +8,7 @@ import { MessageReactions } from "@/components/chat/message-reactions";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/user-avatar";
+import { UserName } from "@/components/user-name";
 import { isGifUrl } from "@/lib/chat/gif";
 import { splitMentions } from "@/lib/chat/mentions";
 import { copy } from "@/lib/copy";
@@ -74,6 +75,7 @@ export function MessageList({
                 avatarUrl={members[group.authorId]?.avatarUrl}
                 className="size-7"
                 fallbackClassName="text-[11px]"
+                loadout={members[group.authorId]?.loadout}
               />
               {online?.has(group.authorId) && (
                 <span className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-background bg-emerald-500" />
@@ -82,7 +84,12 @@ export function MessageList({
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm font-medium">
-                  <ProfileLink userId={group.authorId}>{name}</ProfileLink>
+                  <ProfileLink userId={group.authorId}>
+                    <UserName
+                      name={name}
+                      loadout={members[group.authorId]?.loadout}
+                    />
+                  </ProfileLink>
                   {isOwn && (
                     <span className="text-muted-foreground">
                       {" "}

@@ -14,6 +14,7 @@ import { PlayingCard } from "@/components/poker/playing-card";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
+import { UserName } from "@/components/user-name";
 import { useAutoLeaveTable } from "@/hooks/use-auto-leave-table";
 import { usePokerRealtime } from "@/hooks/use-poker-realtime";
 import { copy } from "@/lib/copy";
@@ -173,12 +174,16 @@ export function PokerPanel({
                   avatarUrl={members[p.userId]?.avatarUrl}
                   className="size-8"
                   fallbackClassName="text-[11px]"
+                  loadout={members[p.userId]?.loadout}
                 />
               </ProfileLink>
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1 truncate text-sm font-medium">
                   <ProfileLink userId={p.userId}>
-                    {members[p.userId]?.name ?? "—"}
+                    <UserName
+                      name={members[p.userId]?.name ?? "—"}
+                      loadout={members[p.userId]?.loadout}
+                    />
                   </ProfileLink>
                   {isMe && (
                     <span className="text-muted-foreground">

@@ -14,6 +14,7 @@ import { RouteField } from "@/components/routes/route-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
+import { UserName } from "@/components/user-name";
 import { copy } from "@/lib/copy";
 import { toRoutePoints } from "@/lib/routes/types";
 import type { MemberMap } from "@/lib/members";
@@ -148,10 +149,13 @@ export function ProposalCard({
             avatarUrl={creator?.avatarUrl}
             className="size-5"
             fallbackClassName="text-[10px]"
+            loadout={creator?.loadout}
           />
         </ProfileLink>
         {copy.proposals.by}{" "}
-        <ProfileLink userId={proposal.created_by}>{creatorName}</ProfileLink>
+        <ProfileLink userId={proposal.created_by}>
+          <UserName name={creatorName} loadout={creator?.loadout} />
+        </ProfileLink>
       </div>
 
       {proposal.destination && (

@@ -1,5 +1,6 @@
 import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
+import { UserName } from "@/components/user-name";
 import type { SessionStanding } from "@/lib/games/session-queries";
 import { copy } from "@/lib/copy";
 import { formatRelative } from "@/lib/time";
@@ -35,12 +36,13 @@ export function SessionLeaderboard({
                   avatarUrl={standing.avatarUrl}
                   className="size-7"
                   fallbackClassName="text-[11px]"
+                  loadout={standing.loadout}
                 />
               </ProfileLink>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">
                   <ProfileLink userId={standing.userId}>
-                    {standing.name}
+                    <UserName name={standing.name} loadout={standing.loadout} />
                   </ProfileLink>
                 </p>
                 <p className="text-xs text-muted-foreground">

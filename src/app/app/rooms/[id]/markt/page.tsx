@@ -5,7 +5,7 @@ import { MarketplacePanel } from "@/components/marketplace/marketplace-panel";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { copy } from "@/lib/copy";
 import { getRoomBids, getRoomOffers } from "@/lib/marketplace/queries";
-import type { MemberMap } from "@/lib/members";
+import { toMemberMap } from "@/lib/members";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 
 interface MarktPageProps {
@@ -36,15 +36,7 @@ export default async function MarktPage({ params }: MarktPageProps) {
     getRoomMembers(id),
   ]);
 
-  const memberMap: MemberMap = Object.fromEntries(
-    members.map((member) => [
-      member.user_id,
-      {
-        name: member.profile?.display_name ?? "—",
-        avatarUrl: member.profile?.avatar_url ?? null,
-      },
-    ]),
-  );
+  const memberMap = toMemberMap(members);
 
   return (
     <div className="mx-auto max-w-xl">

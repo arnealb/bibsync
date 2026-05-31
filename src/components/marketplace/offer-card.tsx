@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/user-avatar";
+import { UserName } from "@/components/user-name";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
 import { cn } from "@/lib/utils";
@@ -85,8 +86,15 @@ export function OfferCard({
                 avatarUrl={members[offer.author_id]?.avatarUrl}
                 className="size-4"
                 fallbackClassName="text-[8px]"
+                loadout={members[offer.author_id]?.loadout}
               />
-              {copy.marketplace.byline(authorName)}
+              <span className="inline-flex items-center gap-1">
+                {copy.marketplace.byline}
+                <UserName
+                  name={authorName}
+                  loadout={members[offer.author_id]?.loadout}
+                />
+              </span>
             </ProfileLink>
           </div>
           <span className="flex shrink-0 items-center gap-1 font-mono text-sm font-semibold tabular-nums text-amber-500">
@@ -178,7 +186,10 @@ export function OfferCard({
                   >
                     <span className="min-w-0 truncate">
                       <ProfileLink userId={bid.bidder_id}>
-                        {members[bid.bidder_id]?.name ?? "—"}
+                        <UserName
+                          name={members[bid.bidder_id]?.name ?? "—"}
+                          loadout={members[bid.bidder_id]?.loadout}
+                        />
                       </ProfileLink>
                     </span>
                     <span className="flex items-center gap-2">

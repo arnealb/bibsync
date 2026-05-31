@@ -3,6 +3,7 @@ import { Coins } from "lucide-react";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
+import { UserName } from "@/components/user-name";
 import type { WealthEntry } from "@/lib/bibcoins/queries";
 import { copy } from "@/lib/copy";
 
@@ -36,10 +37,13 @@ export function RoomWealth({ entries }: { entries: WealthEntry[] }) {
                     avatarUrl={entry.avatarUrl}
                     className="size-6"
                     fallbackClassName="text-[10px]"
+                    loadout={entry.loadout}
                   />
                 </ProfileLink>
                 <span className="min-w-0 flex-1 truncate">
-                  <ProfileLink userId={entry.userId}>{entry.name}</ProfileLink>
+                  <ProfileLink userId={entry.userId}>
+                    <UserName name={entry.name} loadout={entry.loadout} />
+                  </ProfileLink>
                 </span>
                 <span className="shrink-0 font-mono font-semibold tabular-nums text-amber-500">
                   {entry.bibcoins}

@@ -1,5 +1,7 @@
 import { cache } from "react";
 
+import { getLoadouts } from "@/lib/cosmetics/queries";
+import { resolveLoadout, type ResolvedLoadout } from "@/lib/cosmetics/resolve";
 import { getAuthContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, Room } from "@/types/database";
@@ -12,6 +14,7 @@ export interface MemberWithProfile {
   user_id: string;
   joined_at: string;
   profile: Profile | null;
+  loadout: ResolvedLoadout | null;
 }
 
 export interface RoomAccess {
@@ -92,16 +95,17 @@ export const getRoomMembers = cache(
     if (!members || members.length === 0) return [];
 
     const ids = members.map((member) => member.user_id);
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("*")
-      .in("id", ids);
+    const [{ data: profiles }, loadouts] = await Promise.all([
+      supabase.from("profiles").select("*").in("id", ids),
+      getLoadouts(ids),
+    ]);
 
     const byId = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
     return members.map((member) => ({
       user_id: member.user_id,
       joined_at: member.joined_at,
       profile: byId.get(member.user_id) ?? null,
+      loadout: resolveLoadout(loadouts[member.user_id]),
     }));
   },
 );

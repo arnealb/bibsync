@@ -3,10 +3,13 @@ import { getRoomMembers } from "@/lib/rooms/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
+import type { ResolvedLoadout } from "@/lib/cosmetics/resolve";
+
 export interface WealthEntry {
   userId: string;
   name: string;
   avatarUrl: string | null;
+  loadout: ResolvedLoadout | null;
   bibcoins: number;
 }
 
@@ -36,6 +39,7 @@ export async function getRoomWealth(roomId: string): Promise<WealthEntry[]> {
       userId: m.user_id,
       name: m.profile?.display_name ?? "—",
       avatarUrl: m.profile?.avatar_url ?? null,
+      loadout: m.loadout,
       bibcoins: balances.get(m.user_id) ?? BIBCOINS_START,
     }))
     .sort((a, b) => b.bibcoins - a.bibcoins);
