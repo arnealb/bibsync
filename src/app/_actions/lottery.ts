@@ -8,11 +8,7 @@ import { copy } from "@/lib/copy";
 import { LOTTERY_TICKET_PRICE } from "@/lib/lottery/config";
 import {
   addTickets,
-  canDraw,
   initialLottery,
-  resolveLottery,
-  startRound,
-  ticketsFor,
   type LotteryState,
 } from "@/lib/lottery/engine";
 import { requireRoomAccess } from "@/lib/rooms/queries";
@@ -25,12 +21,6 @@ import {
 export type LotteryActionResult =
   | { ok: true; balance?: number }
   | { ok: false; error: string };
-
-function cryptoRng(): number {
-  const buf = new Uint32Array(1);
-  globalThis.crypto.getRandomValues(buf);
-  return buf[0] / 2 ** 32;
-}
 
 async function authorize(
   roomId: string,
@@ -91,7 +81,7 @@ async function persist(
   return Boolean(updated.data && updated.data.length > 0);
 }
 
-/** Buy lottery tickets; opens the countdown once enough players have joined. */
+/** Buy lottery tickets for the current round (drawn daily by the cron). */
 export async function buyTickets(
   input: BuyTicketsInput,
 ): Promise<LotteryActionResult> {
@@ -103,9 +93,6 @@ export async function buyTickets(
   if (!auth.ok) return auth;
 
   const loaded = await loadOrCreate(auth.admin, roomId);
-  if (loaded.state.phase !== "open") {
-    return { ok: false, error: copy.lottery.closed };
-  }
 
   const cost = count * LOTTERY_TICKET_PRICE;
   if ((await getBibcoins(auth.userId)) < cost) {
@@ -116,82 +103,11 @@ export async function buyTickets(
   const paid = await spendBibcoins(auth.userId, cost, "lottery_ticket", ref);
   if (!paid) return { ok: false, error: copy.lottery.cantAfford };
 
-  const next = addTickets(
-    loaded.state,
-    auth.userId,
-    count,
-    LOTTERY_TICKET_PRICE,
-    new Date().toISOString(),
-  );
+  const next = addTickets(loaded.state, auth.userId, count, LOTTERY_TICKET_PRICE);
   const ok = await persist(auth.admin, roomId, loaded.version, next);
   if (!ok) {
     await awardBibcoins(auth.userId, cost, "lottery_refund", ref);
     return { ok: false, error: copy.lottery.busy };
   }
   return { ok: true, balance: await getBibcoins(auth.userId) };
-}
-
-/** Pick the winner and pay the pot. Version-guarded, so only one caller draws. */
-async function drawAndPay(
-  admin: SupabaseClient,
-  roomId: string,
-  state: LotteryState,
-  version: number,
-): Promise<void> {
-  const next = resolveLottery(state, cryptoRng, new Date().toISOString());
-  const ok = await persist(admin, roomId, version, next);
-  if (!ok) return; // another client drew it first
-
-  if (next.winnerId && next.prize > 0) {
-    await awardBibcoins(
-      next.winnerId,
-      next.prize,
-      "lottery_prize",
-      `${roomId}:${next.roundNo}`,
-    );
-  }
-}
-
-/** Draw once the countdown is up. Idempotent; safe to call from any client. */
-export async function drawLottery(roomId: string): Promise<LotteryActionResult> {
-  const auth = await authorize(roomId);
-  if (!auth.ok) return auth;
-
-  const { state, version } = await loadOrCreate(auth.admin, roomId);
-  if (!canDraw(state) || !state.endsAt) return { ok: true };
-  if (Date.now() < Date.parse(state.endsAt)) return { ok: true };
-
-  await drawAndPay(auth.admin, roomId, state, version);
-  return { ok: true };
-}
-
-/** Draw immediately, skipping the countdown. Any participant may trigger it. */
-export async function drawLotteryNow(
-  roomId: string,
-): Promise<LotteryActionResult> {
-  const auth = await authorize(roomId);
-  if (!auth.ok) return auth;
-
-  const { state, version } = await loadOrCreate(auth.admin, roomId);
-  if (!canDraw(state)) return { ok: false, error: copy.lottery.needPlayers };
-  if (ticketsFor(state, auth.userId) <= 0) {
-    return { ok: false, error: copy.lottery.needTicket };
-  }
-
-  await drawAndPay(auth.admin, roomId, state, version);
-  return { ok: true };
-}
-
-/** Open the next round after a draw. Idempotent across clients. */
-export async function startLotteryRound(
-  roomId: string,
-): Promise<LotteryActionResult> {
-  const auth = await authorize(roomId);
-  if (!auth.ok) return auth;
-
-  const { state, version } = await loadOrCreate(auth.admin, roomId);
-  if (state.phase !== "drawn") return { ok: true };
-
-  await persist(auth.admin, roomId, version, startRound(state));
-  return { ok: true };
 }
