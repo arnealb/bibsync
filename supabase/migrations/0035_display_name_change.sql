@@ -1,4 +1,4 @@
--- 0032_display_name_change.sql
+-- 0035_display_name_change.sql
 -- Paid, once-per-day display-name changes.
 -- Records the Brussels date of the user's last name change so the server action
 -- can enforce the daily limit. The 500-bibcoin charge runs server-side via the

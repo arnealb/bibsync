@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import type { ActionResult } from "@/app/_actions/types";
-import { spendBibcoins } from "@/lib/bibcoins/award";
+import { awardBibcoins, spendBibcoins } from "@/lib/bibcoins/award";
 import { copy } from "@/lib/copy";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -96,8 +96,21 @@ export async function updateDisplayName(name: string): Promise<ActionResult> {
     };
   }
 
+  // Refund the charge if we can't actually apply the change, so a failed
+  // update never silently pockets the user's bibcoins.
+  const refund = () =>
+    awardBibcoins(
+      user.id,
+      DISPLAY_NAME_CHANGE_COST,
+      "name-change-refund",
+      `name-change-refund:${user.id}:${crypto.randomUUID()}`,
+    );
+
   const admin = createAdminClient();
-  if (!admin) return { ok: false, error: copy.profile.nameEdit.error };
+  if (!admin) {
+    await refund();
+    return { ok: false, error: copy.profile.nameEdit.error };
+  }
 
   const { error: updateError } = await admin
     .from("profiles")
@@ -105,6 +118,7 @@ export async function updateDisplayName(name: string): Promise<ActionResult> {
     .eq("id", user.id);
   if (updateError) {
     console.error("[updateDisplayName] update", updateError);
+    await refund();
     return { ok: false, error: copy.profile.nameEdit.error };
   }
 
