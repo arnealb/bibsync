@@ -106,6 +106,7 @@ export default async function ProfilePage() {
           chat: ctx.profile?.notify_chat ?? true,
           comments: ctx.profile?.notify_comments ?? true,
           votes: ctx.profile?.notify_votes ?? true,
+          market: ctx.profile?.notify_market ?? true,
         }}
       />
       <InstallAppCard />

@@ -57,6 +57,7 @@ export interface NotificationPrefs {
   notifyChat: boolean;
   notifyComments: boolean;
   notifyVotes: boolean;
+  notifyMarket: boolean;
 }
 
 export async function updateNotificationPrefs(
@@ -75,6 +76,7 @@ export async function updateNotificationPrefs(
       notify_chat: prefs.notifyChat,
       notify_comments: prefs.notifyComments,
       notify_votes: prefs.notifyVotes,
+      notify_market: prefs.notifyMarket,
     })
     .eq("id", user.id);
   if (error) {

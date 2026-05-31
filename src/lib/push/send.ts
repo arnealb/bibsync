@@ -73,7 +73,7 @@ export async function sendRoomPush(
 /** Notifies a single user (e.g. a proposal's creator or a @mention) if opted in. */
 export async function sendUserPush(
   userId: string,
-  pref: "comments" | "votes" | "chat",
+  pref: "comments" | "votes" | "chat" | "market",
   payload: PushPayload,
 ): Promise<void> {
   if (!ensureConfigured()) return;

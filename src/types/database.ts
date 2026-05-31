@@ -32,6 +32,7 @@ export interface Database {
           notify_chat: boolean;
           notify_comments: boolean;
           notify_votes: boolean;
+          notify_market: boolean;
           created_at: Timestamp;
         };
         Insert: {
@@ -44,6 +45,7 @@ export interface Database {
           notify_chat?: boolean;
           notify_comments?: boolean;
           notify_votes?: boolean;
+          notify_market?: boolean;
           created_at?: Timestamp;
         };
         Update: {
@@ -56,6 +58,7 @@ export interface Database {
           notify_chat?: boolean;
           notify_comments?: boolean;
           notify_votes?: boolean;
+          notify_market?: boolean;
           created_at?: Timestamp;
         };
         Relationships: [];

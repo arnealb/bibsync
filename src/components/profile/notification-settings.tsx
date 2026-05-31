@@ -20,7 +20,7 @@ import {
   unsubscribeFromPush,
 } from "@/lib/push/client";
 
-export type PrefKey = "proposals" | "chat" | "comments" | "votes";
+export type PrefKey = "proposals" | "chat" | "comments" | "votes" | "market";
 export type NotificationPrefState = Record<PrefKey, boolean>;
 
 const PREF_ITEMS: { key: PrefKey; label: string }[] = [
@@ -28,6 +28,7 @@ const PREF_ITEMS: { key: PrefKey; label: string }[] = [
   { key: "chat", label: copy.push.prefChat },
   { key: "comments", label: copy.push.prefComments },
   { key: "votes", label: copy.push.prefVotes },
+  { key: "market", label: copy.push.prefMarket },
 ];
 
 export function NotificationSettings({
@@ -99,6 +100,7 @@ export function NotificationSettings({
       notifyChat: next.chat,
       notifyComments: next.comments,
       notifyVotes: next.votes,
+      notifyMarket: next.market,
     }).then((result) => {
       if (!result.ok) {
         setPrefs(prefs);

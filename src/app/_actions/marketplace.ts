@@ -3,9 +3,11 @@
 import { transferBibcoins } from "@/lib/bibcoins/award";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { copy } from "@/lib/copy";
+import { sendUserPush } from "@/lib/push/send";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createOfferSchema,
   placeBidSchema,
@@ -21,6 +23,19 @@ export type CreateOfferResult =
 export type OfferActionResult =
   | { ok: true; balance?: number }
   | { ok: false; error: string };
+
+/** A user's display name (for push bodies), or a neutral fallback. */
+async function displayName(
+  client: SupabaseClient,
+  userId: string,
+): Promise<string> {
+  const { data } = await client
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+  return data?.display_name ?? "Iemand";
+}
 
 /** Post a service for hire ('offer') or a request others can bid on ('request'). */
 export async function createOffer(
@@ -62,7 +77,7 @@ export async function hireOffer(offerId: string): Promise<OfferActionResult> {
 
   const { data: offer } = await admin
     .from("service_offers")
-    .select("id, room_id, author_id, kind, price, status")
+    .select("id, room_id, author_id, kind, title, price, status")
     .eq("id", offerId)
     .maybeSingle();
   if (!offer) return { ok: false, error: copy.marketplace.gone };
@@ -80,14 +95,24 @@ export async function hireOffer(offerId: string): Promise<OfferActionResult> {
   }
 
   // Buyer pays the author, author keeps the agreed price.
-  return settleHire(
+  const result = await settleHire(
     admin,
     offerId,
     access.userId,
-    offer.author_id,
     access.userId,
+    offer.author_id,
     offer.price,
   );
+
+  if (result.ok) {
+    await sendUserPush(offer.author_id, "market", {
+      title: copy.push.marketHired(await displayName(admin, access.userId)),
+      body: `${offer.title} · ${offer.price} bibcoins`,
+      url: `/app/rooms/${offer.room_id}/markt`,
+      tag: `market-${offerId}`,
+    });
+  }
+  return result;
 }
 
 /** Place (or update) your bid on a 'request'. */
@@ -103,7 +128,7 @@ export async function placeBid(input: PlaceBidInput): Promise<OfferActionResult>
 
   const { data: offer } = await supabase
     .from("service_offers")
-    .select("room_id, author_id, kind, status")
+    .select("room_id, author_id, kind, title, status")
     .eq("id", parsed.data.offerId)
     .maybeSingle();
   if (!offer || offer.kind !== "request" || offer.status !== "open") {
@@ -126,6 +151,13 @@ export async function placeBid(input: PlaceBidInput): Promise<OfferActionResult>
     console.error("[placeBid]", error);
     return { ok: false, error: copy.marketplace.error };
   }
+
+  await sendUserPush(offer.author_id, "market", {
+    title: copy.push.marketBid(await displayName(supabase, user.id)),
+    body: `${offer.title} · ${parsed.data.price} bibcoins`,
+    url: `/app/rooms/${offer.room_id}/markt`,
+    tag: `market-${parsed.data.offerId}`,
+  });
   return { ok: true };
 }
 
@@ -169,7 +201,7 @@ export async function acceptBid(bidId: string): Promise<OfferActionResult> {
 
   const { data: offer } = await admin
     .from("service_offers")
-    .select("id, author_id, kind, status")
+    .select("id, room_id, author_id, kind, title, status")
     .eq("id", bid.offer_id)
     .maybeSingle();
   if (!offer || offer.kind !== "request" || offer.status !== "open") {
@@ -183,7 +215,24 @@ export async function acceptBid(bidId: string): Promise<OfferActionResult> {
   }
 
   // Author pays the bidder the bid price.
-  return settleHire(admin, offer.id, user.id, user.id, bid.bidder_id, bid.price);
+  const result = await settleHire(
+    admin,
+    offer.id,
+    bid.bidder_id,
+    user.id,
+    bid.bidder_id,
+    bid.price,
+  );
+
+  if (result.ok) {
+    await sendUserPush(bid.bidder_id, "market", {
+      title: copy.push.marketAccepted,
+      body: `${offer.title} · +${bid.price} bibcoins`,
+      url: `/app/rooms/${offer.room_id}/markt`,
+      tag: `market-${offer.id}`,
+    });
+  }
+  return result;
 }
 
 /**
