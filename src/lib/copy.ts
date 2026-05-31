@@ -467,6 +467,27 @@ export const copy = {
     recent: "Laatste",
     hint: "Kies je inzet, aantal rijen en risico, en laat de bal vallen.",
   },
+  crash: {
+    title: "Crash",
+    subtitle:
+      "Kies een cashout-doel. De raket stijgt — haalt hij jouw doel, dan win je; ontploft hij eerder, dan ben je je inzet kwijt.",
+    stat: "Jouw bibcoins",
+    cantAfford: "Niet genoeg bibcoins voor deze inzet.",
+    unavailable: "Crash is even niet beschikbaar.",
+    betLabel: "Inzet",
+    targetLabel: "Cashout bij",
+    launch: "Lanceer 🚀",
+    launching: "Stijgen…",
+    multiplier: (m: number) => `${m.toFixed(2)}×`,
+    winChanceLabel: "Winkans",
+    winChance: (p: number) => `${p.toFixed(2)}%`,
+    payoutLabel: "Uitbetaling",
+    resultWin: (target: string, payout: number) =>
+      `Uitgecasht op ${target}× — +${payout} bibcoins 🎉`,
+    resultLose: (crash: string) => `💥 Ontploft op ${crash}× — helaas.`,
+    recent: "Laatste",
+    hint: "Kies inzet en cashout-doel en lanceer.",
+  },
   dice: {
     title: "Dice",
     subtitle:
