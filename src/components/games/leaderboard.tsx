@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { SnakeKingBadge } from "@/components/games/snake-king-badge";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/user-avatar";
 import { UserName } from "@/components/user-name";
@@ -16,8 +17,8 @@ interface LeaderboardProps {
   honest: LeaderboardEntry[];
   /** Shared room setting: show all scores (true) or honest-only (false). */
   initialShowCheated: boolean;
-  /** If set, the honest #1 is the daily "master" earning this many coins/day. */
-  masterReward?: number;
+  /** If set, the honest #1 is the daily Snake King earning this many coins/day. */
+  kingReward?: number;
 }
 
 export function Leaderboard({
@@ -26,7 +27,7 @@ export function Leaderboard({
   full,
   honest,
   initialShowCheated,
-  masterReward,
+  kingReward,
 }: LeaderboardProps) {
   const [showCheated, setShowCheated] = useState(initialShowCheated);
   useLeaderboardSettingsRealtime(roomId, setShowCheated);
@@ -74,13 +75,8 @@ export function Leaderboard({
                     🤖
                   </span>
                 )}
-                {masterReward != null && !showCheated && index === 0 && (
-                  <span
-                    title={copy.games.snakeMaster(masterReward)}
-                    aria-label={copy.games.snakeMaster(masterReward)}
-                  >
-                    👑
-                  </span>
+                {kingReward != null && !showCheated && index === 0 && (
+                  <SnakeKingBadge reward={kingReward} />
                 )}
               </span>
               <span className="font-mono tabular-nums text-sm font-semibold">

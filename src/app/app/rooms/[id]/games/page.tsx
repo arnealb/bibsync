@@ -7,6 +7,7 @@ import { Leaderboard } from "@/components/games/leaderboard";
 import { SessionLeaderboard } from "@/components/games/session-leaderboard";
 import { copy } from "@/lib/copy";
 import { getBibcoins, getRoomWealth } from "@/lib/bibcoins/queries";
+import { SNAKE_KING_REWARD } from "@/lib/games/constants";
 import {
   getMyBestScore,
   getRoomLeaderboard,
@@ -146,7 +147,7 @@ export default async function GamesPage({ params }: GamesPageProps) {
         full={snakeBoard.full}
         honest={snakeBoard.honest}
         initialShowCheated={showCheated}
-        masterReward={75}
+        kingReward={SNAKE_KING_REWARD}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Leaderboard } from "@/components/games/leaderboard";
 import { SnakeGame } from "@/components/games/snake/snake-game";
 import { copy } from "@/lib/copy";
+import { SNAKE_KING_REWARD } from "@/lib/games/constants";
 import {
   getMyBestScore,
   getRoomLeaderboard,
@@ -57,6 +58,7 @@ export default async function SnakePage({ params }: SnakePageProps) {
         full={board.full}
         honest={board.honest}
         initialShowCheated={showCheated}
+        kingReward={SNAKE_KING_REWARD}
       />
     </div>
   );
