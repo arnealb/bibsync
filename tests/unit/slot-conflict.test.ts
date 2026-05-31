@@ -29,4 +29,11 @@ describe("conflictingSlot", () => {
     // 15:30 is the middagpauze (coffee) slot, but the dinner slot is at 18:30.
     expect(conflictingSlot("dinner", "15:30")).toBeNull();
   });
+
+  it("blocks free lunch across the whole 12:00–13:00 window (default 12:30 ±30)", () => {
+    expect(conflictingSlot("lunch", "12:00")?.key).toBe("middageten");
+    expect(conflictingSlot("lunch", "13:00")?.key).toBe("middageten");
+    expect(conflictingSlot("lunch", "11:45")).toBeNull();
+    expect(conflictingSlot("lunch", "13:15")).toBeNull();
+  });
 });

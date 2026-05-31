@@ -264,8 +264,10 @@ export function ProposalsPanel({
       decideSlotTime(suggestions, votes, (uid) =>
         voteWeight(members[uid]?.name ?? ""),
       ) ?? slot.defaultTime.slice(0, 5);
+    // A slot stays settable until the END of its window, not its decided time —
+    // so you can still set e.g. 12:30 for lunch at 12:17.
     const passed =
-      anchor < todayIso || (anchor === todayIso && effective < nowClock);
+      anchor < todayIso || (anchor === todayIso && nowClock >= slot.until);
     return { slot, suggestions, passed, effective };
   });
   const earlierSlots = slotEntries.filter((e) => e.passed);

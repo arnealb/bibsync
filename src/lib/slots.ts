@@ -5,15 +5,18 @@ export interface BreakSlot {
   label: string;
   type: ProposalType;
   defaultTime: string;
+  /** End of the slot's window — it stays settable until this time of day, even
+   *  once its decided time has passed. */
+  until: string;
 }
 
 /** The fixed daily break/meal slots, in order. */
 export const BREAK_SLOTS: BreakSlot[] = [
-  { key: "ochtendpauze", label: "Ochtendpauze", type: "coffee", defaultTime: "10:30" },
-  { key: "middageten", label: "Middageten", type: "lunch", defaultTime: "12:00" },
-  { key: "middagpauze", label: "Middagpauze", type: "coffee", defaultTime: "15:30" },
-  { key: "avondeten", label: "Avondeten", type: "dinner", defaultTime: "18:30" },
-  { key: "avondpauze", label: "Avondpauze", type: "coffee", defaultTime: "21:30" },
+  { key: "ochtendpauze", label: "Ochtendpauze", type: "coffee", defaultTime: "10:30", until: "11:30" },
+  { key: "middageten", label: "Middageten", type: "lunch", defaultTime: "12:30", until: "13:00" },
+  { key: "middagpauze", label: "Middagpauze", type: "coffee", defaultTime: "15:30", until: "16:30" },
+  { key: "avondeten", label: "Avondeten", type: "dinner", defaultTime: "18:30", until: "19:30" },
+  { key: "avondpauze", label: "Avondpauze", type: "coffee", defaultTime: "21:30", until: "22:30" },
 ];
 
 function toMinutes(time: string): number {
@@ -37,7 +40,7 @@ export function averageTime(times: string[], fallback: string): string {
 }
 
 /** How close (minutes) a free proposal must be to a same-type slot to clash. */
-export const SLOT_WINDOW_RADIUS_MIN = 90;
+export const SLOT_WINDOW_RADIUS_MIN = 30;
 
 /**
  * The fixed slot a free proposal would step on, or null. A free proposal of the
