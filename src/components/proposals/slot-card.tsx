@@ -18,6 +18,7 @@ import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
 import { toRoutePoints, type RoutePoint } from "@/lib/routes/types";
 import { voteWeight } from "@/lib/proposals/joke";
+import { DESTINATION_PRESETS } from "@/lib/proposals/presets";
 import { decideSlotTime } from "@/lib/proposals/winner";
 import { type BreakSlot } from "@/lib/slots";
 import type {
@@ -185,25 +186,37 @@ export function SlotCard({
       </div>
 
       <div className="space-y-1.5">
-        {places.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {places.map((place) => (
-              <button
-                key={place.id}
-                type="button"
-                onClick={() => {
-                  setDestination(place.name);
-                  setIsWalk(place.is_walk);
-                  setRoutePoints(toRoutePoints(place.points));
-                }}
-                className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
-              >
-                {place.is_walk ? "🚶 " : ""}
-                {place.name}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-1.5">
+          {DESTINATION_PRESETS.map((preset) => (
+            <button
+              key={preset.key}
+              type="button"
+              onClick={() => {
+                setDestination(preset.name);
+                setIsWalk(preset.isWalk);
+                setRoutePoints(preset.points);
+              }}
+              className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
+            >
+              {preset.label}
+            </button>
+          ))}
+          {places.map((place) => (
+            <button
+              key={place.id}
+              type="button"
+              onClick={() => {
+                setDestination(place.name);
+                setIsWalk(place.is_walk);
+                setRoutePoints(toRoutePoints(place.points));
+              }}
+              className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
+            >
+              {place.is_walk ? "🚶 " : ""}
+              {place.name}
+            </button>
+          ))}
+        </div>
         <div className="flex items-center gap-2">
           <Input
             value={destination}

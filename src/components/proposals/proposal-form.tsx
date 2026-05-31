@@ -17,6 +17,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { RouteField } from "@/components/routes/route-field";
 import { copy } from "@/lib/copy";
+import { DESTINATION_PRESETS } from "@/lib/proposals/presets";
 import { toRoutePoints, type RoutePoint } from "@/lib/routes/types";
 import { isoDatePlus } from "@/lib/time";
 import { DURATION_OPTIONS, PROPOSAL_TYPES } from "@/lib/validation/proposals";
@@ -158,25 +159,37 @@ export function ProposalForm({
         <Label htmlFor="proposal-dest">
           {copy.proposals.form.destinationLabel}
         </Label>
-        {places.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {places.map((place) => (
-              <button
-                key={place.id}
-                type="button"
-                onClick={() => {
-                  setDestination(place.name);
-                  setIsWalk(place.is_walk);
-                  setRoutePoints(toRoutePoints(place.points));
-                }}
-                className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
-              >
-                {place.is_walk ? "🚶 " : ""}
-                {place.name}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-1.5">
+          {DESTINATION_PRESETS.map((preset) => (
+            <button
+              key={preset.key}
+              type="button"
+              onClick={() => {
+                setDestination(preset.name);
+                setIsWalk(preset.isWalk);
+                setRoutePoints(preset.points);
+              }}
+              className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
+            >
+              {preset.label}
+            </button>
+          ))}
+          {places.map((place) => (
+            <button
+              key={place.id}
+              type="button"
+              onClick={() => {
+                setDestination(place.name);
+                setIsWalk(place.is_walk);
+                setRoutePoints(toRoutePoints(place.points));
+              }}
+              className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
+            >
+              {place.is_walk ? "🚶 " : ""}
+              {place.name}
+            </button>
+          ))}
+        </div>
         <Input
           id="proposal-dest"
           value={destination}
