@@ -35,3 +35,25 @@ export function averageTime(times: string[], fallback: string): string {
     times.reduce((sum, t) => sum + toMinutes(t), 0) / times.length;
   return fromMinutes(Math.round(avg / 5) * 5);
 }
+
+/** How close (minutes) a free proposal must be to a same-type slot to clash. */
+export const SLOT_WINDOW_RADIUS_MIN = 90;
+
+/**
+ * The fixed slot a free proposal would step on, or null. A free proposal of the
+ * same type within {@link SLOT_WINDOW_RADIUS_MIN} of a slot's time belongs in
+ * that slot's "vast moment", not as a separate free proposal.
+ */
+export function conflictingSlot(
+  type: ProposalType,
+  time: string,
+): BreakSlot | null {
+  const minutes = toMinutes(time);
+  for (const slot of BREAK_SLOTS) {
+    if (slot.type !== type) continue;
+    if (Math.abs(minutes - toMinutes(slot.defaultTime)) <= SLOT_WINDOW_RADIUS_MIN) {
+      return slot;
+    }
+  }
+  return null;
+}

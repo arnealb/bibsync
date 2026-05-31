@@ -614,6 +614,8 @@ export const copy = {
       destinationLabel: "Bestemming (optioneel)",
       destinationPlaceholder: "bv. Park, bakker — leeg = gewoon pauze (Okay)",
       walkLabel: "Wandeling 🚶",
+      fixedSlotHint: (label: string) =>
+        `Rond dit tijdstip is er het vaste moment "${label}". Stem daar op — een vrij voorstel kan hier niet.`,
       placesLabel: "Eerder gebruikt",
       noteLabel: "Notitie (optioneel)",
       notePlaceholder: "bv. afspraak aan de hoofdingang",
@@ -685,6 +687,8 @@ export const copy = {
       noteTooLong: "Notitie mag max 200 tekens zijn.",
       slotTaken:
         "Er staat al een voorstel op dit tijdstip. Kies een ander moment.",
+      useFixedSlot: (label: string) =>
+        `Dit valt onder het vaste moment "${label}". Stem daar i.p.v. een vrij voorstel te plaatsen.`,
       notPresent:
         "Check eerst in (of deel je locatie) — alleen aanwezigen kunnen voorstellen en stemmen.",
     },

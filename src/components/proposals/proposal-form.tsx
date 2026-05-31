@@ -19,6 +19,7 @@ import { RouteField } from "@/components/routes/route-field";
 import { copy } from "@/lib/copy";
 import { DESTINATION_PRESETS } from "@/lib/proposals/presets";
 import { toRoutePoints, type RoutePoint } from "@/lib/routes/types";
+import { conflictingSlot } from "@/lib/slots";
 import { isoDatePlus } from "@/lib/time";
 import { DURATION_OPTIONS, PROPOSAL_TYPES } from "@/lib/validation/proposals";
 import type { BreakProposal, ProposalType, RoomPlace } from "@/types/database";
@@ -46,8 +47,11 @@ export function ProposalForm({
   const [note, setNote] = useState("");
   const [pending, startTransition] = useTransition();
 
+  const slotConflict = conflictingSlot(type, `${hour}:${minute}`);
+
   function onSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (slotConflict) return;
     startTransition(async () => {
       const result = await createProposal({
         roomId,
@@ -227,7 +231,17 @@ export function ProposalForm({
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={pending}>
+      {slotConflict && (
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">
+          {copy.proposals.form.fixedSlotHint(slotConflict.label)}
+        </p>
+      )}
+
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={pending || slotConflict !== null}
+      >
         {pending ? copy.proposals.form.submitting : copy.proposals.form.submit}
       </Button>
     </form>

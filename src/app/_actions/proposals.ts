@@ -5,7 +5,7 @@ import { earnFromProposal, earnFromVote } from "@/lib/bibcoins/earn";
 import { copy } from "@/lib/copy";
 import { isUserPresent } from "@/lib/presence/queries";
 import { sendRoomPush, sendUserPush } from "@/lib/push/send";
-import { BREAK_SLOTS } from "@/lib/slots";
+import { BREAK_SLOTS, conflictingSlot } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
 import { formatTime } from "@/lib/time";
 import {
@@ -45,6 +45,18 @@ export async function createProposal(
 
   if (!(await isUserPresent(parsed.data.roomId, user.id))) {
     return { ok: false, error: copy.proposals.validation.notPresent };
+  }
+
+  // Free proposals may not step on a fixed slot — use the "vast moment" instead.
+  const fixedSlot = conflictingSlot(
+    parsed.data.proposalType,
+    parsed.data.startTime,
+  );
+  if (fixedSlot) {
+    return {
+      ok: false,
+      error: copy.proposals.validation.useFixedSlot(fixedSlot.label),
+    };
   }
 
   // One free-form proposal per time slot: reject a clash on date + start time
