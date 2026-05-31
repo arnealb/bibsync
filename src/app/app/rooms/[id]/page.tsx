@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { StrijderPopup } from "@/components/bibcoins/strijder-popup";
 import { InstantBreakPanel } from "@/components/instant-break/instant-break-panel";
 import { PresenceSidebar } from "@/components/presence/presence-sidebar";
+import { getStrijderClaimable } from "@/lib/bibcoins/queries";
 import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
 import { copy } from "@/lib/copy";
@@ -46,6 +48,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
     recentPushes,
     places,
     foodBets,
+    strijderClaimable,
   ] = await Promise.all([
     getRoomMembers(id),
     getRoomProposals(id),
@@ -55,6 +58,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
     getRecentPushes(id),
     getRoomPlaces(id),
     getFoodBets(id),
+    getStrijderClaimable(access.userId),
   ]);
 
   const memberMap = toMemberMap(members);
@@ -67,6 +71,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
 
   return (
     <div className="space-y-4">
+      <StrijderPopup initialClaimable={strijderClaimable} />
       <InstantBreakPanel
         roomId={access.room.id}
         userId={access.userId}

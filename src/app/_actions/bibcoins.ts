@@ -6,7 +6,7 @@ import {
   claimStrijderBonus,
   transferBibcoins,
 } from "@/lib/bibcoins/award";
-import { getBibcoins } from "@/lib/bibcoins/queries";
+import { getBibcoins, getStrijderClaimable } from "@/lib/bibcoins/queries";
 import { getAuthContext } from "@/lib/auth";
 import { copy } from "@/lib/copy";
 import { createClient } from "@/lib/supabase/server";
@@ -71,4 +71,11 @@ export async function claimStrijder(): Promise<ClaimResult> {
   if (!ctx) return { ok: false };
   const granted = await claimStrijderBonus(ctx.user.id);
   return { ok: true, granted };
+}
+
+/** Whether the Strijder bonus popup should show (in window, not yet claimed). */
+export async function checkStrijder(): Promise<boolean> {
+  const ctx = await getAuthContext();
+  if (!ctx) return false;
+  return getStrijderClaimable(ctx.user.id);
 }

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app/app-header";
 import { DailyClaimer } from "@/components/bibcoins/daily-claimer";
 import { HourlyClaimer } from "@/components/bibcoins/hourly-claimer";
-import { StrijderClaimer } from "@/components/bibcoins/strijder-claimer";
 import { getAuthContext } from "@/lib/auth";
 
 export default async function AppLayout({
@@ -16,7 +15,6 @@ export default async function AppLayout({
     <div className="flex min-h-dvh flex-col">
       <HourlyClaimer />
       <DailyClaimer />
-      <StrijderClaimer />
       <AppHeader />
       <main className="flex-1">{children}</main>
     </div>

@@ -960,6 +960,12 @@ export const copy = {
     hourlyGranted: (n: number) => `+${n} bibcoins ⏳`,
     dailyGranted: (n: number) => `Dagbonus: +${n} bibcoins 🎁`,
     strijderGranted: (n: number) => `Strijder bonus: +${n} bibcoins 🌙⚔️`,
+    strijder: {
+      title: "Strijder bonus 🌙⚔️",
+      body: "Je bent online tussen 00:30 en 01:30 — echte nacht-strijder! Pak je 1000 bibcoins.",
+      claim: "Claim +1000",
+      later: "Later",
+    },
     transfer: {
       button: "Stuur bibcoins",
       title: (name: string) => `Stuur bibcoins naar ${name}`,

@@ -2,6 +2,7 @@ import { BIBCOINS_START } from "@/lib/bibcoins/config";
 import { getRoomMembers } from "@/lib/rooms/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { nowInBrussels, todayInBrussels } from "@/lib/time";
 
 import type { ResolvedLoadout } from "@/lib/cosmetics/resolve";
 
@@ -66,4 +67,25 @@ export async function getUnlockedAchievements(
     .select("achievement_id")
     .eq("user_id", userId);
   return (data ?? []).map((row) => row.achievement_id);
+}
+
+/**
+ * Whether the "Strijder" night bonus is claimable right now for a user: inside
+ * the 00:30–01:30 Brussels window and not yet claimed today.
+ */
+export async function getStrijderClaimable(userId: string): Promise<boolean> {
+  const bx = nowInBrussels();
+  const mins = bx.getHours() * 60 + bx.getMinutes();
+  if (mins < 30 || mins >= 90) return false; // outside the window
+
+  const admin = createAdminClient();
+  if (!admin) return false;
+  const { data } = await admin
+    .from("bibcoin_transactions")
+    .select("ref_key")
+    .eq("user_id", userId)
+    .eq("reason", "strijder")
+    .eq("ref_key", todayInBrussels())
+    .maybeSingle();
+  return !data; // claimable when not yet claimed today
 }
