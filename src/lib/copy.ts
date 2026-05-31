@@ -515,6 +515,7 @@ export const copy = {
     error: "Inzetten mislukt. Probeer opnieuw.",
     placePlaceholder: "Plek (bv. Frituur, Pizza)",
     amountPlaceholder: "Inzet",
+    amountHint: "Kies je inzet en druk op + bij een plek, of tik een nieuwe plek.",
     stake: "Zet in",
     yourStake: (n: number) => `jij ${n}`,
     empty: "Nog niks ingezet — zet de eerste plek in.",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Coins, UtensilsCrossed } from "lucide-react";
+import { Coins, Plus, UtensilsCrossed } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,24 +49,17 @@ export function FoodBets({
   }, [bets, userId]);
 
   const max = ranked[0]?.total ?? 0;
+  const validAmount = amount >= FOOD_BET_MIN;
 
-  // Suggestion chips: existing bet places + the room's saved (non-walk) places.
+  // New-place suggestions: saved room places not yet on the board.
   const chips = useMemo(() => {
     const seen = new Set(ranked.map((r) => r.place.toLowerCase()));
-    const out = ranked.map((r) => r.place);
-    for (const p of places) {
-      if (!seen.has(p.name.toLowerCase())) {
-        seen.add(p.name.toLowerCase());
-        out.push(p.name);
-      }
-    }
-    return out.slice(0, 8);
+    return places.map((p) => p.name).filter((n) => !seen.has(n.toLowerCase()));
   }, [ranked, places]);
 
-  function submit() {
-    const trimmed = place.trim();
-    if (trimmed && amount >= FOOD_BET_MIN) onStake(trimmed, amount);
-    setPlace("");
+  function add(target: string) {
+    const trimmed = target.trim();
+    if (trimmed && validAmount) onStake(trimmed, amount);
   }
 
   return (
@@ -92,9 +85,24 @@ export function FoodBets({
                     </span>
                   )}
                 </span>
-                <span className="flex shrink-0 items-center gap-1 font-mono text-xs font-semibold tabular-nums text-amber-500">
-                  <Coins className="size-3.5" />
-                  {r.total}
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <span className="flex items-center gap-1 font-mono text-xs font-semibold tabular-nums text-amber-500">
+                    <Coins className="size-3.5" />
+                    {r.total}
+                  </span>
+                  {canParticipate && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 gap-0.5 px-1.5 text-xs"
+                      disabled={pending || !validAmount}
+                      onClick={() => add(r.place)}
+                      aria-label={`${copy.foodBets.stake} ${r.place}`}
+                    >
+                      <Plus className="size-3" />
+                      {amount}
+                    </Button>
+                  )}
                 </span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -112,21 +120,10 @@ export function FoodBets({
       )}
 
       {canParticipate && (
-        <div className="space-y-1.5">
-          {chips.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {chips.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setPlace(c)}
-                  className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="space-y-1.5 border-t pt-2">
+          <p className="text-[11px] text-muted-foreground">
+            {copy.foodBets.amountHint}
+          </p>
           <div className="flex items-center gap-1.5">
             <Input
               value={place}
@@ -147,12 +144,29 @@ export function FoodBets({
             />
             <Button
               size="sm"
-              disabled={pending || !place.trim() || amount < FOOD_BET_MIN}
-              onClick={submit}
+              disabled={pending || !place.trim() || !validAmount}
+              onClick={() => {
+                add(place);
+                setPlace("");
+              }}
             >
               {copy.foodBets.stake}
             </Button>
           </div>
+          {chips.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {chips.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setPlace(c)}
+                  className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
