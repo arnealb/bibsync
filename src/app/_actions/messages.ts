@@ -3,8 +3,10 @@
 import type { ActionResult } from "@/app/_actions/types";
 import { earnFromMessage } from "@/lib/bibcoins/earn";
 import { isGifUrl } from "@/lib/chat/gif";
+import { mentionedUserIds } from "@/lib/chat/mentions";
 import { copy } from "@/lib/copy";
-import { sendRoomPush } from "@/lib/push/send";
+import { sendRoomPush, sendUserPush } from "@/lib/push/send";
+import { getRoomMembers } from "@/lib/rooms/queries";
 import { createClient } from "@/lib/supabase/server";
 import {
   editMessageSchema,
@@ -51,12 +53,31 @@ export async function sendMessage(
   const preview = isGifUrl(parsed.data.content)
     ? copy.push.gifMessage
     : parsed.data.content.slice(0, 120);
+  const url = `/app/rooms/${parsed.data.roomId}`;
+  const tag = `chat-${parsed.data.roomId}`;
   await sendRoomPush(parsed.data.roomId, "chat", {
     title: copy.push.newMessage,
     body: preview,
-    url: `/app/rooms/${parsed.data.roomId}`,
-    tag: `chat-${parsed.data.roomId}`,
+    url,
+    tag,
   });
+
+  // @mentions get a more specific push (same tag → supersedes the generic one).
+  const members = await getRoomMembers(parsed.data.roomId);
+  const senderName =
+    members.find((m) => m.user_id === user.id)?.profile?.display_name ?? "—";
+  const mentioned = mentionedUserIds(
+    parsed.data.content,
+    members.map((m) => ({ id: m.user_id, name: m.profile?.display_name ?? "" })),
+  ).filter((id) => id !== user.id);
+  for (const id of mentioned) {
+    await sendUserPush(id, "chat", {
+      title: copy.push.mention(senderName),
+      body: preview,
+      url,
+      tag,
+    });
+  }
 
   await earnFromMessage(user.id);
   return { ok: true, message: data };

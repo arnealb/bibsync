@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, Pencil, Trash2, X } from "lucide-react";
 
 import { ChatImage } from "@/components/chat/chat-image";
@@ -9,6 +9,7 @@ import { ProfileLink } from "@/components/profile/profile-link";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/user-avatar";
 import { isGifUrl } from "@/lib/chat/gif";
+import { splitMentions } from "@/lib/chat/mentions";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
 import type { MessageGroup } from "@/lib/messages/group";
@@ -35,6 +36,14 @@ export function MessageList({
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+
+  const mentionNames = useMemo(
+    () =>
+      new Set(
+        Object.values(members).map((m) => m.name.toLowerCase()),
+      ),
+    [members],
+  );
 
   function startEdit(id: string, content: string) {
     setEditingId(id);
@@ -129,7 +138,19 @@ export function MessageList({
                                     "text-muted-foreground italic",
                                 )}
                               >
-                                {message.content}
+                                {splitMentions(message.content, mentionNames).map(
+                                  (part, i) =>
+                                    part.mention ? (
+                                      <span
+                                        key={i}
+                                        className="rounded bg-primary/15 px-0.5 font-medium text-primary"
+                                      >
+                                        {part.text}
+                                      </span>
+                                    ) : (
+                                      <span key={i}>{part.text}</span>
+                                    ),
+                                )}
                                 {message.edited_at && (
                                   <span className="ml-1 text-[10px] text-muted-foreground">
                                     ({copy.chat.edited})

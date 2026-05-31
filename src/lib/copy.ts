@@ -834,6 +834,7 @@ export const copy = {
     prefVotes: "Stemmen op mijn voorstellen",
     newProposal: "Nieuw pauzevoorstel",
     newMessage: "Nieuw bericht",
+    mention: (name: string) => `${name} noemde je 💬`,
     newComment: "Nieuwe reactie op je voorstel",
     newVote: "Nieuwe stem op je voorstel",
     gifMessage: "📷 GIF",
