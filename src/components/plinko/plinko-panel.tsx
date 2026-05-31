@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { dropPlinko, type PlinkoActionResult } from "@/app/_actions/plinko";
+import { dropPlinko } from "@/app/_actions/plinko";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,29 +16,33 @@ import {
 } from "@/components/ui/select";
 import { copy } from "@/lib/copy";
 import {
+  PLINKO_BALL_COUNTS,
   PLINKO_CHIPS,
+  PLINKO_MAX_BALLS,
   PLINKO_RISKS,
   PLINKO_ROWS_OPTIONS,
   plinkoMultiplierColor,
   type PlinkoRisk,
   type PlinkoRows,
 } from "@/lib/plinko/config";
-import {
-  plinkoMultipliers,
-  type PlinkoDir,
-  type PlinkoResult,
-} from "@/lib/plinko/engine";
+import { plinkoMultipliers, type PlinkoResult } from "@/lib/plinko/engine";
 import { cn } from "@/lib/utils";
 
-/** Step duration of the falling-ball animation (ms per row). */
-const STEP_MS = 110;
-/** Fraction of the board half-width the outermost slot reaches. */
-const HALF = 0.46;
+/** Animation timing. */
+const STEP_MS = 110; // per row the ball falls
+const STAGGER_MS = 180; // between consecutive ball launches in one drop
+const REST_MS = 500; // how long a landed ball rests in its slot
+
+interface Ball {
+  id: number;
+  result: PlinkoResult;
+  step: number;
+}
 
 /** Centred lattice x for `rights` rights after `step` bounces, as a percent. */
 function latticeX(rows: number, step: number, rights: number): number {
   const x = 2 * rights - step;
-  return 50 + (x / rows) * HALF * 100;
+  return 50 + (x / rows) * 0.46 * 100;
 }
 
 export function PlinkoPanel({
@@ -52,93 +56,107 @@ export function PlinkoPanel({
   const [bet, setBet] = useState(50);
   const [rows, setRows] = useState<PlinkoRows>(12);
   const [risk, setRisk] = useState<PlinkoRisk>("medium");
-  const [pending, start] = useTransition();
-
-  // Latest drop (with the post-payout balance to apply once it lands).
-  const [drop, setDrop] = useState<{
-    result: PlinkoResult;
-    balance: number;
-    id: number;
-  } | null>(null);
-  const [step, setStep] = useState(0);
-  const [landed, setLanded] = useState(false);
+  const [ballCount, setBallCount] = useState(1);
+  const [balls, setBalls] = useState<Ball[]>([]);
   const [recent, setRecent] = useState<number[]>([]);
-  const dropId = useRef(0);
+  const [lastResult, setLastResult] = useState<PlinkoResult | null>(null);
 
-  const animating = drop !== null && !landed;
-  const busy = pending || animating;
+  // Running balance is authoritative for spend-gating; `balance` only mirrors
+  // it for display. Deltas (−bet on launch, +payout on land) stay exact under
+  // many balls in flight, where per-call server snapshots would race.
+  const balanceRef = useRef(initialBalance);
+  const ballId = useRef(0);
+  const timers = useRef(new Map<number, number>());
 
-  // Animate the ball one row per tick; bank the result when it lands. Step/
-  // landed are reset in the drop handler (an event), never synchronously here.
+  // Clear every running timer on unmount (no setState here → effect-safe).
   useEffect(() => {
-    if (!drop) return;
-    let k = 0;
+    const map = timers.current;
+    return () => {
+      for (const t of map.values()) window.clearInterval(t);
+      map.clear();
+    };
+  }, []);
+
+  function adjustBalance(delta: number) {
+    balanceRef.current += delta;
+    setBalance(balanceRef.current);
+  }
+
+  /** Drive one ball down the board, then settle its payout. */
+  function animateBall(ball: Ball) {
+    let step = 0;
     const id = window.setInterval(() => {
-      k += 1;
-      setStep(k);
-      if (k >= drop.result.rows) {
+      step += 1;
+      const current = step;
+      setBalls((prev) =>
+        prev.map((b) => (b.id === ball.id ? { ...b, step: current } : b)),
+      );
+      if (current >= ball.result.rows) {
         window.clearInterval(id);
-        setLanded(true);
-        setBalance(drop.balance);
-        setRecent((prev) => [drop.result.multiplier, ...prev].slice(0, 6));
-        if (drop.result.payout > 0) {
+        timers.current.delete(ball.id);
+        adjustBalance(ball.result.payout);
+        setRecent((prev) => [ball.result.multiplier, ...prev].slice(0, 8));
+        setLastResult(ball.result);
+        if (ball.result.payout > 0) {
           toast.success(
-            copy.plinko.landedWin(drop.result.multiplier, drop.result.payout),
+            copy.plinko.landedWin(ball.result.multiplier, ball.result.payout),
           );
         }
+        // Let it rest in the slot a beat before clearing.
+        window.setTimeout(
+          () => setBalls((prev) => prev.filter((b) => b.id !== ball.id)),
+          REST_MS,
+        );
       }
     }, STEP_MS);
-    return () => window.clearInterval(id);
-  }, [drop]);
+    timers.current.set(ball.id, id);
+  }
 
+  /** Stake one ball (optimistic spend, reverted on failure). */
+  async function launchBall(): Promise<boolean> {
+    if (balanceRef.current < bet) return false;
+    adjustBalance(-bet);
+    const res = await dropPlinko({ roomId, bet, rows, risk });
+    if (!res.ok) {
+      adjustBalance(bet);
+      toast.error(res.error);
+      return false;
+    }
+    ballId.current += 1;
+    const ball: Ball = { id: ballId.current, result: res.result, step: 0 };
+    setBalls((prev) => [...prev, ball]);
+    animateBall(ball);
+    return true;
+  }
+
+  /** Launch `ballCount` balls staggered, so they cascade instead of dumping. */
   function onDrop() {
-    if (busy) return;
     if (bet < 1) return;
-    if (bet > balance) {
+    if (balanceRef.current < bet) {
       toast.error(copy.plinko.cantAfford);
       return;
     }
-    start(async () => {
-      const result: PlinkoActionResult = await dropPlinko({
-        roomId,
-        bet,
-        rows,
-        risk,
-      });
-      if (!result.ok) {
-        toast.error(result.error);
-        return;
-      }
-      dropId.current += 1;
-      setStep(0);
-      setLanded(false);
-      setDrop({
-        result: result.result,
-        balance: result.balance,
-        id: dropId.current,
-      });
-    });
+    const count = Math.min(Math.max(ballCount, 1), PLINKO_MAX_BALLS);
+    let launched = 0;
+    const tick = () => {
+      if (launched >= count || balanceRef.current < bet) return;
+      launched += 1;
+      void launchBall();
+      if (launched < count) window.setTimeout(tick, STAGGER_MS);
+    };
+    tick();
   }
 
-  // Active board geometry comes from the in-flight drop, else the chosen rows.
-  const boardRows = drop?.result.rows ?? rows;
-  const boardRisk = drop?.result.risk ?? risk;
-  const multipliers = plinkoMultipliers(boardRows, boardRisk);
+  const multipliers = plinkoMultipliers(rows, risk);
+  const inFlight = balls.length > 0;
 
-  // Ball position: rights so far along the known path, mapped to the lattice.
-  const path: PlinkoDir[] = drop?.result.path ?? [];
-  const rightsSoFar = path.slice(0, step).filter((d) => d === "R").length;
-  const ballLeft = latticeX(boardRows, step, rightsSoFar);
-  const ballTop = (step / boardRows) * 86 + 3;
-  const landedSlot = landed ? drop?.result.slot : null;
-
-  // Decorative peg lattice.
+  // Decorative peg lattice for the chosen board.
   const pegs: { left: number; top: number; key: string }[] = [];
-  for (let i = 1; i <= boardRows; i++) {
+  for (let i = 1; i <= rows; i++) {
     for (let p = 0; p <= i; p++) {
       pegs.push({
-        left: latticeX(boardRows, i, p),
-        top: (i / boardRows) * 86 + 3,
+        left: latticeX(rows, i, p),
+        top: (i / rows) * 86 + 3,
         key: `${i}-${p}`,
       });
     }
@@ -151,22 +169,22 @@ export function PlinkoPanel({
         <span className="font-mono tabular-nums text-muted-foreground">
           {copy.bibcoins.balance(balance)}
         </span>
-        {landed && drop ? (
+        {inFlight ? (
+          <span className="font-mono font-semibold tabular-nums text-amber-500">
+            {copy.plinko.inFlight(balls.length)}
+          </span>
+        ) : lastResult ? (
           <span
             className={cn(
               "font-medium",
-              drop.result.payout > 0
+              lastResult.payout > 0
                 ? "text-emerald-500"
                 : "text-muted-foreground",
             )}
           >
-            {drop.result.payout > 0
-              ? copy.plinko.landedWin(drop.result.multiplier, drop.result.payout)
-              : copy.plinko.landedLose(drop.result.multiplier)}
-          </span>
-        ) : animating ? (
-          <span className="font-mono font-semibold tabular-nums text-amber-500">
-            {copy.plinko.dropping}
+            {lastResult.payout > 0
+              ? copy.plinko.landedWin(lastResult.multiplier, lastResult.payout)
+              : copy.plinko.landedLose(lastResult.multiplier)}
           </span>
         ) : (
           <span className="text-muted-foreground">{copy.plinko.hint}</span>
@@ -183,17 +201,23 @@ export function PlinkoPanel({
             aria-hidden
           />
         ))}
-        {drop && (
-          <span
-            className="absolute z-10 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-400 shadow-[0_0_8px_2px_rgba(251,191,36,0.5)]"
-            style={{
-              left: `${ballLeft}%`,
-              top: `${ballTop}%`,
-              transition: `left ${STEP_MS}ms ease-in, top ${STEP_MS}ms linear`,
-            }}
-            aria-hidden
-          />
-        )}
+        {balls.map((ball) => {
+          const rights = ball.result.path
+            .slice(0, ball.step)
+            .filter((d) => d === "R").length;
+          return (
+            <span
+              key={ball.id}
+              className="absolute z-10 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-400 shadow-[0_0_8px_2px_rgba(251,191,36,0.5)]"
+              style={{
+                left: `${latticeX(rows, ball.step, rights)}%`,
+                top: `${(ball.step / rows) * 86 + 3}%`,
+                transition: `left ${STEP_MS}ms ease-in, top ${STEP_MS}ms linear`,
+              }}
+              aria-hidden
+            />
+          );
+        })}
       </div>
 
       {/* Multiplier slots */}
@@ -202,9 +226,8 @@ export function PlinkoPanel({
           <div
             key={j}
             className={cn(
-              "flex flex-1 items-center justify-center rounded-sm py-1 text-[10px] font-bold tabular-nums text-black transition sm:text-xs",
+              "flex flex-1 items-center justify-center rounded-sm py-1 text-[10px] font-bold tabular-nums text-black sm:text-xs",
               plinkoMultiplierColor(m),
-              landedSlot === j && "ring-2 ring-white ring-offset-1 ring-offset-background",
             )}
           >
             {m}
@@ -239,19 +262,57 @@ export function PlinkoPanel({
               id="plinko-bet"
               type="number"
               min={1}
-              max={balance}
               value={bet}
-              disabled={busy}
               onChange={(e) =>
                 setBet(Math.max(0, Math.floor(Number(e.target.value) || 0)))
               }
             />
           </div>
           <div className="space-y-1.5">
+            <Label>{copy.plinko.ballsLabel}</Label>
+            <Select
+              value={String(ballCount)}
+              onValueChange={(v) => setBallCount(Number(v ?? "1"))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PLINKO_BALL_COUNTS.map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {copy.plinko.ballsValue(n)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>{copy.plinko.rowsLabel}</Label>
+            <Select
+              value={String(rows)}
+              disabled={inFlight}
+              onValueChange={(v) => setRows(Number(v ?? "12") as PlinkoRows)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PLINKO_ROWS_OPTIONS.map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {copy.plinko.rowsValue(n)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
             <Label>{copy.plinko.riskLabel}</Label>
             <Select
               value={risk}
-              disabled={busy}
+              disabled={inFlight}
               onValueChange={(v) => setRisk((v ?? "medium") as PlinkoRisk)}
             >
               <SelectTrigger className="w-full">
@@ -268,35 +329,14 @@ export function PlinkoPanel({
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label>{copy.plinko.rowsLabel}</Label>
-          <Select
-            value={String(rows)}
-            disabled={busy}
-            onValueChange={(v) => setRows(Number(v ?? "12") as PlinkoRows)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PLINKO_ROWS_OPTIONS.map((n) => (
-                <SelectItem key={n} value={String(n)}>
-                  {copy.plinko.rowsValue(n)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
         <div className="flex flex-wrap items-center gap-2">
           {PLINKO_CHIPS.map((c) => (
             <button
               key={c}
               type="button"
-              disabled={busy}
               onClick={() => setBet(c)}
               className={cn(
-                "size-9 rounded-full border-2 text-xs font-bold tabular-nums transition disabled:opacity-60",
+                "size-9 rounded-full border-2 text-xs font-bold tabular-nums transition",
                 bet === c
                   ? "border-amber-400 bg-amber-400/20 text-amber-500"
                   : "border-border text-muted-foreground hover:border-amber-400/50",
@@ -307,8 +347,9 @@ export function PlinkoPanel({
           ))}
         </div>
 
-        <Button className="w-full" disabled={busy} onClick={onDrop}>
-          {animating ? copy.plinko.dropping : copy.plinko.drop}
+        {/* Always enabled — spam it; each press launches `ballCount` balls. */}
+        <Button className="w-full" onClick={onDrop}>
+          {copy.plinko.dropN(ballCount)}
         </Button>
       </div>
     </div>

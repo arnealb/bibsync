@@ -12,6 +12,10 @@ export const PLINKO_MAX_BET = 1_000_000;
 /** Quick-bet chip denominations. */
 export const PLINKO_CHIPS = [10, 50, 100, 500] as const;
 
+/** How many balls one "drop" launches; they fall staggered, not all at once. */
+export const PLINKO_BALL_COUNTS = [1, 5, 10, 25] as const;
+export const PLINKO_MAX_BALLS = 50;
+
 /**
  * Slot multipliers per (rows, risk). Each table is symmetric and has
  * `rows + 1` entries — one per landing slot, lowest in the middle, hottest at
