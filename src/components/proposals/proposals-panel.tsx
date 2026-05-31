@@ -44,12 +44,16 @@ import { BREAK_SLOTS } from "@/lib/slots";
 import { formatClock, formatDateLong, isoDatePlus } from "@/lib/time";
 import type {
   BreakProposal,
+  FoodPlaceBet,
   Presence,
   ProposalComment,
   RoomPlace,
   Vote,
   VoteValue,
 } from "@/types/database";
+import { stakeFoodPlace } from "@/app/_actions/food-bets";
+import { FoodBets } from "@/components/proposals/food-bets";
+import { useFoodBetsRealtime } from "@/hooks/use-food-bets-realtime";
 
 interface ProposalsPanelProps {
   roomId: string;
@@ -60,6 +64,7 @@ interface ProposalsPanelProps {
   initialComments: ProposalComment[];
   initialPlaces: RoomPlace[];
   initialPresence: Presence[];
+  initialFoodBets: FoodPlaceBet[];
   today: string;
 }
 
@@ -72,6 +77,7 @@ export function ProposalsPanel({
   initialComments,
   initialPlaces,
   initialPresence,
+  initialFoodBets,
   today,
 }: ProposalsPanelProps) {
   const [proposals, setProposals] = useState(initialProposals);
@@ -87,6 +93,40 @@ export function ProposalsPanel({
   // vote tallies count only them, and only they may propose/vote/comment.
   const presentIds = usePresentMembers(roomId, initialPresence, today);
   const canParticipate = presentIds.has(userId);
+
+  // Bibcoin bets on eating places for the lunch/dinner slots.
+  const [foodBets, setFoodBets] = useState(initialFoodBets);
+  const [foodPending, startFoodStake] = useTransition();
+  useFoodBetsRealtime(roomId, (bet) =>
+    setFoodBets((prev) =>
+      prev.some((b) => b.id === bet.id) ? prev : [...prev, bet],
+    ),
+  );
+
+  function handleStakeFood(
+    slotKey: "middageten" | "avondeten",
+    slotDate: string,
+    place: string,
+    amount: number,
+  ) {
+    startFoodStake(async () => {
+      const result = await stakeFoodPlace({
+        roomId,
+        slotKey,
+        slotDate,
+        place,
+        amount,
+      });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      setFoodBets((prev) =>
+        prev.some((b) => b.id === result.bet.id) ? prev : [...prev, result.bet],
+      );
+      toast.success(copy.foodBets.staked(amount));
+    });
+  }
 
   // Re-evaluate visibility every minute so expired proposals drop off on their
   // own (one hour after they end) without needing a refresh.
@@ -304,27 +344,50 @@ export function ProposalsPanel({
     })),
   ].sort((a, b) => a.time.localeCompare(b.time));
 
-  const renderSlot = (entry: (typeof slotEntries)[number]) => (
-    <SlotCard
-      key={entry.slot.key}
-      slot={entry.slot}
-      date={anchor}
-      suggestions={entry.suggestions}
-      votes={votes}
-      comments={comments}
-      members={members}
-      userId={userId}
-      places={initialPlaces}
-      presentIds={presentIds}
-      canParticipate={canParticipate}
-      onSetPreference={handleSetSlotPreference}
-      onClearPreference={handleClearSlotPreference}
-      onVote={handleVote}
-      onDelete={handleDelete}
-      onAddComment={handleAddComment}
-      onDeleteComment={handleDeleteComment}
-    />
-  );
+  const renderSlot = (entry: (typeof slotEntries)[number]) => {
+    const isMeal = entry.slot.key === "middageten" || entry.slot.key === "avondeten";
+    return (
+      <div key={entry.slot.key}>
+        <SlotCard
+          slot={entry.slot}
+          date={anchor}
+          suggestions={entry.suggestions}
+          votes={votes}
+          comments={comments}
+          members={members}
+          userId={userId}
+          places={initialPlaces}
+          presentIds={presentIds}
+          canParticipate={canParticipate}
+          onSetPreference={handleSetSlotPreference}
+          onClearPreference={handleClearSlotPreference}
+          onVote={handleVote}
+          onDelete={handleDelete}
+          onAddComment={handleAddComment}
+          onDeleteComment={handleDeleteComment}
+        />
+        {isMeal && (
+          <FoodBets
+            bets={foodBets.filter(
+              (b) => b.slot_key === entry.slot.key && b.slot_date === anchor,
+            )}
+            places={initialPlaces}
+            userId={userId}
+            canParticipate={canParticipate}
+            pending={foodPending}
+            onStake={(place, amount) =>
+              handleStakeFood(
+                entry.slot.key as "middageten" | "avondeten",
+                anchor,
+                place,
+                amount,
+              )
+            }
+          />
+        )}
+      </div>
+    );
+  };
 
   const renderFree = (proposal: BreakProposal, winnerId: string | null) => (
     <ProposalCard

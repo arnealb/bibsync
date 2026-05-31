@@ -13,6 +13,7 @@ import {
 import { toMemberMap } from "@/lib/members";
 import { getRoomPresence } from "@/lib/presence/queries";
 import { getRoomComments } from "@/lib/proposals/comments-queries";
+import { getFoodBets } from "@/lib/proposals/food-bets-queries";
 import { getRoomPlaces, getRoomProposals } from "@/lib/proposals/queries";
 import { getRoomMembers, requireRoomAccess } from "@/lib/rooms/queries";
 import { todayInBrussels } from "@/lib/time";
@@ -44,6 +45,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
     activeBreak,
     recentPushes,
     places,
+    foodBets,
   ] = await Promise.all([
     getRoomMembers(id),
     getRoomProposals(id),
@@ -52,6 +54,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
     getActiveInstantBreak(id),
     getRecentPushes(id),
     getRoomPlaces(id),
+    getFoodBets(id),
   ]);
 
   const memberMap = toMemberMap(members);
@@ -82,6 +85,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
             initialComments={comments}
             initialPlaces={places}
             initialPresence={presenceRows}
+            initialFoodBets={foodBets}
             today={today}
           />
         }

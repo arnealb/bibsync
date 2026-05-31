@@ -509,6 +509,17 @@ export const copy = {
     recent: "Laatste",
     hint: "Kies je inzet en lanceer de raket.",
   },
+  foodBets: {
+    title: "Waar eten we? (zet bibcoins in)",
+    cantAfford: "Niet genoeg bibcoins.",
+    error: "Inzetten mislukt. Probeer opnieuw.",
+    placePlaceholder: "Plek (bv. Frituur, Pizza)",
+    amountPlaceholder: "Inzet",
+    stake: "Zet in",
+    yourStake: (n: number) => `jij ${n}`,
+    empty: "Nog niks ingezet — zet de eerste plek in.",
+    staked: (n: number) => `+${n} ingezet 🍽️`,
+  },
   quests: {
     title: "Dagelijkse quests",
     subtitle: "Voltooi mini-doelen en pak je bibcoins. Reset elke dag.",

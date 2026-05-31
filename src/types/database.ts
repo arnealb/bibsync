@@ -822,6 +822,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      food_place_bets: {
+        Row: {
+          id: string;
+          room_id: string;
+          slot_date: string;
+          slot_key: string;
+          place: string;
+          user_id: string;
+          amount: number;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          slot_date: string;
+          slot_key: string;
+          place: string;
+          user_id: string;
+          amount: number;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          slot_date?: string;
+          slot_key?: string;
+          place?: string;
+          user_id?: string;
+          amount?: number;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
       service_bids: {
         Row: {
           id: string;
@@ -1004,6 +1037,8 @@ export type MessageReaction =
 export type ServiceOffer =
   Database["public"]["Tables"]["service_offers"]["Row"];
 export type ServiceBid = Database["public"]["Tables"]["service_bids"]["Row"];
+export type FoodPlaceBet =
+  Database["public"]["Tables"]["food_place_bets"]["Row"];
 export type InstantBreakPush =
   Database["public"]["Tables"]["instant_break_pushes"]["Row"];
 export type InstantBreak =
