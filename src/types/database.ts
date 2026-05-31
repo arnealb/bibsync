@@ -747,6 +747,81 @@ export interface Database {
         Update: { room_id?: string; user_id?: string; crash_bp?: number };
         Relationships: [];
       };
+      service_offers: {
+        Row: {
+          id: string;
+          room_id: string;
+          author_id: string;
+          kind: string;
+          title: string;
+          description: string;
+          price: number;
+          status: string;
+          hired_by: string | null;
+          agreed_price: number | null;
+          created_at: Timestamp;
+          hired_at: Timestamp | null;
+          completed_at: Timestamp | null;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          author_id: string;
+          kind?: string;
+          title: string;
+          description?: string;
+          price: number;
+          status?: string;
+          hired_by?: string | null;
+          agreed_price?: number | null;
+          created_at?: Timestamp;
+          hired_at?: Timestamp | null;
+          completed_at?: Timestamp | null;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          author_id?: string;
+          kind?: string;
+          title?: string;
+          description?: string;
+          price?: number;
+          status?: string;
+          hired_by?: string | null;
+          agreed_price?: number | null;
+          created_at?: Timestamp;
+          hired_at?: Timestamp | null;
+          completed_at?: Timestamp | null;
+        };
+        Relationships: [];
+      };
+      service_bids: {
+        Row: {
+          id: string;
+          offer_id: string;
+          room_id: string;
+          bidder_id: string;
+          price: number;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          offer_id: string;
+          room_id: string;
+          bidder_id: string;
+          price: number;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          offer_id?: string;
+          room_id?: string;
+          bidder_id?: string;
+          price?: number;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
       room_timeouts: {
         Row: {
           room_id: string;
@@ -899,6 +974,9 @@ export type ProposalComment =
   Database["public"]["Tables"]["proposal_comments"]["Row"];
 export type MessageReaction =
   Database["public"]["Tables"]["message_reactions"]["Row"];
+export type ServiceOffer =
+  Database["public"]["Tables"]["service_offers"]["Row"];
+export type ServiceBid = Database["public"]["Tables"]["service_bids"]["Row"];
 export type InstantBreakPush =
   Database["public"]["Tables"]["instant_break_pushes"]["Row"];
 export type InstantBreak =

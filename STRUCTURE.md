@@ -42,6 +42,7 @@ app/
     stappen/            steps tab
     settings/           owner/admin settings
     games/              page (hub) + snake · poker · blackjack · roulette · mines · plinko · dice · crash · petconnect
+    markt/              bibcoin klussenmarkt (offers + requests with bidding)
 api/
   steps/route.ts        token-authed Apple Shortcut endpoint (code = token~roomId)
   games/leave/route.ts  sendBeacon target for freeing a table seat
@@ -160,6 +161,7 @@ Sequence jumps `0011 → 0014` (0012/0013 renumbered in a merge). Highlights:
 0037 bibcoin_transfer (transfer_bibcoins RPC — atomic p2p coin transfers)
 0038 message_edit (edited_at + author update/delete RLS + replica identity full)
 0039 crash_round (live Crash: crash_rounds public + crash_private hidden crash point)
+0040 service_offers (bibcoin klussenmarkt: offers + bids; atomic pay-on-hire/accept)
 ```
 
 > Note: CLAUDE.md still references the food stack (migration 0005); it was
