@@ -53,6 +53,32 @@ export async function spendBibcoins(
   return data === true;
 }
 
+/**
+ * Atomically move `amount` bibcoins from one user to another. Returns true on
+ * success, false if the sender can't afford it or the transfer was already
+ * processed for this `ref`. No-op without the service key.
+ */
+export async function transferBibcoins(
+  senderId: string,
+  recipientId: string,
+  amount: number,
+  ref: string,
+): Promise<boolean> {
+  const admin = createAdminClient();
+  if (!admin) return false;
+  const { data, error } = await admin.rpc("transfer_bibcoins", {
+    _sender: senderId,
+    _recipient: recipientId,
+    _amount: amount,
+    _ref: ref,
+  });
+  if (error) {
+    console.error("[transferBibcoins]", error);
+    return false;
+  }
+  return data === true;
+}
+
 /** Credit the hourly passive trickle (capped). Returns the amount granted. */
 export async function claimHourlyBibcoins(userId: string): Promise<number> {
   const admin = createAdminClient();

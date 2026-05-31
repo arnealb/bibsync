@@ -157,6 +157,7 @@ Sequence jumps `0011 → 0014` (0012/0013 renumbered in a merge). Highlights:
 0033 drop_food (the /eten food stack was removed) · 0034 public_profile
 0035 display_name_change (paid once-per-day rename)
 0036 mines (single-player gok: mines_games public + mines_private hidden bombs)
+0037 bibcoin_transfer (transfer_bibcoins RPC — atomic p2p coin transfers)
 ```
 
 > Note: CLAUDE.md still references the food stack (migration 0005); it was

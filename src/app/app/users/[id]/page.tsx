@@ -1,8 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { Coins } from "lucide-react";
 
+import { GiftBibcoins } from "@/components/bibcoins/gift-bibcoins";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
+import { getBibcoins } from "@/lib/bibcoins/queries";
 import { getAuthContext } from "@/lib/auth";
 import { COSMETIC_BY_ID, type CosmeticItem } from "@/lib/cosmetics/catalog";
 import { effectClassName } from "@/lib/cosmetics/effects";
@@ -66,10 +68,12 @@ export default async function UserProfilePage({
     .maybeSingle();
   if (!profile) notFound();
 
-  const [stats, ownedIds, loadoutRow] = await Promise.all([
+  const isSelf = id === ctx.user.id;
+  const [stats, ownedIds, loadoutRow, myBalance] = await Promise.all([
     getProfileStats(id),
     getOwnedCosmetics(id),
     getLoadout(id),
+    isSelf ? Promise.resolve(0) : getBibcoins(ctx.user.id),
   ]);
 
   const loadout = resolveLoadout(loadoutRow);
@@ -113,6 +117,13 @@ export default async function UserProfilePage({
           <Coins className="size-4 text-amber-500" />
           {stats.bibcoins} {copy.profile.public.coins}
         </span>
+        {!isSelf && (
+          <GiftBibcoins
+            recipientId={id}
+            recipientName={profile.display_name}
+            myBalance={myBalance}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-3">

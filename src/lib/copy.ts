@@ -838,6 +838,21 @@ export const copy = {
     balance: (n: number) => `${n} bibcoins`,
     hourlyGranted: (n: number) => `+${n} bibcoins ⏳`,
     dailyGranted: (n: number) => `Dagbonus: +${n} bibcoins 🎁`,
+    transfer: {
+      button: "Stuur bibcoins",
+      title: (name: string) => `Stuur bibcoins naar ${name}`,
+      amountLabel: "Bedrag",
+      send: "Versturen",
+      sending: "Versturen…",
+      self: "Je kan geen bibcoins naar jezelf sturen.",
+      noUser: "Die gebruiker bestaat niet.",
+      failed: "Versturen mislukt — niet genoeg bibcoins?",
+      success: (n: number, name: string) => `${n} bibcoins naar ${name} 🪙`,
+    },
+    wealth: {
+      title: "Rijkste in de room",
+      empty: "Nog geen ranglijst.",
+    },
     earn: {
       button: "Hoe verdien ik bibcoins?",
       title: "Bibcoins verdienen",

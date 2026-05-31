@@ -804,6 +804,15 @@ export interface Database {
         };
         Returns: boolean;
       };
+      transfer_bibcoins: {
+        Args: {
+          _sender: string;
+          _recipient: string;
+          _amount: number;
+          _ref: string;
+        };
+        Returns: boolean;
+      };
       claim_hourly_bibcoins: {
         Args: { _user_id: string };
         Returns: number;
