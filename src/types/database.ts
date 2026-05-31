@@ -702,6 +702,51 @@ export interface Database {
         Update: { room_id?: string; user_id?: string; mines?: number[] };
         Relationships: [];
       };
+      crash_rounds: {
+        Row: {
+          room_id: string;
+          user_id: string;
+          bet: number;
+          status: string;
+          started_at: Timestamp;
+          crash_bp: number | null;
+          cashout_bp: number | null;
+          payout: number;
+          version: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          room_id: string;
+          user_id: string;
+          bet: number;
+          status?: string;
+          started_at?: Timestamp;
+          crash_bp?: number | null;
+          cashout_bp?: number | null;
+          payout?: number;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          room_id?: string;
+          user_id?: string;
+          bet?: number;
+          status?: string;
+          started_at?: Timestamp;
+          crash_bp?: number | null;
+          cashout_bp?: number | null;
+          payout?: number;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      crash_private: {
+        Row: { room_id: string; user_id: string; crash_bp: number };
+        Insert: { room_id: string; user_id: string; crash_bp: number };
+        Update: { room_id?: string; user_id?: string; crash_bp?: number };
+        Relationships: [];
+      };
       room_timeouts: {
         Row: {
           room_id: string;

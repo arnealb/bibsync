@@ -1,42 +1,67 @@
 import {
+  CRASH_GROWTH_PER_SEC,
   CRASH_HOUSE_EDGE,
-  CRASH_MAX_TARGET_BP,
+  CRASH_MAX_BP,
 } from "@/lib/crash/config";
 
 /** Pure, server-authoritative Crash math. No persistence here. */
 
-export interface CrashResult {
-  /** Cash-out target in basis points (e.g. 200 = 2.00x). */
-  targetBp: number;
-  /** Where the rocket actually crashed, in basis points (≥ 100). */
-  crashBp: number;
-  win: boolean;
+export type CrashStatus = "running" | "cashed" | "busted";
+
+/** Public round state the client may see (crash point only once the round ends). */
+export interface CrashRoundState {
+  status: CrashStatus;
   bet: number;
+  /** Server timestamp the rocket started rising (ISO). */
+  startedAt: string;
+  /** Server "now" at the moment this state was produced (ISO) — clock sync. */
+  serverNow: string;
+  /** Where it crashed, in basis points — null while running. */
+  crashBp: number | null;
+  /** Multiplier you cashed out at, in basis points — null unless cashed. */
+  cashoutBp: number | null;
   payout: number;
 }
 
 /**
  * Roll a crash point in basis points. The tail follows P(C ≥ x) =
- * (1 − houseEdge) / x, the standard crash curve: ~1% instant busts at 1.00x and
- * the expected return of any cash-out target is (1 − houseEdge).
+ * (1 − houseEdge) / x: ~1% instant-bust at 1.00x, 1% house edge on any
+ * cash-out point.
  */
 export function crashPointBp(rng: () => number): number {
   const r = (1 - CRASH_HOUSE_EDGE) / (1 - rng());
   if (r < 1) return 100; // instant bust at 1.00x
-  return Math.min(CRASH_MAX_TARGET_BP, Math.floor(r * 100));
+  return Math.min(CRASH_MAX_BP, Math.floor(r * 100));
 }
 
-/** Did a cash-out at `targetBp` survive a crash at `crashBp`? */
-export function crashWin(targetBp: number, crashBp: number): boolean {
-  return crashBp >= targetBp;
+/** The rocket's multiplier (basis points) after `ms` elapsed. */
+export function crashMultiplierAtMs(ms: number): number {
+  if (ms <= 0) return 100;
+  const mult = CRASH_GROWTH_PER_SEC ** (ms / 1000);
+  return Math.min(CRASH_MAX_BP, Math.floor(mult * 100));
 }
 
-/** Win probability (0..1) of holding out for `targetBp`. */
-export function crashWinChance(targetBp: number): number {
-  return ((1 - CRASH_HOUSE_EDGE) * 100) / targetBp;
+/** Has the round already crashed by `elapsedMs`? */
+export function crashHasBusted(elapsedMs: number, crashBp: number): boolean {
+  return crashMultiplierAtMs(elapsedMs) >= crashBp;
 }
 
-/** Whole-bibcoin payout on a win (floored — fractional winnings to the house). */
-export function crashPayout(bet: number, targetBp: number): number {
-  return Math.floor((bet * targetBp) / 100);
+/**
+ * Settle a cash-out. `claimedBp` is what the client displayed; it's capped to
+ * the server-elapsed multiplier (you can't bank the future) and must be below
+ * the crash point. Server time is the only authority, so this can't be gamed.
+ */
+export function settleCrash(
+  claimedBp: number,
+  elapsedMs: number,
+  crashBp: number,
+): { win: boolean; effectiveBp: number } {
+  const serverBp = crashMultiplierAtMs(elapsedMs);
+  if (serverBp >= crashBp) return { win: false, effectiveBp: crashBp };
+  return { win: true, effectiveBp: Math.max(100, Math.min(claimedBp, serverBp)) };
+}
+
+/** Whole-bibcoin payout for cashing out at `bp` (floored). */
+export function crashPayout(bet: number, bp: number): number {
+  return Math.floor((bet * bp) / 100);
 }

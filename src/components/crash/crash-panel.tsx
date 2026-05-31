@@ -1,34 +1,29 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { placeCrashBet } from "@/app/_actions/crash";
+import { cashoutCrash, peekCrash, startCrash } from "@/app/_actions/crash";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { copy } from "@/lib/copy";
+import { CRASH_CHIPS } from "@/lib/crash/config";
 import {
-  CRASH_CHIPS,
-  CRASH_DEFAULT_TARGET_BP,
-  CRASH_MAX_TARGET_BP,
-  CRASH_MIN_TARGET_BP,
-  CRASH_TARGET_PRESETS,
-} from "@/lib/crash/config";
-import {
-  crashWinChance,
-  type CrashResult,
+  crashMultiplierAtMs,
+  type CrashRoundState,
 } from "@/lib/crash/engine";
 import { cn } from "@/lib/utils";
 
-/** Basis points → "2.00". */
+/** Basis points → "2.41". */
 function fmtBp(bp: number): string {
   return (bp / 100).toFixed(2);
 }
 
-function clampTarget(bp: number): number {
-  return Math.min(CRASH_MAX_TARGET_BP, Math.max(CRASH_MIN_TARGET_BP, Math.round(bp)));
-}
+/** How often we ask the server whether the rocket has crashed. */
+const POLL_MS = 250;
+
+type Phase = "idle" | "running" | "done";
 
 export function CrashPanel({
   roomId,
@@ -39,95 +34,128 @@ export function CrashPanel({
 }) {
   const [balance, setBalance] = useState(initialBalance);
   const [bet, setBet] = useState(50);
-  const [targetBp, setTargetBp] = useState(CRASH_DEFAULT_TARGET_BP);
+  const [phase, setPhase] = useState<Phase>("idle");
   const [displayBp, setDisplayBp] = useState(100);
-  const [result, setResult] = useState<CrashResult | null>(null);
-  const [flying, setFlying] = useState(false);
-  const [recent, setRecent] = useState<CrashResult[]>([]);
-  const [pending, start] = useTransition();
+  const [result, setResult] = useState<CrashRoundState | null>(null);
+  const [recent, setRecent] = useState<{ bp: number; win: boolean }[]>([]);
+  const [pending, setPending] = useState(false);
+
   const raf = useRef<number | null>(null);
+  const poll = useRef<number | null>(null);
+  const startedAt = useRef(0);
+  const offset = useRef(0); // server clock − client clock
+  const done = useRef(false);
 
-  // Cancel any in-flight animation frame on unmount.
-  useEffect(() => {
-    return () => {
-      if (raf.current !== null) cancelAnimationFrame(raf.current);
-    };
-  }, []);
+  function stopTimers() {
+    if (raf.current !== null) cancelAnimationFrame(raf.current);
+    if (poll.current !== null) window.clearInterval(poll.current);
+    raf.current = null;
+    poll.current = null;
+  }
 
-  const chance = crashWinChance(targetBp);
-  const previewPayout = Math.floor((bet * targetBp) / 100);
-  const busy = pending || flying;
+  useEffect(() => stopTimers, []);
 
-  /** Animate the multiplier rising to the endpoint, then reveal the result. */
-  function animateTo(res: CrashResult) {
-    const end = res.win ? res.targetBp : res.crashBp;
-    const startedAt = performance.now();
-    const duration = Math.min(
-      3000,
-      Math.max(500, 700 * Math.log2(end / 100 + 1)),
+  /** Settle the round locally (cash-out or crash) and stop the timers. */
+  function finish(state: CrashRoundState) {
+    if (done.current) return;
+    done.current = true;
+    stopTimers();
+    setPhase("done");
+    setResult(state);
+    setBalance((b) => (state.payout > 0 ? b + state.payout : b));
+    setDisplayBp(state.cashoutBp ?? state.crashBp ?? displayBp);
+    setRecent((prev) =>
+      [{ bp: state.crashBp ?? 100, win: state.status === "cashed" }, ...prev].slice(
+        0,
+        6,
+      ),
     );
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - startedAt) / duration);
-      // Exponential rise from 1.00x to the endpoint.
-      setDisplayBp(Math.max(100, Math.round(100 * (end / 100) ** t)));
-      if (t < 1) {
-        raf.current = requestAnimationFrame(tick);
-        return;
-      }
-      raf.current = null;
-      setFlying(false);
-      setResult(res);
-      setRecent((prev) => [res, ...prev].slice(0, 6));
-      if (res.win) {
-        toast.success(copy.crash.resultWin(fmtBp(res.targetBp), res.payout));
-      } else {
-        toast.error(copy.crash.resultLose(fmtBp(res.crashBp)));
-      }
-    };
-    raf.current = requestAnimationFrame(tick);
+    if (state.status === "cashed") {
+      toast.success(
+        copy.crash.resultWin(fmtBp(state.cashoutBp ?? 100), state.payout),
+      );
+    } else {
+      toast.error(copy.crash.resultLose(fmtBp(state.crashBp ?? 100)));
+    }
+  }
+
+  function elapsedMs(): number {
+    return Date.now() + offset.current - startedAt.current;
   }
 
   function onLaunch() {
-    if (busy) return;
+    if (phase === "running" || pending) return;
     if (bet < 1) return;
     if (bet > balance) {
       toast.error(copy.crash.cantAfford);
       return;
     }
-    start(async () => {
-      const res = await placeCrashBet({ roomId, bet, targetBp });
+    setPending(true);
+    void startCrash({ roomId, bet }).then((res) => {
+      setPending(false);
       if (!res.ok) {
         toast.error(res.error);
         return;
       }
+      done.current = false;
       setBalance(res.balance);
       setResult(null);
       setDisplayBp(100);
-      setFlying(true);
-      animateTo(res.result);
+      setPhase("running");
+      startedAt.current = Date.parse(res.state.startedAt);
+      offset.current = Date.parse(res.state.serverNow) - Date.now();
+
+      const tick = () => {
+        setDisplayBp(crashMultiplierAtMs(elapsedMs()));
+        raf.current = requestAnimationFrame(tick);
+      };
+      raf.current = requestAnimationFrame(tick);
+
+      poll.current = window.setInterval(() => {
+        void peekCrash(roomId).then((p) => {
+          if (!p.ok || done.current) return;
+          if (p.state.status !== "running") finish(p.state);
+        });
+      }, POLL_MS);
     });
   }
+
+  function onCashout() {
+    if (phase !== "running" || done.current) return;
+    const claimedBp = crashMultiplierAtMs(elapsedMs());
+    void cashoutCrash({ roomId, claimedBp }).then((res) => {
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      finish(res.state);
+    });
+  }
+
+  const running = phase === "running";
+  const liveBp = running ? displayBp : (result?.cashoutBp ?? result?.crashBp ?? displayBp);
+  const potential = Math.floor((bet * displayBp) / 100);
+  const crashed = phase === "done" && result?.status === "busted";
 
   const setBetClamped = (n: number) =>
     setBet(Math.max(1, Math.min(Math.floor(n) || 0, balance || n)));
 
   return (
     <div className="space-y-5">
-      {/* Status line */}
       <div className="flex items-center justify-between gap-2 text-sm">
         <span className="font-mono tabular-nums text-muted-foreground">
           {copy.bibcoins.balance(balance)}
         </span>
-        {result ? (
+        {phase === "done" && result ? (
           <span
             className={cn(
               "font-medium",
-              result.win ? "text-emerald-500" : "text-red-500",
+              result.status === "cashed" ? "text-emerald-500" : "text-red-500",
             )}
           >
-            {result.win
-              ? copy.crash.resultWin(fmtBp(result.targetBp), result.payout)
-              : copy.crash.resultLose(fmtBp(result.crashBp))}
+            {result.status === "cashed"
+              ? copy.crash.resultWin(fmtBp(result.cashoutBp ?? 100), result.payout)
+              : copy.crash.resultLose(fmtBp(result.crashBp ?? 100))}
           </span>
         ) : (
           <span className="text-muted-foreground">{copy.crash.hint}</span>
@@ -137,12 +165,12 @@ export function CrashPanel({
       {/* Rocket display */}
       <div
         className={cn(
-          "relative flex h-44 items-center justify-center overflow-hidden rounded-xl border transition-colors",
-          flying
+          "relative flex h-48 items-center justify-center overflow-hidden rounded-xl border transition-colors",
+          running
             ? "border-amber-400/40 bg-amber-400/5"
-            : result?.win
+            : result?.status === "cashed"
               ? "border-emerald-500/40 bg-emerald-500/5"
-              : result
+              : crashed
                 ? "border-red-500/40 bg-red-500/5"
                 : "bg-muted/20",
         )}
@@ -150,25 +178,25 @@ export function CrashPanel({
         <div className="text-center">
           <p
             className={cn(
-              "font-mono text-5xl font-bold tabular-nums transition-colors",
-              flying
+              "font-mono text-6xl font-bold tabular-nums transition-colors",
+              running
                 ? "text-amber-400"
-                : result?.win
+                : result?.status === "cashed"
                   ? "text-emerald-500"
-                  : result
+                  : crashed
                     ? "text-red-500"
                     : "text-muted-foreground",
             )}
           >
-            {fmtBp(flying || result ? displayBp : targetBp)}×
+            {fmtBp(liveBp)}×
           </p>
-          <p className="mt-1 text-2xl">
-            {flying ? "🚀" : result?.win ? "🎉" : result ? "💥" : "🚀"}
+          <p className="mt-1 text-3xl">
+            {running ? "🚀" : result?.status === "cashed" ? "🎉" : crashed ? "💥" : "🚀"}
           </p>
         </div>
       </div>
 
-      {/* Recent results */}
+      {/* Recent crash points */}
       {recent.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
           <span>{copy.crash.recent}:</span>
@@ -182,105 +210,54 @@ export function CrashPanel({
                   : "bg-red-500/15 text-red-500",
               )}
             >
-              {fmtBp(r.crashBp)}×
+              {fmtBp(r.bp)}×
             </span>
           ))}
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-lg border p-2">
-          <p className="text-[10px] uppercase text-muted-foreground">
-            {copy.crash.targetLabel}
-          </p>
-          <p className="font-mono text-sm font-semibold tabular-nums">
-            {copy.crash.multiplier(targetBp / 100)}
-          </p>
-        </div>
-        <div className="rounded-lg border p-2">
-          <p className="text-[10px] uppercase text-muted-foreground">
-            {copy.crash.winChanceLabel}
-          </p>
-          <p className="font-mono text-sm font-semibold tabular-nums">
-            {copy.crash.winChance(chance * 100)}
-          </p>
-        </div>
-        <div className="rounded-lg border p-2">
-          <p className="text-[10px] uppercase text-muted-foreground">
-            {copy.crash.payoutLabel}
-          </p>
-          <p className="font-mono text-sm font-semibold tabular-nums text-emerald-500">
-            {previewPayout}
-          </p>
-        </div>
-      </div>
-
-      {/* Target controls */}
-      <div className="space-y-2">
-        <Label htmlFor="crash-target">{copy.crash.targetLabel}</Label>
-        <div className="flex items-center gap-2">
-          <Input
-            id="crash-target"
-            type="number"
-            min={1.01}
-            step={0.01}
-            value={(targetBp / 100).toFixed(2)}
-            disabled={busy}
-            onChange={(e) =>
-              setTargetBp(clampTarget(Number(e.target.value) * 100))
-            }
-            className="flex-1"
-          />
-          {CRASH_TARGET_PRESETS.map((p) => (
-            <Button
-              key={p}
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={busy}
-              onClick={() => setTargetBp(p)}
-            >
-              {fmtBp(p)}×
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Bet controls */}
-      <div className="space-y-2">
-        <Label htmlFor="crash-bet">{copy.crash.betLabel}</Label>
-        <Input
-          id="crash-bet"
-          type="number"
-          min={1}
-          value={bet}
-          disabled={busy}
-          onChange={(e) => setBetClamped(Number(e.target.value))}
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          {CRASH_CHIPS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              disabled={busy}
-              onClick={() => setBet(c)}
-              className={cn(
-                "size-9 rounded-full border-2 text-xs font-bold tabular-nums transition disabled:opacity-60",
-                bet === c
-                  ? "border-amber-400 bg-amber-400/20 text-amber-500"
-                  : "border-border text-muted-foreground hover:border-amber-400/50",
-              )}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <Button className="w-full" disabled={busy} onClick={onLaunch}>
-        {flying ? copy.crash.launching : copy.crash.launch}
-      </Button>
+      {/* Action: cash out while running, else launch */}
+      {running ? (
+        <Button
+          className="w-full bg-emerald-600 hover:bg-emerald-500"
+          onClick={onCashout}
+        >
+          {copy.crash.cashout(fmtBp(displayBp))} ({potential})
+        </Button>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="crash-bet">{copy.crash.betLabel}</Label>
+            <Input
+              id="crash-bet"
+              type="number"
+              min={1}
+              value={bet}
+              onChange={(e) => setBetClamped(Number(e.target.value))}
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              {CRASH_CHIPS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setBet(c)}
+                  className={cn(
+                    "size-9 rounded-full border-2 text-xs font-bold tabular-nums transition",
+                    bet === c
+                      ? "border-amber-400 bg-amber-400/20 text-amber-500"
+                      : "border-border text-muted-foreground hover:border-amber-400/50",
+                  )}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+          <Button className="w-full" disabled={pending} onClick={onLaunch}>
+            {copy.crash.launch}
+          </Button>
+        </>
+      )}
     </div>
   );
 }

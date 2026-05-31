@@ -470,23 +470,21 @@ export const copy = {
   crash: {
     title: "Crash",
     subtitle:
-      "Kies een cashout-doel. De raket stijgt — haalt hij jouw doel, dan win je; ontploft hij eerder, dan ben je je inzet kwijt.",
+      "Lanceer de raket en cash uit vóór hij ontploft. Hoe langer je wacht, hoe hoger de multiplier — maar hij kan élk moment crashen.",
     stat: "Jouw bibcoins",
     cantAfford: "Niet genoeg bibcoins voor deze inzet.",
     unavailable: "Crash is even niet beschikbaar.",
+    busy: "Even te snel — probeer opnieuw.",
+    noRound: "Geen actieve ronde.",
     betLabel: "Inzet",
-    targetLabel: "Cashout bij",
     launch: "Lanceer 🚀",
-    launching: "Stijgen…",
-    multiplier: (m: number) => `${m.toFixed(2)}×`,
-    winChanceLabel: "Winkans",
-    winChance: (p: number) => `${p.toFixed(2)}%`,
-    payoutLabel: "Uitbetaling",
-    resultWin: (target: string, payout: number) =>
-      `Uitgecasht op ${target}× — +${payout} bibcoins 🎉`,
-    resultLose: (crash: string) => `💥 Ontploft op ${crash}× — helaas.`,
+    cashout: (m: string) => `Cash uit · ${m}×`,
+    potentialLabel: "Nu waard",
+    resultWin: (m: string, payout: number) =>
+      `Uitgecasht op ${m}× — +${payout} bibcoins 🎉`,
+    resultLose: (crash: string) => `💥 Gecrasht op ${crash}× — helaas.`,
     recent: "Laatste",
-    hint: "Kies inzet en cashout-doel en lanceer.",
+    hint: "Kies je inzet en lanceer de raket.",
   },
   dice: {
     title: "Dice",

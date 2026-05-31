@@ -117,7 +117,7 @@ roulette/    engine · table · config · queries
 mines/       engine (multiplier/payout/bomb-gen) · config · queries (single-player gok)
 plinko/      engine (drop/multiplier/payout) · config (Stake-style tables) — stateless gok, no DB
 dice/        engine (roll/win-chance/multiplier/payout) · config — stateless over/under gok, no DB
-crash/       engine (crash-point/win/payout) · config — stateless auto-cashout rocket gok, no DB
+crash/       engine (crash-point/time-multiplier/settle) · config — LIVE cash-out rocket gok (crash_rounds + crash_private, migration 0039)
 games/       sessions · session-queries · queries · snake/{engine,bot,autopilot}
 petconnect/  engine
 instant-break/ status · config · queries
@@ -159,6 +159,7 @@ Sequence jumps `0011 → 0014` (0012/0013 renumbered in a merge). Highlights:
 0036 mines (single-player gok: mines_games public + mines_private hidden bombs)
 0037 bibcoin_transfer (transfer_bibcoins RPC — atomic p2p coin transfers)
 0038 message_edit (edited_at + author update/delete RLS + replica identity full)
+0039 crash_round (live Crash: crash_rounds public + crash_private hidden crash point)
 ```
 
 > Note: CLAUDE.md still references the food stack (migration 0005); it was
