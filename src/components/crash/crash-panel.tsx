@@ -44,7 +44,8 @@ export function CrashPanel({
   const poll = useRef<number | null>(null);
   const startedAt = useRef(0);
   const offset = useRef(0); // server clock − client clock
-  const done = useRef(false);
+  const running = useRef(false);
+  const cashing = useRef(false);
 
   function stopTimers() {
     if (raf.current !== null) cancelAnimationFrame(raf.current);
@@ -55,20 +56,24 @@ export function CrashPanel({
 
   useEffect(() => stopTimers, []);
 
-  /** Settle the round locally (cash-out or crash) and stop the timers. */
+  function elapsedMs(): number {
+    return Date.now() + offset.current - startedAt.current;
+  }
+
+  /** Settle the round in the UI (from the authoritative server result). */
   function finish(state: CrashRoundState) {
-    if (done.current) return;
-    done.current = true;
+    if (!running.current) return;
+    running.current = false;
     stopTimers();
     setPhase("done");
     setResult(state);
-    setBalance((b) => (state.payout > 0 ? b + state.payout : b));
-    setDisplayBp(state.cashoutBp ?? state.crashBp ?? displayBp);
+    if (state.payout > 0) setBalance((b) => b + state.payout);
+    setDisplayBp(state.cashoutBp ?? state.crashBp ?? 100);
     setRecent((prev) =>
-      [{ bp: state.crashBp ?? 100, win: state.status === "cashed" }, ...prev].slice(
-        0,
-        6,
-      ),
+      [
+        { bp: state.crashBp ?? 100, win: state.status === "cashed" },
+        ...prev,
+      ].slice(0, 6),
     );
     if (state.status === "cashed") {
       toast.success(
@@ -79,12 +84,23 @@ export function CrashPanel({
     }
   }
 
-  function elapsedMs(): number {
-    return Date.now() + offset.current - startedAt.current;
+  /** Cash out at the multiplier shown the instant of the click (or poll-crash). */
+  function cashOut() {
+    if (!running.current || cashing.current) return;
+    cashing.current = true;
+    const claimedBp = crashMultiplierAtMs(elapsedMs());
+    void cashoutCrash({ roomId, claimedBp }).then((res) => {
+      cashing.current = false;
+      if (!res.ok) {
+        if (running.current) toast.error(res.error);
+        return;
+      }
+      finish(res.state);
+    });
   }
 
   function onLaunch() {
-    if (phase === "running" || pending) return;
+    if (running.current || pending) return;
     if (bet < 1) return;
     if (bet > balance) {
       toast.error(copy.crash.cantAfford);
@@ -97,7 +113,8 @@ export function CrashPanel({
         toast.error(res.error);
         return;
       }
-      done.current = false;
+      running.current = true;
+      cashing.current = false;
       setBalance(res.balance);
       setResult(null);
       setDisplayBp(100);
@@ -111,29 +128,19 @@ export function CrashPanel({
       };
       raf.current = requestAnimationFrame(tick);
 
+      // Read-only crash poll: when it reports a crash, auto-cash (→ busts).
       poll.current = window.setInterval(() => {
         void peekCrash(roomId).then((p) => {
-          if (!p.ok || done.current) return;
-          if (p.state.status !== "running") finish(p.state);
+          if (p.ok && p.crashed) cashOut();
         });
       }, POLL_MS);
     });
   }
 
-  function onCashout() {
-    if (phase !== "running" || done.current) return;
-    const claimedBp = crashMultiplierAtMs(elapsedMs());
-    void cashoutCrash({ roomId, claimedBp }).then((res) => {
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
-      finish(res.state);
-    });
-  }
-
-  const running = phase === "running";
-  const liveBp = running ? displayBp : (result?.cashoutBp ?? result?.crashBp ?? displayBp);
+  const isRunning = phase === "running";
+  const liveBp = isRunning
+    ? displayBp
+    : (result?.cashoutBp ?? result?.crashBp ?? displayBp);
   const potential = Math.floor((bet * displayBp) / 100);
   const crashed = phase === "done" && result?.status === "busted";
 
@@ -166,7 +173,7 @@ export function CrashPanel({
       <div
         className={cn(
           "relative flex h-48 items-center justify-center overflow-hidden rounded-xl border transition-colors",
-          running
+          isRunning
             ? "border-amber-400/40 bg-amber-400/5"
             : result?.status === "cashed"
               ? "border-emerald-500/40 bg-emerald-500/5"
@@ -179,7 +186,7 @@ export function CrashPanel({
           <p
             className={cn(
               "font-mono text-6xl font-bold tabular-nums transition-colors",
-              running
+              isRunning
                 ? "text-amber-400"
                 : result?.status === "cashed"
                   ? "text-emerald-500"
@@ -191,7 +198,7 @@ export function CrashPanel({
             {fmtBp(liveBp)}×
           </p>
           <p className="mt-1 text-3xl">
-            {running ? "🚀" : result?.status === "cashed" ? "🎉" : crashed ? "💥" : "🚀"}
+            {isRunning ? "🚀" : result?.status === "cashed" ? "🎉" : crashed ? "💥" : "🚀"}
           </p>
         </div>
       </div>
@@ -217,10 +224,10 @@ export function CrashPanel({
       )}
 
       {/* Action: cash out while running, else launch */}
-      {running ? (
+      {isRunning ? (
         <Button
           className="w-full bg-emerald-600 hover:bg-emerald-500"
-          onClick={onCashout}
+          onClick={cashOut}
         >
           {copy.crash.cashout(fmtBp(displayBp))} ({potential})
         </Button>

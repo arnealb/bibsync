@@ -46,6 +46,19 @@ describe("settleCrash", () => {
     const r = settleCrash(9999, 1000, 5000);
     expect(r.effectiveBp).toBe(crashMultiplierAtMs(1000));
   });
+
+  it("honours a click that beat the crash even if the request arrived late", () => {
+    // Clicked at 1.20x, crash at 1.22x, but the request only lands when the
+    // server clock is already at ~1.71x. The click still wins, at 1.20x.
+    const late = settleCrash(120, 1600, 122);
+    expect(late.win).toBe(true);
+    expect(late.effectiveBp).toBe(120);
+  });
+
+  it("a click after the crash still loses", () => {
+    // Clicked at 1.30x but the crash was at 1.22x.
+    expect(settleCrash(130, 1600, 122).win).toBe(false);
+  });
 });
 
 describe("crashHasBusted", () => {

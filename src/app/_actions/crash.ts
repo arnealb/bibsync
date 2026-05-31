@@ -25,6 +25,10 @@ export type CrashActionResult =
   | { ok: true; state: CrashRoundState; balance: number }
   | { ok: false; error: string };
 
+export type CrashPeekResult =
+  | { ok: true; crashed: boolean }
+  | { ok: false; error: string };
+
 function cryptoRng(): number {
   const buf = new Uint32Array(1);
   globalThis.crypto.getRandomValues(buf);
@@ -77,19 +81,6 @@ async function loadRound(
   return {
     row: round.data as RoundRow,
     crashBp: (priv.data?.crash_bp as number | undefined) ?? 100,
-  };
-}
-
-/** Public state for the client (never leaks the crash point while running). */
-function toState(row: RoundRow): CrashRoundState {
-  return {
-    status: row.status as CrashRoundState["status"],
-    bet: row.bet,
-    startedAt: row.started_at,
-    serverNow: new Date().toISOString(),
-    crashBp: row.status === "running" ? null : row.crash_bp,
-    cashoutBp: row.cashout_bp,
-    payout: row.payout,
   };
 }
 
@@ -236,46 +227,23 @@ export async function cashoutCrash(
   };
 }
 
-/** Poll: if the running round has already crashed, bust it. Idempotent. */
-export async function peekCrash(roomId: string): Promise<CrashActionResult> {
+/**
+ * Read-only poll: has the running round already crashed? It deliberately does
+ * NOT settle the round — settlement happens only via cashoutCrash, so a poll
+ * can never bust a round out from under a cash-out click that's still in
+ * flight. The crash point is never revealed here either (that would let a
+ * client cash just under it); the client auto-cashes when this returns true,
+ * which busts and reveals it through the normal settle path.
+ */
+export async function peekCrash(roomId: string): Promise<CrashPeekResult> {
   const auth = await authorize(roomId);
-  if (!auth.ok) return auth;
+  if (!auth.ok) return { ok: false, error: auth.error };
 
   const loaded = await loadRound(auth.admin, roomId, auth.userId);
-  if (!loaded) return { ok: false, error: copy.crash.noRound };
-  if (loaded.row.status !== "running") {
-    return {
-      ok: true,
-      state: toState(loaded.row),
-      balance: await getBibcoins(auth.userId),
-    };
+  if (!loaded || loaded.row.status !== "running") {
+    return { ok: true, crashed: false };
   }
 
   const elapsedMs = Date.now() - Date.parse(loaded.row.started_at);
-  if (!crashHasBusted(elapsedMs, loaded.crashBp)) {
-    return {
-      ok: true,
-      state: toState(loaded.row),
-      balance: await getBibcoins(auth.userId),
-    };
-  }
-
-  await endRound(auth.admin, roomId, auth.userId, loaded, {
-    status: "busted",
-    cashoutBp: null,
-    payout: 0,
-  });
-  return {
-    ok: true,
-    state: {
-      status: "busted",
-      bet: loaded.row.bet,
-      startedAt: loaded.row.started_at,
-      serverNow: new Date().toISOString(),
-      crashBp: loaded.crashBp,
-      cashoutBp: null,
-      payout: 0,
-    },
-    balance: await getBibcoins(auth.userId),
-  };
+  return { ok: true, crashed: crashHasBusted(elapsedMs, loaded.crashBp) };
 }

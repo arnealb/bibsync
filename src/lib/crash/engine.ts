@@ -47,9 +47,12 @@ export function crashHasBusted(elapsedMs: number, crashBp: number): boolean {
 }
 
 /**
- * Settle a cash-out. `claimedBp` is what the client displayed; it's capped to
- * the server-elapsed multiplier (you can't bank the future) and must be below
- * the crash point. Server time is the only authority, so this can't be gamed.
+ * Settle a cash-out. `claimedBp` is the multiplier the client showed at the
+ * instant the player clicked — this, not the request's arrival time, decides
+ * win/loss, so network latency can't rob a click that landed before the crash.
+ * It's still capped to the server-elapsed multiplier so you can't bank a value
+ * beyond what time allows (no future-claiming). You win iff that effective
+ * multiplier is below the crash point.
  */
 export function settleCrash(
   claimedBp: number,
@@ -57,8 +60,9 @@ export function settleCrash(
   crashBp: number,
 ): { win: boolean; effectiveBp: number } {
   const serverBp = crashMultiplierAtMs(elapsedMs);
-  if (serverBp >= crashBp) return { win: false, effectiveBp: crashBp };
-  return { win: true, effectiveBp: Math.max(100, Math.min(claimedBp, serverBp)) };
+  const effectiveBp = Math.max(100, Math.min(claimedBp, serverBp));
+  if (effectiveBp >= crashBp) return { win: false, effectiveBp: crashBp };
+  return { win: true, effectiveBp };
 }
 
 /** Whole-bibcoin payout for cashing out at `bp` (floored). */
