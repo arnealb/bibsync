@@ -17,8 +17,8 @@ const FLAP = -6.4;
 const MAX_FALL = 8; // terminal velocity so the drop never feels brutal
 const PIPE_W = 54;
 const GAP = 126;
-const SPEED = 2.6;
-const SPAWN_GAP = 180; // horizontal distance between pipes
+const SPEED = 3.1;
+const SPAWN_GAP = 190; // horizontal distance between pipes
 
 interface Pipe {
   x: number;
