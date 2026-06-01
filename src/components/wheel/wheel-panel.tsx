@@ -118,7 +118,7 @@ export function WheelPanel({
         <div
           className="absolute inset-0 rounded-full border-[6px] border-amber-700/60 shadow-2xl"
           style={{
-            background: conic,
+            backgroundImage: `${conic}, repeating-conic-gradient(from ${-seg / 2}deg, rgba(0,0,0,0.5) 0deg 0.6deg, transparent 0.6deg ${seg}deg)`,
             transform: `rotate(${rotation}deg)`,
             transition: spinning
               ? `transform ${SPIN_MS}ms cubic-bezier(0.15, 0.85, 0.2, 1)`

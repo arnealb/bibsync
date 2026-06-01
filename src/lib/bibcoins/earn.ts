@@ -108,6 +108,21 @@ export async function earnFromSnake(
   if (score >= 100) await unlockAchievement(userId, "snake_100");
 }
 
+/** Flappy Bird pays 10 bibcoins per point on every run (farmable by design). */
+export async function earnFromFlappy(
+  userId: string,
+  score: number,
+): Promise<void> {
+  if (score <= 0) return;
+  // Unique ref per run so every game pays out (not just new records).
+  await awardBibcoins(
+    userId,
+    score * REWARD.flappyBestPerPoint,
+    "flappy",
+    crypto.randomUUID(),
+  );
+}
+
 /** Clearing a Pet Connect board: a once-a-day coin reward + achievement. */
 export async function earnFromPetConnect(userId: string): Promise<void> {
   await unlockAchievement(userId, "petconnect_clear");

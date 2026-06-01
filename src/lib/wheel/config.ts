@@ -8,19 +8,21 @@ export const WHEEL_MIN_BET = 10;
 export const WHEEL_MAX_BET = 1_000_000;
 export const WHEEL_CHIPS = [10, 50, 100, 500] as const;
 
-/** Round-robin a [multiplier, count] spec into an interleaved segment list. */
+/** Evenly spread a [multiplier, count] spec around the wheel (no colour
+ *  clustering). Each step every pool gains count/N; the highest-credit pool
+ *  emits and drops by 1 — a standard even-distribution. */
 function build(spec: [number, number][]): number[] {
-  const pools = spec.map(([m, c]) => ({ m, c }));
+  const total = spec.reduce((sum, [, c]) => sum + c, 0);
+  const pools = spec.map(([m, c]) => ({ m, count: c, acc: 0 }));
   const out: number[] = [];
-  let remaining = pools.reduce((sum, p) => sum + p.c, 0);
-  while (remaining > 0) {
+  for (let k = 0; k < total; k++) {
+    let best = pools[0];
     for (const p of pools) {
-      if (p.c > 0) {
-        out.push(p.m);
-        p.c -= 1;
-        remaining -= 1;
-      }
+      p.acc += p.count / total;
+      if (p.acc > best.acc) best = p;
     }
+    out.push(best.m);
+    best.acc -= 1;
   }
   return out;
 }

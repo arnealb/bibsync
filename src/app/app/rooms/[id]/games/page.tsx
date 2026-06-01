@@ -35,16 +35,25 @@ export default async function GamesPage({ params }: GamesPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const [snakeBest, snakeBoard, showCheated, balance, petBest, sessions, wealth] =
-    await Promise.all([
-      getMyBestScore(id, access.userId, "snake"),
-      getRoomLeaderboard(id, "snake"),
-      getShowCheated(id),
-      getBibcoins(access.userId),
-      getMyBestScore(id, access.userId, "petconnect"),
-      getSessionStandings(id),
-      getRoomWealth(id),
-    ]);
+  const [
+    snakeBest,
+    snakeBoard,
+    showCheated,
+    balance,
+    petBest,
+    sessions,
+    wealth,
+    flappyBest,
+  ] = await Promise.all([
+    getMyBestScore(id, access.userId, "snake"),
+    getRoomLeaderboard(id, "snake"),
+    getShowCheated(id),
+    getBibcoins(access.userId),
+    getMyBestScore(id, access.userId, "petconnect"),
+    getSessionStandings(id),
+    getRoomWealth(id),
+    getMyBestScore(id, access.userId, "flappy"),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -62,6 +71,13 @@ export default async function GamesPage({ params }: GamesPageProps) {
           subtitle={copy.games.snake.subtitle}
           emoji="🐍"
           myBest={snakeBest}
+        />
+        <GameCard
+          href={`/app/rooms/${id}/games/flappy`}
+          title={copy.games.flappy.title}
+          subtitle={copy.games.flappy.subtitle}
+          emoji="🐤"
+          myBest={flappyBest}
         />
         <GameCard
           href={`/app/rooms/${id}/games/poker`}
@@ -102,6 +118,14 @@ export default async function GamesPage({ params }: GamesPageProps) {
           emoji="🎴"
           myBest={balance}
           statLabel={copy.hilo.stat}
+        />
+        <GameCard
+          href={`/app/rooms/${id}/games/keno`}
+          title={copy.keno.title}
+          subtitle={copy.keno.subtitle}
+          emoji="🔢"
+          myBest={balance}
+          statLabel={copy.keno.stat}
         />
         <GameCard
           href={`/app/rooms/${id}/games/wheel`}
