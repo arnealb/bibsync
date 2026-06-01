@@ -4,7 +4,6 @@ import { getAuthContext } from "@/lib/auth";
 import { awardBibcoins, spendBibcoins } from "@/lib/bibcoins/award";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { copy } from "@/lib/copy";
-import { requireRoomAccess } from "@/lib/rooms/queries";
 import {
   CAUGHT_MULTIPLIER,
   FALSE_CLAIM_PENALTY,
@@ -19,17 +18,24 @@ import { stealSchema, type StealInput } from "@/lib/validation/theft";
 export async function stealCoins(input: StealInput): Promise<StealResult> {
   const parsed = stealSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: copy.common.genericError };
-  const { roomId, victimId, amount } = parsed.data;
+  const { victimId, amount } = parsed.data;
 
-  const access = await requireRoomAccess(roomId);
-  if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  const ctx = await getAuthContext();
+  if (!ctx) return { ok: false, error: copy.common.notAuthenticated };
   const admin = createAdminClient();
   if (!admin) return { ok: false, error: copy.theft.unavailable };
-  const thiefId = access.userId;
+  const thiefId = ctx.user.id;
 
   if (victimId === thiefId) {
     return { ok: false, error: copy.theft.notYourself };
   }
+
+  const { data: victim } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("id", victimId)
+    .maybeSingle();
+  if (!victim) return { ok: false, error: copy.common.genericError };
 
   // Anti-spam: one steal per cooldown window (any victim).
   const since = new Date(Date.now() - STEAL_COOLDOWN_MS).toISOString();
@@ -72,7 +78,6 @@ export async function stealCoins(input: StealInput): Promise<StealResult> {
   }
 
   const { error } = await admin.from("thefts").insert({
-    room_id: roomId,
     thief_id: thiefId,
     victim_id: victimId,
     amount,

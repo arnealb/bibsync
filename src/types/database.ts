@@ -1083,7 +1083,7 @@ export interface Database {
       thefts: {
         Row: {
           id: string;
-          room_id: string;
+          room_id: string | null;
           thief_id: string;
           victim_id: string;
           amount: number;
@@ -1093,7 +1093,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          room_id: string;
+          room_id?: string | null;
           thief_id: string;
           victim_id: string;
           amount: number;

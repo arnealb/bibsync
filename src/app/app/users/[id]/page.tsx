@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { Coins } from "lucide-react";
 
 import { GiftBibcoins } from "@/components/bibcoins/gift-bibcoins";
+import { StealBibcoins } from "@/components/bibcoins/steal-bibcoins";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
 import { getBibcoins } from "@/lib/bibcoins/queries";
@@ -118,11 +119,18 @@ export default async function UserProfilePage({
           {stats.bibcoins} {copy.profile.public.coins}
         </span>
         {!isSelf && (
-          <GiftBibcoins
-            recipientId={id}
-            recipientName={profile.display_name}
-            myBalance={myBalance}
-          />
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <GiftBibcoins
+              recipientId={id}
+              recipientName={profile.display_name}
+              myBalance={myBalance}
+            />
+            <StealBibcoins
+              victimId={id}
+              victimName={profile.display_name}
+              victimBalance={stats.bibcoins}
+            />
+          </div>
         )}
       </div>
 

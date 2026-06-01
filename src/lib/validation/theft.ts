@@ -1,8 +1,7 @@
 import { z } from "zod";
 
-/** Steal a positive whole amount from another member in a room. */
+/** Steal a positive whole amount from another user (global). */
 export const stealSchema = z.object({
-  roomId: z.string().uuid(),
   victimId: z.string().uuid(),
   amount: z.number().int().min(1),
 });

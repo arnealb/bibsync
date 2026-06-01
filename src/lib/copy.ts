@@ -670,8 +670,15 @@ export const copy = {
     victimBroke: "Die persoon heeft niet genoeg bibcoins.",
     stole: (amount: number, name: string) =>
       `Je stal ${amount} van ${name} 🥷`,
-    cmdHint: "Gebruik: /steel <bedrag> <naam>",
     badAmount: "Geef een geldig bedrag op.",
+    button: "Stelen",
+    dialogTitle: (name: string) => `Stelen van ${name}`,
+    amountLabel: "Hoeveel wil je stelen?",
+    victimHas: (n: number) => `${n} bibcoins beschikbaar`,
+    warning:
+      "Pas op: ziet de ander het en claimt hij op tijd, dan betaal je het dubbele terug.",
+    steal: "Steel",
+    stealing: "Stelen…",
     bannerTitle: "Je bent bestolen! 🥷",
     bannerBody: (amount: number) =>
       `Er is ${amount} van je gestolen. Claim het vóór je volgende uitgave — dan krijg je het dubbele terug.`,

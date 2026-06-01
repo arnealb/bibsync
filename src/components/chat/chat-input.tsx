@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toggleLeaderboardCheated } from "@/app/_actions/games";
 import { clearPillory, setPillory } from "@/app/_actions/pillory";
-import { claimRobbed, stealCoins } from "@/app/_actions/theft";
+import { claimRobbed } from "@/app/_actions/theft";
 import { clearUserTimeout, setUserTimeout } from "@/app/_actions/timeouts";
 import { setAutopilot } from "@/lib/games/snake/autopilot";
 import { copy } from "@/lib/copy";
@@ -25,9 +25,6 @@ import {
 /** Owner/admin member commands: /timeout, /untimeout, /schandpaal, /unschandpaal
  *  followed by a member name (schandpaal may add a reason after the name). */
 const MANAGE_CMD = /^\/(timeout|untimeout|schandpaal|unschandpaal)\s+(.*)$/i;
-
-/** Steal command (everyone): /steel <bedrag> <naam>. */
-const STEAL_CMD = /^\/steel\s+(\d+)\s+(.*)$/i;
 
 export function ChatInput({
   roomId,
@@ -54,11 +51,9 @@ export function ChatInput({
     [members],
   );
 
-  // Name-completion state. Manage commands need canManage; /steel is for all.
+  // Name-completion state for the owner/admin member commands.
   const manageMatch = canManage ? value.match(MANAGE_CMD) : null;
-  const stealMatch = value.match(STEAL_CMD);
-  const nameMatch = manageMatch ?? stealMatch;
-  const partial = nameMatch ? nameMatch[2].trim().toLowerCase() : "";
+  const partial = manageMatch ? manageMatch[2].trim().toLowerCase() : "";
   // A full member name is present (optionally followed by a reason) → stop
   // suggesting so the user can type the rest.
   const nameLocked = memberList.some(
@@ -67,7 +62,7 @@ export function ChatInput({
       partial.startsWith(m.name.toLowerCase() + " "),
   );
   const suggestions =
-    nameMatch && !nameLocked
+    manageMatch && !nameLocked
       ? memberList
           .filter((m) => m.name.toLowerCase().includes(partial))
           .slice(0, 6)
@@ -76,8 +71,7 @@ export function ChatInput({
   const clampedIndex = Math.max(0, Math.min(activeIndex, suggestions.length - 1));
 
   function complete(name: string) {
-    if (stealMatch) setValue(`/steel ${stealMatch[1]} ${name} `);
-    else if (manageMatch) setValue(`/${manageMatch[1].toLowerCase()} ${name} `);
+    if (manageMatch) setValue(`/${manageMatch[1].toLowerCase()} ${name} `);
     setActiveIndex(0);
   }
 
@@ -131,33 +125,6 @@ export function ChatInput({
     });
   }
 
-  function runSteal(amount: number, rest: string) {
-    const lower = rest.trim().toLowerCase();
-    const member = memberList
-      .filter(
-        (m) =>
-          lower === m.name.toLowerCase() ||
-          lower.startsWith(m.name.toLowerCase() + " "),
-      )
-      .sort((a, b) => b.name.length - a.name.length)[0];
-    if (!member) {
-      toast.error(copy.timeout.unknownUser);
-      return;
-    }
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error(copy.theft.badAmount);
-      return;
-    }
-    setValue("");
-    void stealCoins({ roomId, victimId: member.id, amount }).then((res) => {
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
-      toast.success(copy.theft.stole(amount, member.name));
-    });
-  }
-
   function submit() {
     const trimmed = value.trim();
     if (!trimmed) return;
@@ -174,12 +141,6 @@ export function ChatInput({
         else toast.error(copy.theft.falseClaim(res.amount));
       });
       setValue("");
-      return;
-    }
-
-    const sm = trimmed.match(STEAL_CMD);
-    if (sm) {
-      runSteal(Number(sm[1]), sm[2]!);
       return;
     }
 
