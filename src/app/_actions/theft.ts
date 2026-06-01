@@ -12,7 +12,25 @@ import {
 } from "@/lib/theft/config";
 import type { ClaimResult, StealResult } from "@/lib/theft/types";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { stealSchema, type StealInput } from "@/lib/validation/theft";
+
+/**
+ * Read any user's wallet balance with the service role. `getBibcoins` uses the
+ * caller's session, which RLS scopes to *their own* wallet — reading someone
+ * else's that way returns the default, breaking the steal/claim math.
+ */
+async function walletBalance(
+  admin: SupabaseClient,
+  userId: string,
+): Promise<number> {
+  const { data } = await admin
+    .from("wallets")
+    .select("bibcoins")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data?.bibcoins ?? 0;
+}
 
 /** Steal coins from another member. The coins move immediately. */
 export async function stealCoins(input: StealInput): Promise<StealResult> {
@@ -61,7 +79,7 @@ export async function stealCoins(input: StealInput): Promise<StealResult> {
     return { ok: false, error: copy.theft.alreadyOpen };
   }
 
-  const victimBalance = await getBibcoins(victimId);
+  const victimBalance = await walletBalance(admin, victimId);
   if (amount > victimBalance) {
     return { ok: false, error: copy.theft.victimBroke };
   }
@@ -171,9 +189,11 @@ export async function claimRobbed(): Promise<ClaimResult> {
   // to the victim. No minting — the victim only gets what the thieves can pay.
   let recovered = 0;
   for (const t of claimable) {
-    const thiefBalance = await getBibcoins(t.thiefId);
-    const want = t.amount * CAUGHT_MULTIPLIER;
-    const reclaim = Math.min(want, thiefBalance);
+    // Read the thief's *real* balance with the service role, then clamp the
+    // reclaim to it so the (all-or-nothing) spend always succeeds — otherwise a
+    // thief who can't cover the full 2× pays nothing and the victim gets 0.
+    const thiefBalance = await walletBalance(admin, t.thiefId);
+    const reclaim = Math.min(t.amount * CAUGHT_MULTIPLIER, thiefBalance);
     const ref = `caught:${t.id}`;
     if (reclaim > 0) {
       const took = await spendBibcoins(t.thiefId, reclaim, "theft_caught", ref);
