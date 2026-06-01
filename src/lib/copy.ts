@@ -708,6 +708,8 @@ export const copy = {
     wagered: "Totaal vergokt",
     cantAfford: "Niet genoeg bibcoins voor deze aankoop.",
     notEnoughShares: "Je hebt niet genoeg aandelen om te verkopen.",
+    capReached: (cap: number) =>
+      `Je mag maximaal ${cap.toLocaleString("nl-BE")} aandelen bezitten — niemand kan de beurs alleen opkopen.`,
     busy: "Even druk op de beurs — probeer opnieuw.",
     unavailable: "De beurs is even niet beschikbaar.",
     bought: (qty: number, cost: number) =>
@@ -717,6 +719,10 @@ export const copy = {
     empty: "Nog geen koersgeschiedenis — wees de eerste die instapt.",
     balance: "Saldo",
     hint: "De koers volgt de winst van het casino: hoe meer er verloren wordt aan de tafels, hoe meer jouw aandeel waard wordt.",
+    feeNote: (pct: string) =>
+      `Let op: elke dag gaat er ${pct} beheerskost van het fonds af. Je wint dus alleen als het casino sneller wint dan die kost — geen gratis spaarpot.`,
+    holdingCapNote: (cap: number) =>
+      `Max. ${cap.toLocaleString("nl-BE")} aandelen per persoon.`,
   },
   dice: {
     title: "Dice",

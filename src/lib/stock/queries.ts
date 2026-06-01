@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getBibcoins } from "@/lib/bibcoins/queries";
+import { MANAGEMENT_FEE_DAILY, holdingCap } from "@/lib/stock/config";
 import { sellPrice, sharePrice, type StockState } from "@/lib/stock/engine";
 import type { StockQuote, StockTick } from "@/lib/stock/types";
 import { createClient } from "@/lib/supabase/server";
@@ -65,6 +66,8 @@ export async function buildQuote(
     balance,
     houseProfit: stats.net,
     wagered: stats.wagered,
+    holdingCap: holdingCap(state.shares),
+    feeDaily: MANAGEMENT_FEE_DAILY,
   };
 }
 

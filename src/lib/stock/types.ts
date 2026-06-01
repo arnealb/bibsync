@@ -18,6 +18,10 @@ export interface StockQuote {
   houseProfit: number;
   /** Total bibcoins ever wagered in house-banked games. */
   wagered: number;
+  /** Largest position the viewer may hold (anti-whale cap). */
+  holdingCap: number;
+  /** Daily management fee burned from the fund (e.g. 0.01 = 1%/day). */
+  feeDaily: number;
 }
 
 /** One point on the price chart. */

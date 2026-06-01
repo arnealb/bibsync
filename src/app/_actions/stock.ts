@@ -6,6 +6,7 @@ import { getAuthContext } from "@/lib/auth";
 import { awardBibcoins, spendBibcoins } from "@/lib/bibcoins/award";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { copy } from "@/lib/copy";
+import { holdingCap } from "@/lib/stock/config";
 import { applyBuy, applySell, sharePrice, type StockState } from "@/lib/stock/engine";
 import { buildQuote, getCasinoStats, getStockState } from "@/lib/stock/queries";
 import type { StockQuote, StockTradeResult } from "@/lib/stock/types";
@@ -51,6 +52,18 @@ export async function buyStock(
 
   const { net } = await getCasinoStats(admin);
   const state = await getStockState(admin);
+
+  // Anti-whale cap: a single holder can't corner the float.
+  const { data: held } = await admin
+    .from("casino_holdings")
+    .select("shares")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const cap = holdingCap(state.shares);
+  if ((held?.shares ?? 0) + qty > cap) {
+    return { ok: false, error: copy.stock.capReached(cap) };
+  }
+
   const { state: next, cost } = applyBuy(state, net, qty);
 
   const balance = await getBibcoins(userId);
