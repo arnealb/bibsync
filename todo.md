@@ -31,7 +31,7 @@ unchecked item top-to-bottom.
       Snake; alle skill-games verdienen coins per punt (per-game tarief in
       `ARCADE_COINS_PER_EVENT`, gedeelde **250/uur-cap** met statusbalk
       `ArcadeCapBar`) via `earnFromArcade`. Elke skill-game heeft een dagelijkse
-      **King** (Snake 1000, rest 500 via migratie `0050_game_kings.sql`).
+      **King** (Snake 1000, rest 500 via migratie `0051_game_kings.sql`).
 
 ## Now
 
