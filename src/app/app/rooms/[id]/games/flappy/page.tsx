@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { ArcadeCapBar } from "@/components/games/arcade-cap-bar";
 import { FlappyGame } from "@/components/games/flappy/flappy-game";
 import { Leaderboard } from "@/components/games/leaderboard";
 import { copy } from "@/lib/copy";
@@ -44,6 +45,7 @@ export default async function FlappyPage({ params }: FlappyPageProps) {
             {copy.games.flappy.subtitle}
           </p>
         </div>
+        <ArcadeCapBar />
         <FlappyGame roomId={id} myBest={myBest} />
       </section>
       <Leaderboard

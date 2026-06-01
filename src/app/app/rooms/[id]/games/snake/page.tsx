@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { ArcadeCapBar } from "@/components/games/arcade-cap-bar";
 import { Leaderboard } from "@/components/games/leaderboard";
 import { SnakeGame } from "@/components/games/snake/snake-game";
 import { copy } from "@/lib/copy";
@@ -50,6 +51,7 @@ export default async function SnakePage({ params }: SnakePageProps) {
             {copy.games.snake.subtitle}
           </p>
         </div>
+        <ArcadeCapBar />
         <SnakeGame roomId={id} myBest={myBest} />
       </section>
       <Leaderboard

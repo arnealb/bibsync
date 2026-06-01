@@ -975,6 +975,11 @@ export const copy = {
       mobileBlocked:
         "Snake is enkel speelbaar op desktop — kom terug op een laptop.",
     },
+    cap: {
+      label: "Coins dit uur",
+      resetIn: (m: number, s: number) =>
+        `Reset over ${m}m ${s.toString().padStart(2, "0")}s`,
+    },
     poker: {
       title: "Poker",
       subtitle: "Texas Hold'em met je bibcoins tegen elkaar",
