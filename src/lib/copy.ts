@@ -662,6 +662,25 @@ export const copy = {
     bidPlaced: "Bod geplaatst 🙋",
     empty: "Nog niks op de markt — plaats de eerste klus.",
   },
+  theft: {
+    unavailable: "Stelen is even niet beschikbaar.",
+    notYourself: "Je kan niet van jezelf stelen.",
+    cooldown: "Rustig aan, dief — je moet even wachten voor je weer steelt.",
+    alreadyOpen: "Je hebt al een openstaande diefstal bij die persoon.",
+    victimBroke: "Die persoon heeft niet genoeg bibcoins.",
+    stole: (amount: number, name: string) =>
+      `Je stal ${amount} van ${name} 🥷`,
+    cmdHint: "Gebruik: /steel <bedrag> <naam>",
+    badAmount: "Geef een geldig bedrag op.",
+    bannerTitle: "Je bent bestolen! 🥷",
+    bannerBody: (amount: number) =>
+      `Er is ${amount} van je gestolen. Claim het vóór je volgende uitgave — dan krijg je het dubbele terug.`,
+    claimButton: "Ik ben bestolen",
+    claimed: (amount: number) => `Dief gepakt! +${amount} bibcoins 💰`,
+    tooLate: "Te laat — je had al iets uitgegeven. De dief houdt de buit.",
+    falseClaim: (amount: number) =>
+      `Je was niet bestolen. Boete: ${amount} bibcoins naar het casino.`,
+  },
   stock: {
     title: "BIB-aandeel",
     subtitle:

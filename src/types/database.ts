@@ -1080,6 +1080,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      thefts: {
+        Row: {
+          id: string;
+          room_id: string;
+          thief_id: string;
+          victim_id: string;
+          amount: number;
+          status: string;
+          created_at: Timestamp;
+          resolved_at: Timestamp | null;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          thief_id: string;
+          victim_id: string;
+          amount: number;
+          status?: string;
+          created_at?: Timestamp;
+          resolved_at?: Timestamp | null;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          thief_id?: string;
+          victim_id?: string;
+          amount?: number;
+          status?: string;
+          created_at?: Timestamp;
+          resolved_at?: Timestamp | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {

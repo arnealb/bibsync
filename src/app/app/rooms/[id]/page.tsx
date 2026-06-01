@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 
 import { StrijderPopup } from "@/components/bibcoins/strijder-popup";
 import { PilloryBanner } from "@/components/rooms/pillory-banner";
+import { TheftBanner } from "@/components/rooms/theft-banner";
 import { getRoomPillory } from "@/lib/rooms/pillory-queries";
+import { getMyPendingThefts } from "@/lib/theft/queries";
 import { InstantBreakPanel } from "@/components/instant-break/instant-break-panel";
 import { PresenceSidebar } from "@/components/presence/presence-sidebar";
 import { getStrijderClaimable } from "@/lib/bibcoins/queries";
@@ -52,6 +54,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
     foodBets,
     strijderClaimable,
     pillory,
+    pendingThefts,
   ] = await Promise.all([
     getRoomMembers(id),
     getRoomProposals(id),
@@ -63,6 +66,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
     getFoodBets(id),
     getStrijderClaimable(access.userId),
     getRoomPillory(id),
+    getMyPendingThefts(access.userId),
   ]);
 
   const memberMap = toMemberMap(members);
@@ -76,6 +80,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
   return (
     <div className="space-y-4">
       <StrijderPopup initialClaimable={strijderClaimable} />
+      <TheftBanner userId={access.userId} initialThefts={pendingThefts} />
       <PilloryBanner
         roomId={access.room.id}
         userId={access.userId}
