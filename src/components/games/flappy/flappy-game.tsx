@@ -12,12 +12,13 @@ const H = 460;
 const GROUND = H - 36;
 const BIRD_X = 84;
 const BIRD_R = 13;
-const GRAVITY = 0.45;
-const FLAP = -7.2;
+const GRAVITY = 0.28;
+const FLAP = -6;
+const MAX_FALL = 7; // terminal velocity so the drop never feels brutal
 const PIPE_W = 54;
-const GAP = 140;
-const SPEED = 2.3;
-const SPAWN_GAP = 200; // horizontal distance between pipes
+const GAP = 152;
+const SPEED = 2;
+const SPAWN_GAP = 210; // horizontal distance between pipes
 
 interface Pipe {
   x: number;
@@ -102,7 +103,7 @@ export function FlappyGame({
     function step() {
       const g = game.current;
       if (g.phase === "playing") {
-        g.vy += GRAVITY;
+        g.vy = Math.min(g.vy + GRAVITY, MAX_FALL);
         g.y += g.vy;
 
         // Spawn / move pipes.
