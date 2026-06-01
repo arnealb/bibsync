@@ -22,10 +22,6 @@ export const REWARD = {
   comment: 100,
   /** Sending 20 chat messages in a day (once/day). */
   dailyChat: 25,
-  /** Per +1 of a new honest Snake personal best. */
-  snakeBestPerPoint: 1,
-  /** Per Flappy Bird point, paid on every run (capped — see FLAPPY_HOURLY_CAP). */
-  flappyBestPerPoint: 10,
   /** Clearing a Pet Connect board (once per day). */
   petConnectDaily: 30,
   /** Per full 1000 steps of a user's daily total (capped, see below). */
@@ -38,5 +34,18 @@ export const DAILY_CHAT_THRESHOLD = 20;
 /** Max thousands of daily steps that earn bibcoins (anti-abuse cap). */
 export const STEPS_REWARD_DAILY_CAP_THOUSANDS = 20;
 
-/** Max bibcoins earnable from Flappy Bird per rolling hour (anti-abuse). */
-export const FLAPPY_HOURLY_CAP = 250;
+/** Shared cap on per-event skill-game coins (snake/flappy/tetris/2048) per
+ * clock hour (anti-abuse). */
+export const ARCADE_HOURLY_CAP = 250;
+
+/**
+ * Coins per coin-event, tuned per game so faster/easier points pay less:
+ * snake/flappy = per apple/pipe, tetris = per line, 2048 = per new tile
+ * (a milestone = log2−1). Shared 250/hour cap bounds the total.
+ */
+export const ARCADE_COINS_PER_EVENT = {
+  snake: 3,
+  flappy: 3,
+  tetris: 8,
+  "2048": 12,
+} as const;

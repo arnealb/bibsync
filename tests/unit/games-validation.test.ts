@@ -13,34 +13,41 @@ describe("submitScoreSchema", () => {
     expect(submitScoreSchema.safeParse(baseInput).success).toBe(true);
   });
 
+  it("accepts the skill-game keys", () => {
+    for (const gameKey of ["snake", "flappy", "tetris", "2048"] as const) {
+      expect(
+        submitScoreSchema.safeParse({ ...baseInput, gameKey }).success,
+      ).toBe(true);
+    }
+  });
+
   it("rejects a non-uuid roomId", () => {
-    const result = submitScoreSchema.safeParse({ ...baseInput, roomId: "abc" });
-    expect(result.success).toBe(false);
+    expect(
+      submitScoreSchema.safeParse({ ...baseInput, roomId: "abc" }).success,
+    ).toBe(false);
   });
 
   it("rejects an unknown gameKey", () => {
-    const result = submitScoreSchema.safeParse({
-      ...baseInput,
-      gameKey: "tetris",
-    });
-    expect(result.success).toBe(false);
+    expect(
+      submitScoreSchema.safeParse({ ...baseInput, gameKey: "pacman" }).success,
+    ).toBe(false);
   });
 
   it("rejects a negative score", () => {
-    const result = submitScoreSchema.safeParse({ ...baseInput, score: -1 });
-    expect(result.success).toBe(false);
+    expect(
+      submitScoreSchema.safeParse({ ...baseInput, score: -1 }).success,
+    ).toBe(false);
   });
 
   it("rejects a non-integer score", () => {
-    const result = submitScoreSchema.safeParse({ ...baseInput, score: 1.5 });
-    expect(result.success).toBe(false);
+    expect(
+      submitScoreSchema.safeParse({ ...baseInput, score: 1.5 }).success,
+    ).toBe(false);
   });
 
   it("rejects scores above the sanity cap", () => {
-    const result = submitScoreSchema.safeParse({
-      ...baseInput,
-      score: 100_001,
-    });
-    expect(result.success).toBe(false);
+    expect(
+      submitScoreSchema.safeParse({ ...baseInput, score: 100_001 }).success,
+    ).toBe(false);
   });
 });

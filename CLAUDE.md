@@ -271,6 +271,15 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   "busy" error and the client does not advance). Hidden state (decks, hole/
   dealer cards) lives in service-only `*_private` tables with RLS and no
   policies. Pure, unit-tested engines in `src/lib/<game>/`.
+- **Skill games earn coins per event:** Snake/Flappy/Tetris/2048 pay a per-game
+  rate (`ARCADE_COINS_PER_EVENT` = 3/3/8/12) per apple/pipe/line/new-tile via
+  `earnFromArcade` (fresh server-side ref, so every run pays), clamped to a
+  shared **250 bibcoins/clock-hour** cap (`ARCADE_HOURLY_CAP`); the
+  `ArcadeCapBar` on each game page shows usage + a countdown to the next `:00`.
+  Pure coin/window helpers in `src/lib/games/arcade-coins.ts` /
+  `arcade-window.ts`. Every skill game has a daily **King** (top honest
+  `game_scores` score per room): Snake 1000 (cron `0047`), the others 500
+  (cron `0050_game_kings.sql`); the crown is the generic `KingBadge`.
 - **Leaving a table frees the seat:** blackjack/poker panels use
   `useAutoLeaveTable` — SPA navigation away unmounts the panel and calls the
   (idempotent) leave action after a debounced tick (StrictMode-remount-safe);

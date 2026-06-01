@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 
 import { Leaderboard } from "@/components/games/leaderboard";
 import { PetConnectBoard } from "@/components/petconnect/petconnect-board";
-import { getRoomLeaderboard, getShowCheated } from "@/lib/games/queries";
 import { copy } from "@/lib/copy";
+import { GAME_KING_REWARD } from "@/lib/games/constants";
+import { getRoomLeaderboard, getShowCheated } from "@/lib/games/queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 
 interface PetConnectPageProps {
@@ -51,6 +52,8 @@ export default async function PetConnectPage({ params }: PetConnectPageProps) {
         full={board.full}
         honest={board.honest}
         initialShowCheated={showCheated}
+        kingReward={GAME_KING_REWARD}
+        kingLabel={copy.games.king.petconnect}
       />
     </div>
   );

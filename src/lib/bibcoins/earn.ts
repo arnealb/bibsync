@@ -1,11 +1,14 @@
 import { awardBibcoins } from "@/lib/bibcoins/award";
 import {
+  ARCADE_HOURLY_CAP,
   DAILY_CHAT_THRESHOLD,
-  FLAPPY_HOURLY_CAP,
   REWARD,
   STEPS_REWARD_DAILY_CAP_THOUSANDS,
 } from "@/lib/bibcoins/config";
 import { unlockAchievement } from "@/lib/bibcoins/unlock";
+import { arcadeCoins, cappedCoins } from "@/lib/games/arcade-coins";
+import { ARCADE_REASONS, hourStartMs } from "@/lib/games/arcade-window";
+import type { GameKey } from "@/lib/validation/games";
 import { dayTotal } from "@/lib/steps/aggregate";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayInBrussels } from "@/lib/time";
@@ -79,66 +82,47 @@ export async function earnFromMessage(userId: string): Promise<void> {
   }
 }
 
-/** Honest Snake runs pay out up to your all-time best (cheated runs earn nothing). */
-export async function earnFromSnake(
+/**
+ * A finished per-event skill run (snake/flappy/tetris/2048) pays the per-game
+ * `arcadeCoins` amount, clamped so these four games together pay at most
+ * ARCADE_HOURLY_CAP in the current clock hour. A fresh server-side ref means
+ * every run can pay (the cap, not idempotency, governs the total). Cheated
+ * (autopilot) runs earn nothing; Snake keeps its score achievements.
+ */
+export async function earnFromArcade(
   userId: string,
+  gameKey: GameKey,
   score: number,
   cheated: boolean,
 ): Promise<void> {
   if (cheated || score <= 0) return;
 
-  const admin = createAdminClient();
-  if (!admin) return;
-
-  const { data } = await admin
-    .from("bibcoin_transactions")
-    .select("amount")
-    .eq("user_id", userId)
-    .eq("reason", "snake_best");
-  const alreadyAwarded = (data ?? []).reduce(
-    (sum: number, row: { amount: number }) => sum + row.amount,
-    0,
-  );
-
-  const delta = (score - alreadyAwarded) * REWARD.snakeBestPerPoint;
-  if (delta > 0) {
-    await awardBibcoins(userId, delta, "snake_best", String(score));
+  if (gameKey === "snake") {
+    if (score >= 25) await unlockAchievement(userId, "snake_25");
+    if (score >= 100) await unlockAchievement(userId, "snake_100");
   }
 
-  if (score >= 25) await unlockAchievement(userId, "snake_25");
-  if (score >= 100) await unlockAchievement(userId, "snake_100");
-}
-
-/** Flappy Bird pays 10 bibcoins per point on every run, capped at 250/hour. */
-export async function earnFromFlappy(
-  userId: string,
-  score: number,
-): Promise<void> {
-  if (score <= 0) return;
+  const desired = arcadeCoins(gameKey, score);
+  if (desired <= 0) return;
 
   const admin = createAdminClient();
   if (!admin) return;
 
-  // Sum Flappy earnings in the last rolling hour to enforce the cap.
-  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const sinceIso = new Date(hourStartMs(Date.now())).toISOString();
   const { data } = await admin
     .from("bibcoin_transactions")
     .select("amount")
     .eq("user_id", userId)
-    .eq("reason", "flappy")
-    .gte("created_at", since);
+    .in("reason", ARCADE_REASONS as unknown as string[])
+    .gte("created_at", sinceIso);
   const earnedThisHour = (data ?? []).reduce(
     (sum: number, row: { amount: number }) => sum + row.amount,
     0,
   );
 
-  const grant = Math.min(
-    score * REWARD.flappyBestPerPoint,
-    Math.max(0, FLAPPY_HOURLY_CAP - earnedThisHour),
-  );
-  if (grant > 0) {
-    // Unique ref per run so every (uncapped) game pays out.
-    await awardBibcoins(userId, grant, "flappy", crypto.randomUUID());
+  const coins = cappedCoins(desired, earnedThisHour, ARCADE_HOURLY_CAP);
+  if (coins > 0) {
+    await awardBibcoins(userId, coins, gameKey, crypto.randomUUID());
   }
 }
 

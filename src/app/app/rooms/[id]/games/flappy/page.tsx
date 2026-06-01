@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { ArcadeCapBar } from "@/components/games/arcade-cap-bar";
 import { FlappyGame } from "@/components/games/flappy/flappy-game";
 import { Leaderboard } from "@/components/games/leaderboard";
 import { copy } from "@/lib/copy";
+import { GAME_KING_REWARD } from "@/lib/games/constants";
 import { getMyBestScore, getRoomLeaderboard } from "@/lib/games/queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 
@@ -44,6 +46,7 @@ export default async function FlappyPage({ params }: FlappyPageProps) {
             {copy.games.flappy.subtitle}
           </p>
         </div>
+        <ArcadeCapBar />
         <FlappyGame roomId={id} myBest={myBest} />
       </section>
       <Leaderboard
@@ -52,6 +55,8 @@ export default async function FlappyPage({ params }: FlappyPageProps) {
         full={board.full}
         honest={board.honest}
         initialShowCheated={false}
+        kingReward={GAME_KING_REWARD}
+        kingLabel={copy.games.king.flappy}
       />
     </div>
   );

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import {
+  ARCADE_COINS_PER_EVENT,
   DAILY_BONUS,
   HOURLY_TRICKLE,
   REWARD,
@@ -67,7 +68,7 @@ const METHODS: EarnMethod[] = [
     emoji: "🐍",
     title: c.methods.snakeTitle,
     desc: c.methods.snakeDesc,
-    amount: c.perPoint(REWARD.snakeBestPerPoint),
+    amount: c.perPoint(ARCADE_COINS_PER_EVENT.snake),
   },
   {
     emoji: "🐶",

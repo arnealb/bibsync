@@ -999,9 +999,14 @@ export const copy = {
     submitError: "Score kon niet opgeslagen worden.",
     honestView: "eerlijke weergave",
     cheatedTag: "Met cheats behaald",
-    snakeKing: {
-      label: "Snake King",
-      tooltip: (n: number) => `Snake King · +${n} bibcoins/dag 👑`,
+    king: {
+      tooltip: (label: string, n: number) =>
+        `${label} · +${n} bibcoins/dag 👑`,
+      snake: "Snake King",
+      flappy: "Flappy King",
+      tetris: "Tetris King",
+      twenty48: "2048 King",
+      petconnect: "Pet Connect King",
     },
     snake: {
       title: "Snake",
@@ -1015,6 +1020,11 @@ export const copy = {
       mobileBlocked:
         "Snake is enkel speelbaar op desktop — kom terug op een laptop.",
     },
+    cap: {
+      label: "Coins dit uur",
+      resetIn: (m: number, s: number) =>
+        `Reset over ${m}m ${s.toString().padStart(2, "0")}s`,
+    },
     poker: {
       title: "Poker",
       subtitle: "Texas Hold'em met je bibcoins tegen elkaar",
@@ -1022,7 +1032,7 @@ export const copy = {
     },
     flappy: {
       title: "Flappy Bird",
-      subtitle: "Tik/spatie om te fladderen. 10 bibcoins per punt, elke ronde.",
+      subtitle: "Tik/spatie om te fladderen. Coins per buis (gedeelde uurcap).",
       score: "Score",
       best: "Record",
       tapToStart: "Tik of spatie om te starten",
@@ -1030,6 +1040,30 @@ export const copy = {
       restart: "Opnieuw",
       saved: (n: number) => `Score ${n} opgeslagen`,
       newBest: "Nieuw record! 🎉",
+    },
+    tetris: {
+      title: "Tetris",
+      subtitle: "Maak rijen vol — coins per rij",
+      score: "Rijen",
+      controls: "Pijltjes om te bewegen, ↑ draaien, spatie laten vallen",
+      gameOver: "Game over",
+      restart: "Opnieuw",
+      newHighScore: "Nieuwe high score!",
+      saved: (n: number) => `${n} rijen opgeslagen`,
+      left: "Links",
+      right: "Rechts",
+      rotate: "Draai",
+      drop: "Laten vallen",
+    },
+    twenty48: {
+      title: "2048",
+      subtitle: "Veeg en combineer — coins per nieuwe tegel",
+      score: "Hoogste tegel",
+      controls: "Pijltjes of vegen om te schuiven",
+      gameOver: "Geen zetten meer",
+      restart: "Opnieuw",
+      newHighScore: "Nieuwe high score!",
+      saved: (n: number) => `Tegel ${n} bereikt`,
     },
   },
   pwa: {
@@ -1127,7 +1161,7 @@ export const copy = {
         chatTitle: "Chatten",
         chatDesc: "Stuur 20 berichten op één dag.",
         snakeTitle: "Snake",
-        snakeDesc: "Verdien per punt van een nieuw, eerlijk record.",
+        snakeDesc: "Verdien coins per appel, elke ronde (gedeelde uurcap).",
         petTitle: "Pet Connect",
         petDesc: "Ruim een volledig bord leeg (één keer per dag).",
         stepsTitle: "Stappen",
