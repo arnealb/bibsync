@@ -959,9 +959,14 @@ export const copy = {
     submitError: "Score kon niet opgeslagen worden.",
     honestView: "eerlijke weergave",
     cheatedTag: "Met cheats behaald",
-    snakeKing: {
-      label: "Snake King",
-      tooltip: (n: number) => `Snake King · +${n} bibcoins/dag 👑`,
+    king: {
+      tooltip: (label: string, n: number) =>
+        `${label} · +${n} bibcoins/dag 👑`,
+      snake: "Snake King",
+      flappy: "Flappy King",
+      tetris: "Tetris King",
+      twenty48: "2048 King",
+      petconnect: "Pet Connect King",
     },
     snake: {
       title: "Snake",
