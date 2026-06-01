@@ -9,6 +9,7 @@ import { PhotoUpload } from "@/components/chat/photo-upload";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toggleLeaderboardCheated } from "@/app/_actions/games";
+import { clearPillory, setPillory } from "@/app/_actions/pillory";
 import { clearUserTimeout, setUserTimeout } from "@/app/_actions/timeouts";
 import { setAutopilot } from "@/lib/games/snake/autopilot";
 import { copy } from "@/lib/copy";
@@ -20,8 +21,9 @@ import {
   MESSAGE_MAX_LENGTH,
 } from "@/lib/validation/messages";
 
-/** `/timeout <naam>` or `/untimeout <naam>` (the name part may be partial). */
-const TIMEOUT_CMD = /^\/(timeout|untimeout)\s+(.*)$/i;
+/** Owner/admin member commands: /timeout, /untimeout, /schandpaal, /unschandpaal
+ *  followed by a member name (schandpaal may add a reason after the name). */
+const MANAGE_CMD = /^\/(timeout|untimeout|schandpaal|unschandpaal)\s+(.*)$/i;
 
 export function ChatInput({
   roomId,
@@ -48,13 +50,19 @@ export function ChatInput({
     [members],
   );
 
-  // Name-completion state for the /timeout command.
-  const cmdMatch = canManage ? value.match(TIMEOUT_CMD) : null;
+  // Name-completion state for the member commands.
+  const cmdMatch = canManage ? value.match(MANAGE_CMD) : null;
   const partial = cmdMatch ? cmdMatch[2].trim().toLowerCase() : "";
   const cmd = cmdMatch ? cmdMatch[1].toLowerCase() : "";
-  const exactMatch = memberList.some((m) => m.name.toLowerCase() === partial);
+  // A full member name is present (optionally followed by a reason) → stop
+  // suggesting so the manager can type the schandpaal reason.
+  const nameLocked = memberList.some(
+    (m) =>
+      partial === m.name.toLowerCase() ||
+      partial.startsWith(m.name.toLowerCase() + " "),
+  );
   const suggestions =
-    cmdMatch && !exactMatch
+    cmdMatch && !nameLocked
       ? memberList
           .filter((m) => m.name.toLowerCase().includes(partial))
           .slice(0, 6)
@@ -67,14 +75,42 @@ export function ChatInput({
     setActiveIndex(0);
   }
 
-  function runTimeoutCommand(kind: string, name: string) {
-    const member = memberList.find(
-      (m) => m.name.toLowerCase() === name.trim().toLowerCase(),
-    );
+  function runManageCommand(kind: string, rest: string) {
+    const lower = rest.trim().toLowerCase();
+    // Longest matching member name (so "Jan Peter" wins over "Jan").
+    const member = memberList
+      .filter(
+        (m) =>
+          lower === m.name.toLowerCase() ||
+          lower.startsWith(m.name.toLowerCase() + " "),
+      )
+      .sort((a, b) => b.name.length - a.name.length)[0];
     if (!member) {
       toast.error(copy.timeout.unknownUser);
       return;
     }
+    const reason = rest.trim().slice(member.name.length).trim();
+    setValue("");
+
+    if (kind === "schandpaal" || kind === "unschandpaal") {
+      const run =
+        kind === "schandpaal"
+          ? () => setPillory(roomId, member.id, reason || undefined)
+          : () => clearPillory(roomId, member.id);
+      void run().then((res) => {
+        if (!res.ok) {
+          toast.error(res.error);
+          return;
+        }
+        toast.success(
+          kind === "schandpaal"
+            ? copy.pillory.set(member.name)
+            : copy.pillory.cleared(member.name),
+        );
+      });
+      return;
+    }
+
     const run = kind === "timeout" ? setUserTimeout : clearUserTimeout;
     void run(roomId, member.id).then((res) => {
       if (!res.ok) {
@@ -87,7 +123,6 @@ export function ChatInput({
           : copy.timeout.cleared(member.name),
       );
     });
-    setValue("");
   }
 
   function submit() {
@@ -128,9 +163,9 @@ export function ChatInput({
       return;
     }
 
-    const tm = canManage ? trimmed.match(TIMEOUT_CMD) : null;
+    const tm = canManage ? trimmed.match(MANAGE_CMD) : null;
     if (tm) {
-      runTimeoutCommand(tm[1].toLowerCase(), tm[2]);
+      runManageCommand(tm[1].toLowerCase(), tm[2]);
       return;
     }
 

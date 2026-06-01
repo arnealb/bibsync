@@ -567,6 +567,12 @@ export const copy = {
     recent: "Laatste",
     hint: "Kies je inzet en lanceer de raket.",
   },
+  pillory: {
+    title: "Aan de schandpaal",
+    set: (name: string) => `${name} staat aan de schandpaal 🔨`,
+    cleared: (name: string) => `${name} mag van de schandpaal af.`,
+    cmdHint: "Gebruik: /schandpaal <naam> [reden]",
+  },
   foodBets: {
     title: "Waar eten we? (zet bibcoins in)",
     cantAfford: "Niet genoeg bibcoins.",

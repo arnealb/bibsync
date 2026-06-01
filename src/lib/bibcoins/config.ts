@@ -24,7 +24,7 @@ export const REWARD = {
   dailyChat: 25,
   /** Per +1 of a new honest Snake personal best. */
   snakeBestPerPoint: 1,
-  /** Per Flappy Bird point, paid on every run (farmable by design). */
+  /** Per Flappy Bird point, paid on every run (capped — see FLAPPY_HOURLY_CAP). */
   flappyBestPerPoint: 10,
   /** Clearing a Pet Connect board (once per day). */
   petConnectDaily: 30,
@@ -37,3 +37,6 @@ export const DAILY_CHAT_THRESHOLD = 20;
 
 /** Max thousands of daily steps that earn bibcoins (anti-abuse cap). */
 export const STEPS_REWARD_DAILY_CAP_THOUSANDS = 20;
+
+/** Max bibcoins earnable from Flappy Bird per rolling hour (anti-abuse). */
+export const FLAPPY_HOURLY_CAP = 250;
