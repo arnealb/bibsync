@@ -99,40 +99,50 @@ export function FlappyGame({
     const ctx: CanvasRenderingContext2D = maybeCtx;
 
     let raf = 0;
+    let last = performance.now();
+    let acc = 0;
+    const STEP = 1000 / 60; // fixed 60 physics ticks/sec, any refresh rate
 
-    function step() {
+    // One physics tick (tuned for 60 ticks/sec).
+    function tick() {
       const g = game.current;
-      if (g.phase === "playing") {
-        g.vy = Math.min(g.vy + GRAVITY, MAX_FALL);
-        g.y += g.vy;
+      if (g.phase !== "playing") return;
+      g.vy = Math.min(g.vy + GRAVITY, MAX_FALL);
+      g.y += g.vy;
 
-        // Spawn / move pipes.
-        const last = g.pipes[g.pipes.length - 1];
-        if (!last || last.x < W - SPAWN_GAP) {
-          const gapTop = 50 + Math.floor(Math.random() * (GROUND - GAP - 100));
-          g.pipes.push({ x: W, gapTop, passed: false });
-        }
-        for (const p of g.pipes) p.x -= SPEED;
-        g.pipes = g.pipes.filter((p) => p.x + PIPE_W > -10);
-
-        // Score + collisions.
-        for (const p of g.pipes) {
-          if (!p.passed && p.x + PIPE_W < BIRD_X) {
-            p.passed = true;
-            g.score += 1;
-            setScore(g.score);
-          }
-          const hitX = BIRD_X + BIRD_R > p.x && BIRD_X - BIRD_R < p.x + PIPE_W;
-          const hitGap = g.y - BIRD_R > p.gapTop && g.y + BIRD_R < p.gapTop + GAP;
-          if (hitX && !hitGap) endGame();
-        }
-        if (g.y + BIRD_R >= GROUND || g.y - BIRD_R <= 0) endGame();
+      const lastPipe = g.pipes[g.pipes.length - 1];
+      if (!lastPipe || lastPipe.x < W - SPAWN_GAP) {
+        const gapTop = 50 + Math.floor(Math.random() * (GROUND - GAP - 100));
+        g.pipes.push({ x: W, gapTop, passed: false });
       }
+      for (const p of g.pipes) p.x -= SPEED;
+      g.pipes = g.pipes.filter((p) => p.x + PIPE_W > -10);
 
-      draw(ctx, g);
-      raf = requestAnimationFrame(step);
+      for (const p of g.pipes) {
+        if (!p.passed && p.x + PIPE_W < BIRD_X) {
+          p.passed = true;
+          g.score += 1;
+          setScore(g.score);
+        }
+        const hitX = BIRD_X + BIRD_R > p.x && BIRD_X - BIRD_R < p.x + PIPE_W;
+        const hitGap = g.y - BIRD_R > p.gapTop && g.y + BIRD_R < p.gapTop + GAP;
+        if (hitX && !hitGap) endGame();
+      }
+      if (g.y + BIRD_R >= GROUND || g.y - BIRD_R <= 0) endGame();
     }
-    raf = requestAnimationFrame(step);
+
+    function frame(now: number) {
+      acc += now - last;
+      last = now;
+      if (acc > 250) acc = 250; // don't spiral after a tab pause
+      while (acc >= STEP) {
+        tick();
+        acc -= STEP;
+      }
+      draw(ctx, game.current);
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
 
     function onKey(e: KeyboardEvent) {
       if (e.code === "Space" || e.code === "ArrowUp") {
