@@ -185,20 +185,21 @@ export async function claimRobbed(): Promise<ClaimResult> {
     return { ok: true, kind: "late" };
   }
 
-  // Caught! Reclaim 2× from each thief (bounded by their balance) and pay it
-  // to the victim. No minting — the victim only gets what the thieves can pay.
-  let recovered = 0;
+  // Caught! The victim always gets back 2× of every claimed theft, and each
+  // thief loses 2× of what they stole. The thief is debited as much of the 2×
+  // as their balance allows (the all-or-nothing spend can't go negative, so a
+  // broke thief is simply drained to 0); the victim is still paid the full 2×.
+  let reward = 0;
   for (const t of claimable) {
-    // Read the thief's *real* balance with the service role, then clamp the
-    // reclaim to it so the (all-or-nothing) spend always succeeds — otherwise a
-    // thief who can't cover the full 2× pays nothing and the victim gets 0.
+    const penalty = t.amount * CAUGHT_MULTIPLIER;
+    // Read the thief's *real* balance with the service role, then take the most
+    // of the 2× they can cover so the spend succeeds instead of failing.
     const thiefBalance = await walletBalance(admin, t.thiefId);
-    const reclaim = Math.min(t.amount * CAUGHT_MULTIPLIER, thiefBalance);
-    const ref = `caught:${t.id}`;
-    if (reclaim > 0) {
-      const took = await spendBibcoins(t.thiefId, reclaim, "theft_caught", ref);
-      if (took) recovered += reclaim;
+    const take = Math.min(penalty, thiefBalance);
+    if (take > 0) {
+      await spendBibcoins(t.thiefId, take, "theft_caught", `caught:${t.id}`);
     }
+    reward += penalty;
   }
 
   await admin
@@ -209,10 +210,10 @@ export async function claimRobbed(): Promise<ClaimResult> {
       claimable.map((t) => t.id),
     );
 
-  if (recovered > 0) {
+  if (reward > 0) {
     await awardBibcoins(
       victimId,
-      recovered,
+      reward,
       "theft_reward",
       `reward:${victimId}:${crypto.randomUUID()}`,
     );
@@ -221,7 +222,7 @@ export async function claimRobbed(): Promise<ClaimResult> {
   return {
     ok: true,
     kind: "reward",
-    amount: recovered,
+    amount: reward,
     balance: await getBibcoins(victimId),
   };
 }
