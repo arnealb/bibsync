@@ -23,6 +23,7 @@ import {
   ROULETTE_SPIN_MS,
 } from "@/lib/roulette/config";
 import { colorOf, type BetType } from "@/lib/roulette/engine";
+import { useBibcoinsRealtime } from "@/hooks/use-bibcoins-realtime";
 import { useRouletteRealtime } from "@/hooks/use-roulette-realtime";
 import {
   stakeFor,
@@ -121,6 +122,8 @@ export function RoulettePanel({
       setRotation((r) => rotationFor(r, n));
     }
   });
+  // Payouts settle server-side after the spin, so track the wallet directly.
+  useBibcoinsRealtime(userId, setBalance);
 
   // Tick a clock for the countdown.
   useEffect(() => {

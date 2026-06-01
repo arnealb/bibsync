@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
@@ -21,6 +20,7 @@ import { UserName } from "@/components/user-name";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAutoLeaveTable } from "@/hooks/use-auto-leave-table";
+import { useBibcoinsRealtime } from "@/hooks/use-bibcoins-realtime";
 import { useBlackjackRealtime } from "@/hooks/use-blackjack-realtime";
 import { cardScore } from "@/lib/blackjack/engine";
 import type { PublicHand, PublicSeat, PublicTable } from "@/lib/blackjack/table";
@@ -193,7 +193,6 @@ export function BlackjackPanel({
   initialState,
   initialBalance,
 }: BlackjackPanelProps) {
-  const router = useRouter();
   const [table, setTable] = useState<PublicTable | null>(initialState);
   const [balance, setBalance] = useState(initialBalance);
   const [showStrategy, setShowStrategy] = useState(false);
@@ -201,24 +200,18 @@ export function BlackjackPanel({
     Math.max(MIN_BLACKJACK_BET, Math.min(100, initialBalance)),
   );
   const [pending, start] = useTransition();
-  const lastPhase = useRef(initialState?.phase);
 
   useBlackjackRealtime(roomId, setTable);
+  // Keep the displayed balance live: payouts settle server-side (often via
+  // another player's final move), so we track the wallet directly instead of
+  // relying on the action result.
+  useBibcoinsRealtime(userId, setBalance);
 
   // Leaving the page — or sitting idle for 3 min — frees your seat so an AFK
   // player can't block the table.
   useAutoLeaveTable("blackjack", roomId, () => leaveBlackjack(roomId), {
     armed: Boolean(table?.seats.some((s) => s.userId === userId)),
   });
-
-  // When a round resolves, refresh server-rendered balance (payouts may have
-  // landed via someone else's final move).
-  useEffect(() => {
-    if (table?.phase === "done" && lastPhase.current !== "done") {
-      router.refresh();
-    }
-    lastPhase.current = table?.phase;
-  }, [table?.phase, router]);
 
   function run(fn: () => Promise<BlackjackActionResult>) {
     start(async () => {
