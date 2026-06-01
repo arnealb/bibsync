@@ -120,6 +120,14 @@ export default async function GamesPage({ params }: GamesPageProps) {
           statLabel={copy.hilo.stat}
         />
         <GameCard
+          href={`/app/rooms/${id}/games/keno`}
+          title={copy.keno.title}
+          subtitle={copy.keno.subtitle}
+          emoji="🔢"
+          myBest={balance}
+          statLabel={copy.keno.stat}
+        />
+        <GameCard
           href={`/app/rooms/${id}/games/wheel`}
           title={copy.wheel.title}
           subtitle={copy.wheel.subtitle}
