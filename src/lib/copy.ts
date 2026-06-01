@@ -740,6 +740,32 @@ export const copy = {
     again: "Nog een kist",
     hint: "Tip: premium titels en effecten zitten niet in de kist — die koop je rechtstreeks.",
   },
+  merge: {
+    title: "Merge Valley",
+    subtitle:
+      "Tik de Toverbron voor een item, sleep twee dezelfde items op elkaar om ze te mergen, en lever bestellingen voor bibcoins.",
+    unavailable: "Merge Valley is even niet beschikbaar.",
+    noGame: "Tuin niet gevonden — herlaad de pagina.",
+    busy: "Even druk — probeer opnieuw.",
+    cantAfford: "Niet genoeg bibcoins.",
+    noEnergy: "Geen energie meer. Wacht even of koop bij.",
+    boardFull: "Het bord is vol — merge eerst wat items.",
+    noItem: "Je hebt dat item (nog) niet op het bord.",
+    energy: "Energie",
+    generator: "Toverbron",
+    tapGenerator: "Tik voor een item",
+    orders: "Bestellingen",
+    deliver: "Lever",
+    delivered: (n: number) =>
+      n > 0 ? `Geleverd! +${n} bibcoins 💰` : "Geleverd! (uurcap bereikt)",
+    capReached: "Bestelling geleverd — coin-uurcap is bereikt.",
+    buyEnergy: (amount: number, cost: number) => `+${amount} energie · ${cost}`,
+    merges: "Merges",
+    ordersFilled: "Geleverd",
+    reward: (n: number) => `+${n}`,
+    hint: "Energie groeit vanzelf aan (1 per 2 min). Orders leveren coins (gedeelde uurcap met de arcade-games).",
+    selectHint: "Tik een item, tik dan een leeg vakje of een gelijk item.",
+  },
   dice: {
     title: "Dice",
     subtitle:
@@ -1072,6 +1098,10 @@ export const copy = {
       label: "Coins dit uur",
       resetIn: (m: number, s: number) =>
         `Reset over ${m}m ${s.toString().padStart(2, "0")}s`,
+    },
+    merge: {
+      title: "Merge Valley",
+      subtitle: "Smelt items samen en herstel de bib-tuin",
     },
     poker: {
       title: "Poker",

@@ -7,7 +7,7 @@ import {
 } from "@/lib/bibcoins/config";
 import { unlockAchievement } from "@/lib/bibcoins/unlock";
 import { arcadeCoins, cappedCoins } from "@/lib/games/arcade-coins";
-import { ARCADE_REASONS, hourStartMs } from "@/lib/games/arcade-window";
+import { CAPPED_EARN_REASONS, hourStartMs } from "@/lib/games/arcade-window";
 import type { GameKey } from "@/lib/validation/games";
 import { dayTotal } from "@/lib/steps/aggregate";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -108,22 +108,58 @@ export async function earnFromArcade(
   const admin = createAdminClient();
   if (!admin) return;
 
+  const coins = cappedCoins(
+    desired,
+    await cappedEarnedThisHour(admin, userId),
+    ARCADE_HOURLY_CAP,
+  );
+  if (coins > 0) {
+    await awardBibcoins(userId, coins, gameKey, crypto.randomUUID());
+  }
+}
+
+/** Coins earned this clock hour across all reasons sharing the arcade cap. */
+async function cappedEarnedThisHour(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+): Promise<number> {
+  if (!admin) return 0;
   const sinceIso = new Date(hourStartMs(Date.now())).toISOString();
   const { data } = await admin
     .from("bibcoin_transactions")
     .select("amount")
     .eq("user_id", userId)
-    .in("reason", ARCADE_REASONS as unknown as string[])
+    .in("reason", CAPPED_EARN_REASONS as unknown as string[])
     .gte("created_at", sinceIso);
-  const earnedThisHour = (data ?? []).reduce(
+  return (data ?? []).reduce(
     (sum: number, row: { amount: number }) => sum + row.amount,
     0,
   );
+}
 
-  const coins = cappedCoins(desired, earnedThisHour, ARCADE_HOURLY_CAP);
+/**
+ * Pay a Merge Valley order reward, clamped to the shared arcade hourly cap so
+ * it can't be farmed. Returns the coins actually awarded (0 if capped out).
+ * Idempotent per `ref` (the delivered order id).
+ */
+export async function earnFromMergeOrder(
+  userId: string,
+  reward: number,
+  ref: string,
+): Promise<number> {
+  if (reward <= 0) return 0;
+  const admin = createAdminClient();
+  if (!admin) return 0;
+
+  const coins = cappedCoins(
+    reward,
+    await cappedEarnedThisHour(admin, userId),
+    ARCADE_HOURLY_CAP,
+  );
   if (coins > 0) {
-    await awardBibcoins(userId, coins, gameKey, crypto.randomUUID());
+    await awardBibcoins(userId, coins, "merge_order", ref);
   }
+  return coins;
 }
 
 /** Clearing a Pet Connect board: a once-a-day coin reward + achievement. */

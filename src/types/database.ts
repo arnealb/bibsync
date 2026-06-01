@@ -729,6 +729,30 @@ export interface Database {
         Update: { room_id?: string; user_id?: string; mines?: number[] };
         Relationships: [];
       };
+      merge_games: {
+        Row: {
+          room_id: string;
+          user_id: string;
+          state: Record<string, unknown>;
+          version: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          room_id: string;
+          user_id: string;
+          state: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          room_id?: string;
+          user_id?: string;
+          state?: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
       crash_rounds: {
         Row: {
           room_id: string;
