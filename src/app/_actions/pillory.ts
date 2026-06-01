@@ -5,7 +5,11 @@ import { awardBibcoins, spendBibcoins } from "@/lib/bibcoins/award";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { copy } from "@/lib/copy";
 import { getAuthContext } from "@/lib/auth";
-import { PILLORY_BUYOFF_COST, PILLORY_MIN_MS } from "@/lib/rooms/pillory";
+import {
+  PILLORY_BUYOFF_COST,
+  PILLORY_MIN_MS,
+  PILLORY_SET_COST,
+} from "@/lib/rooms/pillory";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -71,9 +75,31 @@ export async function setPillory(
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
   if (!access.canManage) return { ok: false, error: copy.rooms.onlyOwner };
 
+  const admin = createAdminClient();
+  if (!admin) return { ok: false, error: copy.common.genericError };
+
+  // Charge only when newly shaming — updating an existing reason is free.
+  const { data: existing } = await admin
+    .from("room_pillory")
+    .select("user_id")
+    .eq("room_id", roomId)
+    .eq("user_id", targetUserId)
+    .maybeSingle();
+
+  const ref = `pillory-set:${roomId}:${targetUserId}:${crypto.randomUUID()}`;
+  if (!existing) {
+    const paid = await spendBibcoins(
+      access.userId,
+      PILLORY_SET_COST,
+      "pillory_set",
+      ref,
+    );
+    if (!paid) return { ok: false, error: copy.pillory.cantAffordSet };
+  }
+
   const supabase = await createClient();
-  // Upsert so re-shaming updates the reason (manager has insert; the manager
-  // also owns the row's reason — RLS only needs insert/delete here).
+  // Re-shaming updates the reason: delete then insert (manager has insert/delete
+  // via RLS; the new row resets the 1h buy-off timer too).
   const { error } = await supabase
     .from("room_pillory")
     .delete()
@@ -81,6 +107,9 @@ export async function setPillory(
     .eq("user_id", targetUserId);
   if (error) {
     console.error("[setPillory:clear]", error);
+    if (!existing) {
+      await awardBibcoins(access.userId, PILLORY_SET_COST, "pillory_set_refund", ref);
+    }
     return { ok: false, error: copy.common.genericError };
   }
   const insert = await supabase.from("room_pillory").insert({
@@ -91,6 +120,9 @@ export async function setPillory(
   });
   if (insert.error) {
     console.error("[setPillory]", insert.error);
+    if (!existing) {
+      await awardBibcoins(access.userId, PILLORY_SET_COST, "pillory_set_refund", ref);
+    }
     return { ok: false, error: copy.common.genericError };
   }
   return { ok: true };
