@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Coins, Sparkles } from "lucide-react";
 
+import { CrateBox } from "@/components/bibcoins/crate-box";
 import { ShopPanel } from "@/components/bibcoins/shop-panel";
 import { QuestBoard } from "@/components/quests/quest-board";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ export default async function ShopPage() {
         {copy.bibcoins.earn.button}
       </Button>
       <QuestBoard initialQuests={quests} streak={streak} />
+      <CrateBox balance={balance} />
       <ShopPanel balance={balance} owned={owned} loadout={loadout} />
     </div>
   );

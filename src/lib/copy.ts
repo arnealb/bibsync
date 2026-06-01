@@ -724,6 +724,22 @@ export const copy = {
     holdingCapNote: (cap: number) =>
       `Max. ${cap.toLocaleString("nl-BE")} aandelen per persoon.`,
   },
+  crates: {
+    title: "Mysterieuze kist",
+    subtitle: "Open een kist voor een willekeurig cosmetisch item.",
+    open: (price: number) => `Open kist · ${price}`,
+    opening: "Openen…",
+    cantAfford: "Niet genoeg bibcoins voor een kist.",
+    unavailable: "De kist is even niet beschikbaar.",
+    odds: "Gewoon 55% · Zeldzaam 33% · Episch 12%",
+    won: (name: string) => `Nieuw: ${name}! 🎁`,
+    duplicate: (name: string, refund: number) =>
+      `${name} had je al — +${refund} bibcoins terug.`,
+    newLabel: "Nieuw item!",
+    dupLabel: "Al in bezit",
+    again: "Nog een kist",
+    hint: "Tip: premium titels en effecten zitten niet in de kist — die koop je rechtstreeks.",
+  },
   dice: {
     title: "Dice",
     subtitle:
