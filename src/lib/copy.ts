@@ -1015,6 +1015,16 @@ export const copy = {
       rotate: "Draai",
       drop: "Laten vallen",
     },
+    twenty48: {
+      title: "2048",
+      subtitle: "Veeg en combineer — coins per nieuwe tegel",
+      score: "Hoogste tegel",
+      controls: "Pijltjes of vegen om te schuiven",
+      gameOver: "Geen zetten meer",
+      restart: "Opnieuw",
+      newHighScore: "Nieuwe high score!",
+      saved: (n: number) => `Tegel ${n} bereikt`,
+    },
   },
   pwa: {
     title: "Installeer als app",
