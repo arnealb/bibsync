@@ -12,13 +12,13 @@ const H = 460;
 const GROUND = H - 36;
 const BIRD_X = 84;
 const BIRD_R = 13;
-const GRAVITY = 0.28;
-const FLAP = -6;
-const MAX_FALL = 7; // terminal velocity so the drop never feels brutal
+const GRAVITY = 0.34;
+const FLAP = -6.4;
+const MAX_FALL = 8; // terminal velocity so the drop never feels brutal
 const PIPE_W = 54;
-const GAP = 152;
-const SPEED = 2;
-const SPAWN_GAP = 210; // horizontal distance between pipes
+const GAP = 126;
+const SPEED = 2.6;
+const SPAWN_GAP = 180; // horizontal distance between pipes
 
 interface Pipe {
   x: number;
