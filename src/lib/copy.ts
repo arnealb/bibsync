@@ -958,7 +958,7 @@ export const copy = {
     },
     flappy: {
       title: "Flappy Bird",
-      subtitle: "Tik/spatie om te fladderen. 10 bibcoins per punt (van je record).",
+      subtitle: "Tik/spatie om te fladderen. 10 bibcoins per punt, elke ronde.",
       score: "Score",
       best: "Record",
       tapToStart: "Tik of spatie om te starten",
