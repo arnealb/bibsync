@@ -992,7 +992,7 @@ export const copy = {
     },
     flappy: {
       title: "Flappy Bird",
-      subtitle: "Tik/spatie om te fladderen. 10 bibcoins per punt, elke ronde.",
+      subtitle: "Tik/spatie om te fladderen. Coins per buis (gedeelde uurcap).",
       score: "Score",
       best: "Record",
       tapToStart: "Tik of spatie om te starten",
@@ -1121,7 +1121,7 @@ export const copy = {
         chatTitle: "Chatten",
         chatDesc: "Stuur 20 berichten op één dag.",
         snakeTitle: "Snake",
-        snakeDesc: "Verdien per punt van een nieuw, eerlijk record.",
+        snakeDesc: "Verdien coins per appel, elke ronde (gedeelde uurcap).",
         petTitle: "Pet Connect",
         petDesc: "Ruim een volledig bord leeg (één keer per dag).",
         stepsTitle: "Stappen",
