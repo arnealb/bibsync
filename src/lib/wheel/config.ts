@@ -30,9 +30,8 @@ function build(spec: [number, number][]): number[] {
 /** 20-segment wheels per risk (mean ≈ 0.975 → ~2.5% house edge). */
 export const WHEEL_SEGMENTS: Record<WheelRisk, number[]> = {
   low: build([
-    [1.2, 10],
-    [1.5, 5],
-    [0, 5],
+    [1.5, 13],
+    [0, 7],
   ]),
   medium: build([
     [0, 11],
