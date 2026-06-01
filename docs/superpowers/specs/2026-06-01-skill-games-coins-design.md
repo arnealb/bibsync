@@ -30,10 +30,11 @@ unit-tested engines in `src/lib/games/`).
   less): **Snake 3/apple, Flappy 3/pipe, Tetris 8/line, 2048 12/new-tile**. 2048's
   event is a new highest tile, so it pays `(log2(highestTile) − 1) × 12`. Rates
   live in `ARCADE_COINS_PER_EVENT` (config).
-- **Shared cap: 250 coins per hour** across all four games combined (rolling
-  60-minute window). Once a user has earned 250 from these games in the last
-  hour, further runs earn nothing until the window frees up. This is the
-  anti-OP guardrail (replaces the earlier no-cap idea).
+- **Shared cap: 250 coins per clock hour** across all four games combined (fixed
+  Brussels clock-hour window — which equals the UTC hour boundary since Brussels
+  is a whole-hour offset). Once a user has earned 250 from these games in the
+  current hour, further runs earn nothing until the next `:00`. This is the
+  anti-OP guardrail, and the fixed reset is what the **status bar** counts down to.
 - Pays **every run** — the award uses a fresh server-side `crypto.randomUUID()`
   ref (no per-run client id needed), mirroring the pattern the merged
   `earnFromFlappy` already used. The hourly cap, not idempotency, governs total
@@ -55,8 +56,9 @@ The action is unchanged in shape — the client still submits
   1. `desired = arcadeCoins(gameKey, score)` = `events × ARCADE_COINS_PER_EVENT[gameKey]`,
      where `events` = `score` for snake/flappy/tetris and
      `Math.max(0, Math.round(Math.log2(score)) − 1)` for `2048`.
-  2. Read the user's last-hour sum of ledger rows whose `reason` is one of
-     `snake`/`flappy`/`tetris`/`2048`; `remaining = max(0, 250 − earnedThisHour)`.
+  2. Read the user's **current-clock-hour** sum of ledger rows whose `reason` is
+     one of `snake`/`flappy`/`tetris`/`2048` (`created_at >= hourStartMs(now)`);
+     `remaining = max(0, 250 − earnedThisHour)`.
   3. `coins = min(desired, remaining)`; if `> 0`,
      `awardBibcoins(userId, coins, gameKey, crypto.randomUUID())`.
   4. Snake-only: unlock `snake_25` / `snake_100` from the raw score.
@@ -64,6 +66,24 @@ The action is unchanged in shape — the client still submits
 > Concurrency note: two simultaneous submits can both read the same
 > `earnedThisHour` and slightly overshoot 250. Acceptable for a friends app (no
 > real money); a fully atomic cap would need a DB function and isn't worth it.
+
+### Earning status bar
+
+A small client component `ArcadeCapBar` shows the user how much of the hourly
+cap they've used and when it resets — on each per-event skill-game page (Snake,
+Flappy, Tetris, 2048), above the game. It reads `X / 250 dit uur` and counts down
+`Reset over Mm Ss` to the top of the hour.
+
+- A server action `getArcadeHourEarned()` sums the caller's arcade ledger rows
+  (reasons `snake`/`flappy`/`tetris`/`2048`) since `hourStartMs(now)` — the same
+  window the cap uses, so the bar and the cap always agree.
+- The bar is self-fetching (no props): it fetches on mount, polls every ~15 s
+  (so it reflects a finished run without touching the game components), ticks the
+  countdown every second locally via `msUntilHourReset(now) = 3_600_000 − (now %
+  3_600_000)`, and refetches when the hour rolls over (earnings reset to 0).
+- Shared pure helpers in `src/lib/games/arcade-window.ts`: `ARCADE_REASONS`,
+  `hourStartMs(nowMs)`, `msUntilHourReset(nowMs)` — used by `earnFromArcade`, the
+  action, and the bar so the window definition lives in one place.
 
 `REWARD.snakeBestPerPoint` and `REWARD.flappyBestPerPoint` are deleted (their
 functions `earnFromSnake` / `earnFromFlappy` are replaced by `earnFromArcade`).
@@ -112,13 +132,13 @@ canvas/grid component that submits the score once on game-over (`submittedRef`).
   gravity tick, line detection + clear + collapse, `lines`, game-over when a new
   piece can't spawn.
 - Client: canvas + keyboard (arrows + Space hard-drop) + a few on-screen buttons
-  for touch. Submits `lines`. **10 coins per line** (shared cap).
+  for touch. Submits `lines`. **8 coins per line** (shared cap).
 
 ### 2048 (new) — `2048`
 
 - Engine: 4×4 grid, `move(dir)` (slide + merge once per tile), spawn 2 (90%) /
   4 (10%) seeded, `highestTile`, game-over when no moves remain.
-- Client: tile grid, arrow keys **+ swipe**. Submits `highestTile`. **10 coins
+- Client: tile grid, arrow keys **+ swipe**. Submits `highestTile`. **12 coins
   per new-highest-tile milestone** (shared cap).
 - Naming: `gameKey = "2048"`, route `games/2048/`, engine/component dirs
   `twenty48`, copy block `copy.games.twenty48`.
@@ -132,28 +152,37 @@ canvas/grid component that submits the score once on game-over (`submittedRef`).
   remove `snakeBestPerPoint`, `flappyBestPerPoint`.
 - `src/lib/games/arcade-coins.ts` (new): pure `arcadeCoins(gameKey, score)` and a
   pure `cappedCoins(desired, earnedThisHour, cap)` clamp helper.
+- `src/lib/games/arcade-window.ts` (new): pure `ARCADE_REASONS`,
+  `hourStartMs(nowMs)`, `msUntilHourReset(nowMs)`.
 - `src/lib/bibcoins/earn.ts`: delete `earnFromSnake` + `earnFromFlappy`; add
-  `earnFromArcade` (with the shared hourly cap).
+  `earnFromArcade` (clock-hour shared cap via `hourStartMs`/`ARCADE_REASONS`).
 - `src/app/_actions/games.ts`: route `petconnect` → `earnFromPetConnect`, all
   other keys → `earnFromArcade`.
+- `src/app/_actions/arcade.ts` (new): `getArcadeHourEarned()` for the status bar.
+- `src/components/games/arcade-cap-bar.tsx` (new): the `ArcadeCapBar` client
+  component (self-fetching progress + countdown), rendered on the Snake, Flappy,
+  Tetris and 2048 pages.
 - `src/app/app/rooms/[id]/games/page.tsx`: add Tetris (🧩) and 2048 (🧮; 🔢 is
   Keno's) cards.
-- New pages `games/{tetris,2048}/page.tsx` (game + King leaderboard).
-- `src/lib/copy.ts`: `copy.games.tetris`, `copy.games.twenty48`, and the generic
-  `copy.games.king` block.
+- New pages `games/{tetris,2048}/page.tsx` (cap bar + game + King leaderboard).
+- `src/lib/copy.ts`: `copy.games.tetris`, `copy.games.twenty48`, `copy.games.cap`,
+  and the generic `copy.games.king` block.
 - King: `constants.ts` (`GAME_KING_REWARD`), `KingBadge`, `Leaderboard.kingLabel`,
   Flappy + Pet Connect page props, migration `0050_game_kings.sql`.
-- **Untouched:** Flappy game/engine/page body, Keno, Snake & Pet Connect client
-  components, Snake King migration 0047. (Flappy & Pet Connect pages only gain
-  the two King props; that's the King feature, not the game.)
+- **Untouched gameplay:** Flappy game/engine, Keno, Snake & Pet Connect *game*
+  components, Snake King migration 0047. (The Flappy page gains King props + the
+  cap bar; Snake page gains the cap bar; Pet Connect page gains King props — all
+  additive page changes, not gameplay.)
 
 ## Testing
 
 - Unit tests for the new engines (`tetris-engine.test.ts`,
   `twenty48-engine.test.ts`) — deterministic via seed: spawn, movement, scoring,
   collision/game-over, and (2048) merge correctness + highest-tile.
-- Unit tests for `arcadeCoins` (incl. 2048 `log2−1`) and `cappedCoins`
-  (clamps to remaining headroom, never negative).
+- Unit tests for `arcadeCoins` (per-game rates incl. 2048 `log2−1`) and
+  `cappedCoins` (clamps to remaining headroom, never negative).
+- Unit tests for `hourStartMs` / `msUntilHourReset` (align to the hour;
+  `msUntilHourReset` ∈ (0, 3 600 000]).
 - `submitScoreSchema` test updated (new keys valid; `pacman` invalid).
 - Gate: `pnpm exec tsc --noEmit` + `pnpm lint` + `pnpm test` green. (Local
   `pnpm build` may fail on `next/font`; rely on Vercel.)

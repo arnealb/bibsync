@@ -2,17 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Unify all skill games on one earning model — **per-game coins/event (Snake 3, Flappy 3, Tetris 8, 2048 12), shared 250-coins/hour cap** — add Tetris and 2048, and give **every skill game a daily King** (Snake 1000, the rest 500) like the existing Snake King.
+**Goal:** Unify all skill games on one earning model — **per-game coins/event (Snake 3, Flappy 3, Tetris 8, 2048 12), shared 250-coins/clock-hour cap** with an on-page **status bar** — add Tetris and 2048, and give **every skill game a daily King** (Snake 1000, the rest 500) like the existing Snake King.
 
-**Architecture:** Each new game is a pure, seeded, unit-tested engine + a thin `"use client"` component that submits a score on game-over. `submitGameScore` routes `petconnect` to its daily reward and `snake`/`flappy`/`tetris`/`2048` to a new `earnFromArcade`, which pays a **per-game rate × events** (Snake/Flappy 3 per apple/pipe, Tetris 8 per line, 2048 12 per new tile = `log2−1`), clamped to a **shared 250/hour** headroom read from the ledger, with a fresh server-side `crypto.randomUUID()` ref (no client `runId`). A new cron migration (`0050`) pays each non-Snake skill game's daily King 500; the crown badge is generalised per game. **Only DB change is the manual cron migration** — scores and payouts use existing tables.
+**Architecture:** Each new game is a pure, seeded, unit-tested engine + a thin `"use client"` component that submits a score on game-over. `submitGameScore` routes `petconnect` to its daily reward and `snake`/`flappy`/`tetris`/`2048` to a new `earnFromArcade`, which pays a **per-game rate × events** (2048 events = `log2−1`), clamped to the **remaining headroom in the current clock hour** (sum of the user's arcade ledger rows since the hour start), with a fresh server-side `crypto.randomUUID()` ref (no client `runId`). An `ArcadeCapBar` client component shows `X / 250 dit uur` + a live countdown to the next `:00`. A cron migration (`0050`) pays each non-Snake skill game's daily King 500; the crown badge is generalised per game. **Only DB change is the manual cron migration** — scores and payouts use existing tables.
 
-> **Merge note:** a teammate already shipped a Flappy-only cap (`earnFromFlappy`, `FLAPPY_HOURLY_CAP = 250`, `flappyBestPerPoint: 10`). This plan generalises it: rename `FLAPPY_HOURLY_CAP` → `ARCADE_HOURLY_CAP` (shared) and replace `earnFromFlappy`/`earnFromSnake` with `earnFromArcade`. Migrations `0048_hilo`/`0049_pillory` already exist, so the King migration is **`0050`**.
+> **Merge note:** a teammate shipped a Flappy-only cap (`earnFromFlappy`, `FLAPPY_HOURLY_CAP = 250`, `flappyBestPerPoint: 10`). This plan generalises it: rename `FLAPPY_HOURLY_CAP` → `ARCADE_HOURLY_CAP` and replace `earnFromFlappy`/`earnFromSnake` with `earnFromArcade`, switching the rolling window to a **fixed clock hour**. Migrations `0048_hilo`/`0049_pillory` already exist, so the King migration is **`0050`**.
 
 **Tech Stack:** Next.js 16 (App Router, RSC + Server Actions), React 19, TS strict, Zod, Vitest, Supabase (`game_scores` + `award_bibcoins` RPC + `pg_cron`), Tailwind + base-nova shadcn.
 
 **Conventions (CLAUDE.md):** Dutch strings in `copy.ts`; English code; pure seeded engines; never import the server client into a `"use client"` file; gate on `pnpm exec tsc --noEmit` + `pnpm lint` + `pnpm test` (local `pnpm build` may fail on `next/font` — ignore).
 
-**Do NOT touch:** `flappy-game.tsx`, the Flappy engine, Keno, Snake/Pet Connect client components, Snake King migration `0047`. The Flappy and Pet Connect *pages* only gain two King props (the feature the owner asked for), not gameplay.
+**Do NOT touch gameplay:** `flappy-game.tsx`, the Flappy engine, Keno, Snake/Pet Connect *game* components, Snake King migration `0047`. The Snake/Flappy/Pet Connect *pages* gain additive UI only (cap bar and/or King props).
 
 **Commit after every task.** Branch `feat/skill-games-coins` (already created; `main` merged in).
 
@@ -21,20 +21,24 @@
 ## File Structure
 
 - Modify `src/lib/validation/games.ts` — add `tetris`, `2048` keys.
-- Modify `src/lib/bibcoins/config.ts` — add `ARCADE_COINS_PER_EVENT` rate map; rename `FLAPPY_HOURLY_CAP` → `ARCADE_HOURLY_CAP` (now shared); remove `snakeBestPerPoint`, `flappyBestPerPoint`.
+- Modify `src/lib/bibcoins/config.ts` — add `ARCADE_COINS_PER_EVENT` rate map; rename `FLAPPY_HOURLY_CAP` → `ARCADE_HOURLY_CAP`; remove `snakeBestPerPoint`, `flappyBestPerPoint`.
 - Create `src/lib/games/arcade-coins.ts` — `arcadeCoins` + `cappedCoins`.
+- Create `src/lib/games/arcade-window.ts` — `ARCADE_REASONS`, `hourStartMs`, `msUntilHourReset`.
 - Modify `src/lib/bibcoins/earn.ts` — delete `earnFromSnake` + `earnFromFlappy`; add `earnFromArcade`.
 - Modify `src/app/_actions/games.ts` — route `petconnect`→daily, else→`earnFromArcade`.
-- King: Modify `src/lib/games/constants.ts` (`GAME_KING_REWARD`), `src/lib/copy.ts` (`copy.games.king`), `src/components/games/leaderboard.tsx` (`kingLabel`); create `src/components/games/king-badge.tsx` (replaces `snake-king-badge.tsx`); add King props to `…/games/flappy/page.tsx` + `…/games/petconnect/page.tsx`; create `supabase/migrations/0050_game_kings.sql`.
+- Create `src/app/_actions/arcade.ts` — `getArcadeHourEarned()`.
+- Create `src/components/games/arcade-cap-bar.tsx` — `ArcadeCapBar`.
+- King: Modify `src/lib/games/constants.ts` (`GAME_KING_REWARD`), `src/lib/copy.ts`, `src/components/games/leaderboard.tsx` (`kingLabel`); create `src/components/games/king-badge.tsx` (replaces `snake-king-badge.tsx`); add King props to `…/games/flappy/page.tsx` + `…/games/petconnect/page.tsx`; create `supabase/migrations/0050_game_kings.sql`.
+- Cap bar onto `…/games/snake/page.tsx` + `…/games/flappy/page.tsx` (Task 4); Tetris/2048 pages include it on creation.
 - Tetris: `src/lib/games/tetris/engine.ts` (+test), `src/components/games/tetris/tetris-game.tsx`, `…/games/tetris/page.tsx`.
 - 2048: `src/lib/games/twenty48/engine.ts` (+test), `src/components/games/twenty48/twenty48-game.tsx`, `…/games/2048/page.tsx`.
 - Modify `src/app/app/rooms/[id]/games/page.tsx` — Tetris + 2048 cards.
-- Modify `src/lib/copy.ts` — `copy.games.tetris`, `copy.games.twenty48`.
+- Modify `src/lib/copy.ts` — `copy.games.{tetris,twenty48,cap,king}`.
 - Modify `tests/unit/games-validation.test.ts`.
 
 ---
 
-## Task 1: Validation keys + config
+## Task 1: Validation keys + config rate map
 
 **Files:** Modify `src/lib/validation/games.ts`, `src/lib/bibcoins/config.ts`; Test `tests/unit/games-validation.test.ts`.
 
@@ -96,7 +100,7 @@ describe("submitScoreSchema", () => {
 });
 ```
 
-- [ ] **Step 2: Run it (FAIL)** — `pnpm exec vitest run tests/unit/games-validation.test.ts` → `tetris`/`2048` rejected.
+- [ ] **Step 2: Run it (FAIL)** — `pnpm exec vitest run tests/unit/games-validation.test.ts`.
 
 - [ ] **Step 3: Add keys** — in `src/lib/validation/games.ts` change:
 
@@ -116,7 +120,7 @@ export const GAME_KEYS = [
 ] as const;
 ```
 
-- [ ] **Step 4: Config** — in `src/lib/bibcoins/config.ts`, add the per-game rate map. The hourly-cap constant already exists from the teammate's Flappy work (`export const FLAPPY_HOURLY_CAP = 250;`) and is renamed to `ARCADE_HOURLY_CAP` in Task 3; the two `*PerPoint` rewards are removed in Task 3. Add this just below the `export const FLAPPY_HOURLY_CAP = 250;` line:
+- [ ] **Step 4: Config rate map** — in `src/lib/bibcoins/config.ts`, add the per-game rate map just below the existing `export const FLAPPY_HOURLY_CAP = 250;` line (that constant is renamed in Task 3; the two `*PerPoint` rewards are removed in Task 3):
 
 ```ts
 /**
@@ -143,11 +147,11 @@ git commit -m "feat(games): add tetris/2048 keys + per-game arcade rate map"
 
 ---
 
-## Task 2: Pure coin math (`arcadeCoins` + `cappedCoins`)
+## Task 2: Pure arcade math + window helpers
 
-**Files:** Create `src/lib/games/arcade-coins.ts`; Test `tests/unit/arcade-coins.test.ts`.
+**Files:** Create `src/lib/games/arcade-coins.ts`, `src/lib/games/arcade-window.ts`; Test `tests/unit/arcade-coins.test.ts`, `tests/unit/arcade-window.test.ts`.
 
-- [ ] **Step 1: Write the failing test (RED)** — create `tests/unit/arcade-coins.test.ts`:
+- [ ] **Step 1: Write the failing tests (RED)** — create `tests/unit/arcade-coins.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -163,7 +167,7 @@ describe("arcadeCoins", () => {
 
   it("is 12 per new-highest-tile milestone for 2048", () => {
     expect(arcadeCoins("2048", 2)).toBe(0); // start tile, no milestone
-    expect(arcadeCoins("2048", 4)).toBe(12); // 1 milestone × 12
+    expect(arcadeCoins("2048", 4)).toBe(12); // 1 × 12
     expect(arcadeCoins("2048", 256)).toBe(84); // 7 × 12
     expect(arcadeCoins("2048", 2048)).toBe(120); // 10 × 12
   });
@@ -191,9 +195,67 @@ describe("cappedCoins", () => {
 });
 ```
 
-- [ ] **Step 2: Run it (FAIL)** — `pnpm exec vitest run tests/unit/arcade-coins.test.ts`.
+And `tests/unit/arcade-window.test.ts`:
 
-- [ ] **Step 3: Implement** — create `src/lib/games/arcade-coins.ts`:
+```ts
+import { describe, expect, it } from "vitest";
+
+import { hourStartMs, msUntilHourReset } from "@/lib/games/arcade-window";
+
+const SAMPLE = 1_700_000_123_456;
+
+describe("arcade window", () => {
+  it("hourStartMs truncates to the hour boundary", () => {
+    const start = hourStartMs(SAMPLE);
+    expect(start % 3_600_000).toBe(0);
+    expect(SAMPLE - start).toBeGreaterThanOrEqual(0);
+    expect(SAMPLE - start).toBeLessThan(3_600_000);
+  });
+
+  it("hourStartMs is stable within the hour, jumps at the boundary", () => {
+    const start = hourStartMs(SAMPLE);
+    expect(hourStartMs(start)).toBe(start);
+    expect(hourStartMs(start + 3_599_999)).toBe(start);
+    expect(hourStartMs(start + 3_600_000)).toBe(start + 3_600_000);
+  });
+
+  it("msUntilHourReset complements the hour, within (0, 3.6M]", () => {
+    const start = hourStartMs(SAMPLE);
+    expect(msUntilHourReset(start)).toBe(3_600_000);
+    expect(msUntilHourReset(start + 1)).toBe(3_599_999);
+    const r = msUntilHourReset(SAMPLE);
+    expect(r).toBeGreaterThan(0);
+    expect(r).toBeLessThanOrEqual(3_600_000);
+  });
+});
+```
+
+- [ ] **Step 2: Run them (FAIL)** — `pnpm exec vitest run tests/unit/arcade-coins.test.ts tests/unit/arcade-window.test.ts`.
+
+- [ ] **Step 3: Implement the window helpers** — create `src/lib/games/arcade-window.ts`:
+
+```ts
+/** Per-event skill games that share the hourly cap (also each one's ledger reason). */
+export const ARCADE_REASONS = ["snake", "flappy", "tetris", "2048"] as const;
+
+const HOUR_MS = 3_600_000;
+
+/**
+ * Start of the current clock hour, in epoch ms. Epoch hour boundaries are UTC,
+ * and Brussels is a whole-hour offset, so this is also the start of the current
+ * Brussels clock hour.
+ */
+export function hourStartMs(nowMs: number): number {
+  return nowMs - (nowMs % HOUR_MS);
+}
+
+/** Milliseconds until the next clock-hour boundary (the cap reset). */
+export function msUntilHourReset(nowMs: number): number {
+  return HOUR_MS - (nowMs % HOUR_MS);
+}
+```
+
+- [ ] **Step 4: Implement the coin math** — create `src/lib/games/arcade-coins.ts`:
 
 ```ts
 import { ARCADE_COINS_PER_EVENT } from "@/lib/bibcoins/config";
@@ -224,51 +286,47 @@ export function cappedCoins(
 }
 ```
 
-- [ ] **Step 4: Run it (PASS)** — `pnpm exec vitest run tests/unit/arcade-coins.test.ts`.
+- [ ] **Step 5: Run them (PASS)** — `pnpm exec vitest run tests/unit/arcade-coins.test.ts tests/unit/arcade-window.test.ts`.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/lib/games/arcade-coins.ts tests/unit/arcade-coins.test.ts
-git commit -m "feat(games): pure coin math + hourly-cap clamp for skill games"
+git add src/lib/games/arcade-coins.ts src/lib/games/arcade-window.ts tests/unit/arcade-coins.test.ts tests/unit/arcade-window.test.ts
+git commit -m "feat(games): pure arcade coin math + clock-hour window helpers"
 ```
 
 ---
 
-## Task 3: `earnFromArcade` with shared hourly cap + wiring
+## Task 3: `earnFromArcade` with shared clock-hour cap + wiring
 
 Replaces `earnFromSnake` **and** `earnFromFlappy` with one capped path for
-`snake`/`flappy`/`tetris`/`2048`. No client changes (server-side ref).
+`snake`/`flappy`/`tetris`/`2048`. No game-component changes (server-side ref).
 
 **Files:** Modify `src/lib/bibcoins/earn.ts`, `src/lib/bibcoins/config.ts`, `src/app/_actions/games.ts`.
 
-- [ ] **Step 1: Edit `src/lib/bibcoins/earn.ts`** — add imports at the top (keep existing ones):
+- [ ] **Step 1: Edit `src/lib/bibcoins/earn.ts`** — add these imports at the top:
 
 ```ts
 import { ARCADE_HOURLY_CAP } from "@/lib/bibcoins/config";
 import { arcadeCoins, cappedCoins } from "@/lib/games/arcade-coins";
+import { ARCADE_REASONS, hourStartMs } from "@/lib/games/arcade-window";
 import type { GameKey } from "@/lib/validation/games";
 ```
 
 > `earn.ts` currently imports `FLAPPY_HOURLY_CAP` from `@/lib/bibcoins/config`
 > (used by the old `earnFromFlappy`). Change that import to `ARCADE_HOURLY_CAP`
-> (renamed in Step 2), and add the `arcadeCoins`/`cappedCoins` and `GameKey`
-> imports shown above.
+> (renamed in Step 2), and add the other imports shown above.
 
 Delete the entire `earnFromSnake` function **and** the entire `earnFromFlappy`
 function, and in their place add:
 
 ```ts
-/** Per-event skill games whose payouts share the hourly cap (also the ledger
- * `reason` for each). */
-const ARCADE_REASONS = ["snake", "flappy", "tetris", "2048"] as const;
-
 /**
- * A finished per-event skill run pays the per-game `arcadeCoins` amount,
- * clamped so these four games together pay at most ARCADE_HOURLY_CAP per rolling
- * hour. A fresh server-side ref means every run can pay (the cap, not
- * idempotency, governs the total). Cheated (autopilot) runs earn nothing; Snake
- * keeps its score achievements.
+ * A finished per-event skill run (snake/flappy/tetris/2048) pays the per-game
+ * `arcadeCoins` amount, clamped so these four games together pay at most
+ * ARCADE_HOURLY_CAP in the current clock hour. A fresh server-side ref means
+ * every run can pay (the cap, not idempotency, governs the total). Cheated
+ * (autopilot) runs earn nothing; Snake keeps its score achievements.
  */
 export async function earnFromArcade(
   userId: string,
@@ -289,7 +347,7 @@ export async function earnFromArcade(
   const admin = createAdminClient();
   if (!admin) return;
 
-  const sinceIso = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const sinceIso = new Date(hourStartMs(Date.now())).toISOString();
   const { data } = await admin
     .from("bibcoin_transactions")
     .select("amount")
@@ -308,6 +366,8 @@ export async function earnFromArcade(
 }
 ```
 
+(`awardBibcoins`, `unlockAchievement`, `createAdminClient` are already imported.)
+
 - [ ] **Step 2: Rename the cap + remove old rewards** — in `src/lib/bibcoins/config.ts`:
 
 Rename the Flappy-only cap to the shared one — change:
@@ -321,7 +381,7 @@ to:
 
 ```ts
 /** Shared cap on per-event skill-game coins (snake/flappy/tetris/2048) per
- * rolling hour (anti-abuse). */
+ * clock hour (anti-abuse). */
 export const ARCADE_HOURLY_CAP = 250;
 ```
 
@@ -384,18 +444,180 @@ with:
   }
 ```
 
-- [ ] **Step 4: Gate** — `pnpm exec tsc --noEmit && pnpm lint && pnpm test` → green (no refs to `earnFromSnake`/`earnFromFlappy`/`snakeBestPerPoint`/`flappyBestPerPoint`).
+- [ ] **Step 4: Gate** — `pnpm exec tsc --noEmit && pnpm lint && pnpm test` → green.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add src/lib/bibcoins/earn.ts src/lib/bibcoins/config.ts src/app/_actions/games.ts
-git commit -m "feat(games): unified arcade earning, per-game rates, shared 250/hour cap"
+git commit -m "feat(games): unified arcade earning, per-game rates, shared clock-hour cap"
 ```
 
 ---
 
-## Task 4: Daily Kings for the other skill games
+## Task 4: Earning status bar (`ArcadeCapBar`)
+
+A self-fetching meter showing `X / 250 dit uur` and a countdown to the next `:00`,
+on each per-event skill-game page.
+
+**Files:** Create `src/app/_actions/arcade.ts`, `src/components/games/arcade-cap-bar.tsx`; Modify `src/lib/copy.ts`, `…/games/snake/page.tsx`, `…/games/flappy/page.tsx`.
+
+- [ ] **Step 1: Copy** — in `src/lib/copy.ts`, inside the `games:` object, immediately after the `snake: { … },` block, insert:
+
+```ts
+    cap: {
+      label: "Coins dit uur",
+      resetIn: (m: number, s: number) =>
+        `Reset over ${m}m ${s.toString().padStart(2, "0")}s`,
+    },
+```
+
+- [ ] **Step 2: Server action** — create `src/app/_actions/arcade.ts`:
+
+```ts
+"use server";
+
+import { ARCADE_REASONS, hourStartMs } from "@/lib/games/arcade-window";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+
+/**
+ * The caller's total skill-game coins earned in the current clock hour, for the
+ * cap status bar. Global per user (arcade earnings aren't room-scoped). Uses the
+ * same window as `earnFromArcade`, so the bar and the cap always agree.
+ */
+export async function getArcadeHourEarned(): Promise<number> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return 0;
+
+  const admin = createAdminClient();
+  if (!admin) return 0;
+
+  const sinceIso = new Date(hourStartMs(Date.now())).toISOString();
+  const { data, error } = await admin
+    .from("bibcoin_transactions")
+    .select("amount")
+    .eq("user_id", user.id)
+    .in("reason", ARCADE_REASONS as unknown as string[])
+    .gte("created_at", sinceIso);
+  if (error) {
+    console.error("[getArcadeHourEarned]", error);
+    return 0;
+  }
+  return (data ?? []).reduce(
+    (sum: number, row: { amount: number }) => sum + row.amount,
+    0,
+  );
+}
+```
+
+- [ ] **Step 3: The bar component** — create `src/components/games/arcade-cap-bar.tsx`:
+
+```tsx
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { getArcadeHourEarned } from "@/app/_actions/arcade";
+import { ARCADE_HOURLY_CAP } from "@/lib/bibcoins/config";
+import { msUntilHourReset } from "@/lib/games/arcade-window";
+import { copy } from "@/lib/copy";
+
+const POLL_TICKS = 15; // refetch the earned total every 15 seconds
+
+export function ArcadeCapBar() {
+  const [earned, setEarned] = useState<number | null>(null);
+  const [msLeft, setMsLeft] = useState(() => msUntilHourReset(Date.now()));
+
+  useEffect(() => {
+    let active = true;
+    const refetch = () => {
+      void getArcadeHourEarned().then((n) => {
+        if (active) setEarned(n);
+      });
+    };
+    refetch();
+
+    let tick = 0;
+    let prev = msUntilHourReset(Date.now());
+    const id = window.setInterval(() => {
+      const left = msUntilHourReset(Date.now());
+      if (left > prev) refetch(); // hour rolled over → earnings reset to 0
+      prev = left;
+      setMsLeft(left);
+      tick = (tick + 1) % POLL_TICKS;
+      if (tick === 0) refetch();
+    }, 1000);
+
+    return () => {
+      active = false;
+      window.clearInterval(id);
+    };
+  }, []);
+
+  const value = earned ?? 0;
+  const pct = Math.min(100, Math.round((value / ARCADE_HOURLY_CAP) * 100));
+  const atCap = value >= ARCADE_HOURLY_CAP;
+  const mins = Math.floor(msLeft / 60_000);
+  const secs = Math.floor((msLeft % 60_000) / 1000);
+
+  return (
+    <div className="space-y-1 rounded-lg border p-3">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">{copy.games.cap.label}</span>
+        <span className="font-mono tabular-nums font-medium">
+          {earned == null ? "…" : value} / {ARCADE_HOURLY_CAP}
+        </span>
+      </div>
+      <div
+        className="h-2 overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={ARCADE_HOURLY_CAP}
+      >
+        <div
+          className={`h-full rounded-full transition-all ${atCap ? "bg-destructive" : "bg-primary"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="text-xs text-muted-foreground tabular-nums">
+        {copy.games.cap.resetIn(mins, secs)}
+      </p>
+    </div>
+  );
+}
+```
+
+- [ ] **Step 4: Snake page** — in `src/app/app/rooms/[id]/games/snake/page.tsx` add the import:
+
+```ts
+import { ArcadeCapBar } from "@/components/games/arcade-cap-bar";
+```
+
+and render the bar inside the game `<section>`, right after the title `<div>` and before `<SnakeGame …/>`:
+
+```tsx
+        <ArcadeCapBar />
+```
+
+- [ ] **Step 5: Flappy page** — in `src/app/app/rooms/[id]/games/flappy/page.tsx` add the same import and the `<ArcadeCapBar />` line right after the title `<div>` and before `<FlappyGame …/>`.
+
+- [ ] **Step 6: Gate** — `pnpm exec tsc --noEmit && pnpm lint`.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/app/_actions/arcade.ts src/components/games/arcade-cap-bar.tsx src/lib/copy.ts "src/app/app/rooms/[id]/games/snake/page.tsx" "src/app/app/rooms/[id]/games/flappy/page.tsx"
+git commit -m "feat(games): hourly cap status bar on skill-game pages"
+```
+
+---
+
+## Task 5: Daily Kings for the other skill games
 
 Adds a 500/day King for Flappy, Tetris, 2048 and Pet Connect (Snake King 0047
 unchanged), and generalises the crown badge.
@@ -413,7 +635,7 @@ unchanged), and generalises the crown badge.
 export const GAME_KING_REWARD = 500;
 ```
 
-- [ ] **Step 2: Copy** — in `src/lib/copy.ts`, inside the `games:` object, replace the existing `snakeKing` block:
+- [ ] **Step 2: Copy** — in `src/lib/copy.ts`, inside `games:`, replace the existing `snakeKing` block:
 
 ```ts
     snakeKing: {
@@ -539,8 +761,8 @@ to:
                 )}
 ```
 
-(`copy` is already imported in this file. The Snake page passes only
-`kingReward`, so it falls back to "Snake King" — unchanged.)
+(`copy` is already imported. The Snake page passes only `kingReward`, so it
+falls back to "Snake King" — unchanged.)
 
 - [ ] **Step 5: Flappy page King** — in `src/app/app/rooms/[id]/games/flappy/page.tsx` add the import:
 
@@ -646,7 +868,7 @@ git commit -m "feat(games): daily King (500) for flappy/tetris/2048/petconnect"
 
 ---
 
-## Task 5: Tetris engine
+## Task 6: Tetris engine
 
 **Files:** Create `src/lib/games/tetris/engine.ts`; Test `tests/unit/tetris-engine.test.ts`.
 
@@ -964,7 +1186,7 @@ git commit -m "feat(tetris): seeded, unit-tested engine"
 
 ---
 
-## Task 6: Tetris UI (client + page + card + copy)
+## Task 7: Tetris UI (client + page + card + copy)
 
 **Files:** Create `src/components/games/tetris/tetris-game.tsx`, `…/games/tetris/page.tsx`; Modify `src/lib/copy.ts`, `src/app/app/rooms/[id]/games/page.tsx`.
 
@@ -1160,12 +1382,13 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
 }
 ```
 
-- [ ] **Step 3: Page (with King leaderboard)** — create `src/app/app/rooms/[id]/games/tetris/page.tsx`:
+- [ ] **Step 3: Page (cap bar + King leaderboard)** — create `src/app/app/rooms/[id]/games/tetris/page.tsx`:
 
 ```tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { ArcadeCapBar } from "@/components/games/arcade-cap-bar";
 import { Leaderboard } from "@/components/games/leaderboard";
 import { TetrisGame } from "@/components/games/tetris/tetris-game";
 import { copy } from "@/lib/copy";
@@ -1215,6 +1438,7 @@ export default async function TetrisPage({ params }: TetrisPageProps) {
             {copy.games.tetris.subtitle}
           </p>
         </div>
+        <ArcadeCapBar />
         <TetrisGame roomId={id} myBest={myBest} />
       </section>
       <Leaderboard
@@ -1281,12 +1505,12 @@ Then add the card right after the existing Flappy `<GameCard … emoji="🐤" my
 
 ```bash
 git add src/components/games/tetris/tetris-game.tsx "src/app/app/rooms/[id]/games/tetris/page.tsx" src/lib/copy.ts "src/app/app/rooms/[id]/games/page.tsx"
-git commit -m "feat(tetris): playable Tetris with King leaderboard"
+git commit -m "feat(tetris): playable Tetris with cap bar + King leaderboard"
 ```
 
 ---
 
-## Task 7: 2048 engine
+## Task 8: 2048 engine
 
 **Files:** Create `src/lib/games/twenty48/engine.ts`; Test `tests/unit/twenty48-engine.test.ts`.
 
@@ -1527,11 +1751,11 @@ git commit -m "feat(2048): seeded, unit-tested engine"
 
 ---
 
-## Task 8: 2048 UI (client + page + card + copy)
+## Task 9: 2048 UI (client + page + card + copy)
 
 **Files:** Create `src/components/games/twenty48/twenty48-game.tsx`, `…/games/2048/page.tsx`; Modify `src/lib/copy.ts`, `src/app/app/rooms/[id]/games/page.tsx`.
 
-- [ ] **Step 1: Copy** — in `src/lib/copy.ts`, inside `games:`, immediately after the `tetris: { … },` block from Task 6, insert:
+- [ ] **Step 1: Copy** — in `src/lib/copy.ts`, inside `games:`, immediately after the `tetris: { … },` block from Task 7, insert:
 
 ```ts
     twenty48: {
@@ -1693,12 +1917,13 @@ export function Game2048({ roomId, myBest }: Game2048Props) {
 }
 ```
 
-- [ ] **Step 3: Page (with King leaderboard)** — create `src/app/app/rooms/[id]/games/2048/page.tsx`:
+- [ ] **Step 3: Page (cap bar + King leaderboard)** — create `src/app/app/rooms/[id]/games/2048/page.tsx`:
 
 ```tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { ArcadeCapBar } from "@/components/games/arcade-cap-bar";
 import { Leaderboard } from "@/components/games/leaderboard";
 import { Game2048 } from "@/components/games/twenty48/twenty48-game";
 import { copy } from "@/lib/copy";
@@ -1748,6 +1973,7 @@ export default async function Game2048Page({ params }: Game2048PageProps) {
             {copy.games.twenty48.subtitle}
           </p>
         </div>
+        <ArcadeCapBar />
         <Game2048 roomId={id} myBest={myBest} />
       </section>
       <Leaderboard
@@ -1816,26 +2042,28 @@ Then add the card right after the Tetris `<GameCard … emoji="🧩" myBest={tet
 
 ```bash
 git add src/components/games/twenty48/twenty48-game.tsx "src/app/app/rooms/[id]/games/2048/page.tsx" src/lib/copy.ts "src/app/app/rooms/[id]/games/page.tsx"
-git commit -m "feat(2048): playable 2048 with King leaderboard"
+git commit -m "feat(2048): playable 2048 with cap bar + King leaderboard"
 ```
 
 ---
 
-## Task 9: Full verification, migration & manual smoke
+## Task 10: Full verification, migration & manual smoke
 
 **Files:** docs only.
 
 - [ ] **Step 1: Full gate** — `pnpm exec tsc --noEmit && pnpm lint && pnpm test` → all green. Ignore a `next/font` `pnpm build` failure (sandbox).
 
-- [ ] **Step 2: Run the cron migration** — in the Supabase SQL editor, run `supabase/migrations/0050_game_kings.sql` (after 0047). Confirm `select cron.jobname from cron.job;` lists `game-kings-winter` / `game-kings-summer`.
+- [ ] **Step 2: Run the cron migration** — in the Supabase SQL editor, run `supabase/migrations/0050_game_kings.sql` (after 0047). Confirm `select jobname from cron.job;` lists `game-kings-winter` / `game-kings-summer`.
 
 - [ ] **Step 3: Manual smoke** — `pnpm dev`, open `/app/rooms/<id>/games`:
   - Grid shows 🐍 Snake, 🐤 Flappy, 🧩 Tetris, 🧮 2048 (+ existing cards).
-  - **Snake/Flappy/Tetris/2048:** finish a run; the header balance rises by the
-    per-game rate × events (Snake/Flappy `3×`, Tetris `8×`, 2048 `12 × (log2−1)`),
-    and **stops at +250 within an hour** across these games combined (play several
-    runs to confirm the shared cap).
-  - **Each game page** shows its leaderboard with the correct crown label
+  - On each of Snake/Flappy/Tetris/2048 the **cap bar** shows `… / 250 dit uur`
+    and a ticking `Reset over Mm Ss`.
+  - Finish runs: the header balance rises by the per-game rate × events
+    (Snake/Flappy `3×`, Tetris `8×`, 2048 `12 × (log2−1)`); the bar climbs and
+    **stops at 250** within the hour across these games combined; further runs
+    earn 0 until the next `:00`, when the bar resets to `0 / 250`.
+  - **Each game page** shows its leaderboard with the right crown label
     (Snake King / Flappy King / Tetris King / 2048 King; Pet Connect King on
     `/petconnect`).
   - Optionally run `select public.award_game_kings();` in SQL and confirm the top
@@ -1843,13 +2071,13 @@ git commit -m "feat(2048): playable 2048 with King leaderboard"
 
 - [ ] **Step 4: Docs** — tick the `todo.md` item if present; add one line to
   `CLAUDE.md`'s games section: skill games pay a per-game rate/event (Snake/Flappy
-  3, Tetris 8, 2048 12) via `earnFromArcade` (shared 250/hour cap, server-side
-  ref) and every skill game has a daily King (Snake 1000 / others 500, cron
-  `0050`). Commit:
+  3, Tetris 8, 2048 12) via `earnFromArcade` (shared 250/clock-hour cap shown by
+  `ArcadeCapBar`) and every skill game has a daily King (Snake 1000 / others 500,
+  cron `0050`). Commit:
 
 ```bash
 git add todo.md CLAUDE.md
-git commit -m "docs: note arcade earning cap + per-game Kings"
+git commit -m "docs: note arcade earning cap, status bar + per-game Kings"
 ```
 
 ---
@@ -1858,22 +2086,26 @@ git commit -m "docs: note arcade earning cap + per-game Kings"
 
 **Spec coverage:**
 - Snake pays per apple every run (3/apple) → Task 3 (`earnFromArcade`). King 1000 preserved (0047 untouched). ✓
-- Flappy: game untouched, earning unified to per-game rate + shared cap → Task 3 routes it; only its page gains King props (Task 4). ✓
-- Tetris (8/line) → Tasks 5–6; 2048 (12 per tile via log2) → Tasks 7–8. ✓
-- Per-game rates = `ARCADE_COINS_PER_EVENT` map (Task 1) baked into `arcadeCoins` (Task 2): Snake/Flappy 3, Tetris 8, 2048 12. ✓
-- Shared 250/hour cap → `ARCADE_HOURLY_CAP` (renamed from `FLAPPY_HOURLY_CAP`, Task 3) + `cappedCoins` (Task 2) + ledger sum over `ARCADE_REASONS` in `earnFromArcade` (Task 3). ✓
-- King for every skill game → Task 4 (Flappy/Tetris/2048/Pet Connect at 500, migration `0050`) + Snake 1000 unchanged; Tetris/2048 leaderboards in Tasks 6/8. ✓
-- No client `runId`; Snake & Pet Connect clients untouched. ✓
+- Flappy: gameplay untouched, earning unified → Task 3 routes it; page gains cap bar (Task 4) + King props (Task 5). ✓
+- Tetris (8/line) → Tasks 6–7; 2048 (12 per tile via log2) → Tasks 8–9. ✓
+- Per-game rates = `ARCADE_COINS_PER_EVENT` (Task 1) baked into `arcadeCoins` (Task 2). ✓
+- Shared 250/**clock-hour** cap → `ARCADE_HOURLY_CAP` (renamed Task 3) + `cappedCoins` + `hourStartMs`/`ARCADE_REASONS` (Task 2) in `earnFromArcade` (Task 3). ✓
+- **Status bar** → Task 4: `getArcadeHourEarned` action + `ArcadeCapBar` (self-fetching, `msUntilHourReset` countdown) on Snake/Flappy pages; Tetris/2048 pages include it (Tasks 7/9). ✓
+- King for every skill game → Task 5 (others 500, migration `0050`) + Snake 1000 unchanged; Tetris/2048 King leaderboards in Tasks 7/9. ✓
+- No client `runId`; Snake/Flappy/Pet Connect game components untouched (pages gain additive UI only). ✓
 - Only DB change = manual cron `0050` (0048/0049 already taken). ✓
 
 **Placeholder scan:** none — every code step is complete. ✓
 
 **Type consistency:**
-- `arcadeCoins(gameKey, score)` & `cappedCoins(desired, earned, cap)` defined Task 2, used Task 3. ✓
-- `earnFromArcade(userId, gameKey, score, cheated)` defined Task 3, called with that arity in `games.ts`. ✓
-- `KingBadge({ reward, label })` (Task 4) used by `Leaderboard` with `label={kingLabel ?? copy.games.king.snake}`; `copy.games.king.{snake,flappy,tetris,twenty48,petconnect}` all defined in Task 4. ✓
-- `GAME_KING_REWARD` defined Task 4, imported by Flappy/Pet Connect (Task 4) and Tetris/2048 pages (Tasks 6/8). ✓
+- `arcadeCoins(gameKey, score)` & `cappedCoins(desired, earned, cap)` (Task 2) used in `earnFromArcade` (Task 3). ✓
+- `hourStartMs`/`msUntilHourReset`/`ARCADE_REASONS` (Task 2) used by `earnFromArcade` + `getArcadeHourEarned` (Tasks 3/4) and `ArcadeCapBar` (Task 4). ✓
+- `earnFromArcade(userId, gameKey, score, cheated)` called with that arity in `games.ts`. ✓
+- `ARCADE_HOURLY_CAP` imported by `earn.ts` (Task 3) and `ArcadeCapBar` (Task 4) from config (pure constants → client-safe). ✓
+- `KingBadge({ reward, label })` (Task 5) used by `Leaderboard` with `label={kingLabel ?? copy.games.king.snake}`; `copy.games.king.{snake,flappy,tetris,twenty48,petconnect}` defined in Task 5. ✓
+- `GAME_KING_REWARD` (Task 5) imported by Flappy/Pet Connect (Task 5) and Tetris/2048 pages (Tasks 7/9). ✓
+- `ArcadeCapBar` (Task 4) imported by Tetris/2048 pages (Tasks 7/9). ✓
 - Tetris client uses `COLS/ROWS/PIECE_ID/cellsOf/createInitialState/hardDrop/moveLeft/moveRight/rotate/softDrop/tick/TetrisState`; 2048 client uses `createInitialState/move/Direction/Game2048State` — all exported in their engine task. ✓
-- Task ordering keeps each step `tsc`-clean: `snakeBestPerPoint`/`flappyBestPerPoint` removed in Task 3 alongside their functions; new keys added before use. ✓
+- Task ordering keeps each step `tsc`-clean: `snakeBestPerPoint`/`flappyBestPerPoint` removed in Task 3 with their functions; `ARCADE_COINS_PER_EVENT` added Task 1 before use Task 2; bar + King exist (Tasks 4/5) before Tetris/2048 pages (Tasks 7/9). ✓
 
-**Untouched-by-contract:** Flappy game/engine, Keno, Snake/Pet Connect clients, Snake King 0047. Flappy & Pet Connect *pages* gain only King props. ✓
+**Untouched-by-contract:** Flappy game/engine, Keno, Snake/Pet Connect *game* components, Snake King 0047. Snake/Flappy/Pet Connect *pages* gain additive UI (cap bar / King props) only. ✓
