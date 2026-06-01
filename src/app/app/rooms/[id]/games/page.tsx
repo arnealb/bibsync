@@ -44,6 +44,7 @@ export default async function GamesPage({ params }: GamesPageProps) {
     sessions,
     wealth,
     flappyBest,
+    tetrisBest,
   ] = await Promise.all([
     getMyBestScore(id, access.userId, "snake"),
     getRoomLeaderboard(id, "snake"),
@@ -53,6 +54,7 @@ export default async function GamesPage({ params }: GamesPageProps) {
     getSessionStandings(id),
     getRoomWealth(id),
     getMyBestScore(id, access.userId, "flappy"),
+    getMyBestScore(id, access.userId, "tetris"),
   ]);
 
   return (
@@ -78,6 +80,13 @@ export default async function GamesPage({ params }: GamesPageProps) {
           subtitle={copy.games.flappy.subtitle}
           emoji="🐤"
           myBest={flappyBest}
+        />
+        <GameCard
+          href={`/app/rooms/${id}/games/tetris`}
+          title={copy.games.tetris.title}
+          subtitle={copy.games.tetris.subtitle}
+          emoji="🧩"
+          myBest={tetrisBest}
         />
         <GameCard
           href={`/app/rooms/${id}/games/poker`}
