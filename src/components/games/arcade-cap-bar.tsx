@@ -56,6 +56,7 @@ export function ArcadeCapBar() {
       <div
         className="h-2 overflow-hidden rounded-full bg-muted"
         role="progressbar"
+        aria-label={copy.games.cap.label}
         aria-valuenow={value}
         aria-valuemin={0}
         aria-valuemax={ARCADE_HOURLY_CAP}
