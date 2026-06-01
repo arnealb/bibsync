@@ -78,6 +78,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
       <StrijderPopup initialClaimable={strijderClaimable} />
       <PilloryBanner
         roomId={access.room.id}
+        userId={access.userId}
         members={memberMap}
         initialEntries={pillory}
       />

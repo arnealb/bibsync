@@ -1,24 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { toast } from "sonner";
 
+import { buyOffPillory } from "@/app/_actions/pillory";
+import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { usePilloryRealtime } from "@/hooks/use-pillory-realtime";
 import { copy } from "@/lib/copy";
 import type { MemberMap } from "@/lib/members";
+import { PILLORY_BUYOFF_COST, PILLORY_MIN_MS } from "@/lib/rooms/pillory";
 import type { PilloryEntry } from "@/lib/rooms/pillory-queries";
 
 /** Public banner naming everyone on the room's schandpaal (and why). */
 export function PilloryBanner({
   roomId,
+  userId,
   members,
   initialEntries,
 }: {
   roomId: string;
+  userId: string;
   members: MemberMap;
   initialEntries: PilloryEntry[];
 }) {
   const [entries, setEntries] = useState<PilloryEntry[]>(initialEntries);
+  const [now, setNow] = useState(() => Date.now());
+  const [pending, start] = useTransition();
 
   usePilloryRealtime(roomId, {
     onInsert: (entry) =>
@@ -27,11 +35,37 @@ export function PilloryBanner({
           ? prev.map((e) => (e.userId === entry.userId ? entry : e))
           : [...prev, entry],
       ),
-    onDelete: (userId) =>
-      setEntries((prev) => prev.filter((e) => e.userId !== userId)),
+    onDelete: (uid) =>
+      setEntries((prev) => prev.filter((e) => e.userId !== uid)),
   });
 
+  const mine = entries.find((e) => e.userId === userId);
+
+  // Tick once a minute while still locked, so the countdown stays fresh.
+  useEffect(() => {
+    if (!mine) return;
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, [mine]);
+
   if (entries.length === 0) return null;
+
+  const minsLeft = mine
+    ? Math.ceil((PILLORY_MIN_MS - (now - Date.parse(mine.createdAt))) / 60_000)
+    : 0;
+  const locked = minsLeft > 0;
+
+  function buyOff() {
+    start(async () => {
+      const res = await buyOffPillory(roomId);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      setEntries((prev) => prev.filter((e) => e.userId !== userId));
+      toast.success(copy.pillory.boughtOff);
+    });
+  }
 
   return (
     <div
@@ -59,6 +93,19 @@ export function PilloryBanner({
           </li>
         ))}
       </ul>
+      {mine && (
+        <Button
+          size="sm"
+          variant="secondary"
+          className="mt-2"
+          disabled={pending || locked}
+          onClick={buyOff}
+        >
+          {locked
+            ? copy.pillory.lockedFor(minsLeft)
+            : copy.pillory.buyOff(PILLORY_BUYOFF_COST)}
+        </Button>
+      )}
     </div>
   );
 }

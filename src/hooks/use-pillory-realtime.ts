@@ -5,7 +5,11 @@ import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export interface PilloryRealtimeHandlers {
-  onInsert: (entry: { userId: string; reason: string | null }) => void;
+  onInsert: (entry: {
+    userId: string;
+    reason: string | null;
+    createdAt: string;
+  }) => void;
   onDelete: (userId: string) => void;
 }
 
@@ -32,8 +36,16 @@ export function usePilloryRealtime(
           filter: `room_id=eq.${roomId}`,
         },
         (p) => {
-          const row = p.new as { user_id: string; reason: string | null };
-          ref.current.onInsert({ userId: row.user_id, reason: row.reason });
+          const row = p.new as {
+            user_id: string;
+            reason: string | null;
+            created_at: string;
+          };
+          ref.current.onInsert({
+            userId: row.user_id,
+            reason: row.reason,
+            createdAt: row.created_at,
+          });
         },
       )
       .on(

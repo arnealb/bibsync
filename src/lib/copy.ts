@@ -572,6 +572,13 @@ export const copy = {
     set: (name: string) => `${name} staat aan de schandpaal 🔨`,
     cleared: (name: string) => `${name} mag van de schandpaal af.`,
     cmdHint: "Gebruik: /schandpaal <naam> [reden]",
+    buyOff: (cost: number) => `Koop jezelf vrij (${cost})`,
+    boughtOff: "Je bent van de schandpaal af 🎉",
+    cantAfford: "Niet genoeg bibcoins om jezelf vrij te kopen.",
+    notOnIt: "Je staat niet op de schandpaal.",
+    tooSoon: (mins: number) =>
+      `Je moet minstens een uur blijven — nog ${mins} min.`,
+    lockedFor: (mins: number) => `Vrijkopen kan over ${mins} min`,
   },
   foodBets: {
     title: "Waar eten we? (zet bibcoins in)",
