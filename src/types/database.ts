@@ -774,6 +774,36 @@ export interface Database {
         Update: { room_id?: string; user_id?: string; crash_bp?: number };
         Relationships: [];
       };
+      hilo_games: {
+        Row: {
+          room_id: string;
+          user_id: string;
+          state: Record<string, unknown>;
+          version: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          room_id: string;
+          user_id: string;
+          state: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          room_id?: string;
+          user_id?: string;
+          state?: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      hilo_private: {
+        Row: { room_id: string; user_id: string; next: number };
+        Insert: { room_id: string; user_id: string; next: number };
+        Update: { room_id?: string; user_id?: string; next?: number };
+        Relationships: [];
+      };
       service_offers: {
         Row: {
           id: string;
