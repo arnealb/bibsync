@@ -2,67 +2,41 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make Snake pay 1 coin per apple every run (no cap) and add three more skill games — Flappy Bird (1 coin/pipe), Tetris (1 coin/line) and 2048 (1 coin per new-highest-tile) — that all earn bibcoins through play.
+**Goal:** Unify all skill games on one earning model — **10 coins per event, shared 250-coins/hour cap** — add Tetris and 2048, and give **every skill game a daily King** (Snake 1000, the rest 500) like the existing Snake King.
 
-**Architecture:** Each game is a pure, seeded, unit-tested engine in `src/lib/games/<game>/engine.ts` plus a thin `"use client"` canvas/grid component that runs the loop and submits a score once on game-over. The existing `submitGameScore` server action stores the score in `game_scores` and awards `coins` via a new `earnFromArcade`, keyed on a per-run UUID so replays pay again (no cap) but retries don't double-pay. **No database migrations** — `game_scores.game_key` is plain `text` and the bibcoin ledger is generic.
+**Architecture:** Each new game is a pure, seeded, unit-tested engine + a thin `"use client"` component that submits a score on game-over. `submitGameScore` routes `petconnect` to its daily reward and `snake`/`flappy`/`tetris`/`2048` to a new `earnFromArcade`, which pays `score × 10` (2048: `(log2−1) × 10`), clamped to a **shared 250/hour** headroom read from the ledger, with a fresh server-side `crypto.randomUUID()` ref (no client `runId`). A new cron migration (`0048`) pays each non-Snake skill game's daily King 500; the crown badge is generalised per game. **Only DB change is the manual cron migration** — scores and payouts use existing tables.
 
-**Tech Stack:** Next.js 16 (App Router, RSC + Server Actions), React 19, TypeScript strict, Zod, Vitest, Supabase (existing `game_scores` table + `award_bibcoins` RPC), Tailwind + base-nova shadcn.
+**Tech Stack:** Next.js 16 (App Router, RSC + Server Actions), React 19, TS strict, Zod, Vitest, Supabase (`game_scores` + `award_bibcoins` RPC + `pg_cron`), Tailwind + base-nova shadcn.
 
-**Conventions to respect (from CLAUDE.md):**
-- Dutch user-facing strings live in `src/lib/copy.ts`; code/comments in English. No hardcoded UI strings.
-- Server actions return `ActionResult`; Zod-validate server-side.
-- Engines are pure and deterministic via a seed; only the client component touches the DOM/canvas.
-- `getInitials`/client-safe imports only in client components; never import the server Supabase client into a `"use client"` file.
-- Run `pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm test` — local `pnpm build` may fail on `next/font` (sandbox), so do not gate on it.
+**Conventions (CLAUDE.md):** Dutch strings in `copy.ts`; English code; pure seeded engines; never import the server client into a `"use client"` file; gate on `pnpm exec tsc --noEmit` + `pnpm lint` + `pnpm test` (local `pnpm build` may fail on `next/font` — ignore).
 
-**Commit after every task.** Work happens on branch `feat/skill-games-coins` (already created).
+**Do NOT touch:** `flappy-game.tsx`, the Flappy engine, Keno, Snake/Pet Connect client components, Snake King migration `0047`. The Flappy and Pet Connect *pages* only gain two King props (the feature the owner asked for), not gameplay.
+
+**Commit after every task.** Branch `feat/skill-games-coins` (already created; `main` merged in).
 
 ---
 
 ## File Structure
 
-**Shared plumbing**
-- Modify `src/lib/validation/games.ts` — add game keys `flappy`/`tetris`/`2048`, add `runId` to `submitScoreSchema`.
-- Modify `src/lib/bibcoins/config.ts` — add `REWARD.arcadePerEvent`.
-- Create `src/lib/games/arcade-coins.ts` — pure `arcadeCoins(gameKey, score)` coin math.
-- Modify `src/lib/bibcoins/earn.ts` — replace `earnFromSnake` with generic `earnFromArcade`.
-- Modify `src/app/_actions/games.ts` — route every non-petconnect key through `earnFromArcade`; accept `runId`.
-- Modify `src/components/games/snake/snake-game.tsx` — send a per-run `runId`.
-- Modify `src/components/petconnect/petconnect-board.tsx` — send a `runId` (schema now requires it).
-
-**Flappy Bird**
-- Create `src/lib/games/flappy/engine.ts`, `tests/unit/flappy-engine.test.ts`
-- Create `src/components/games/flappy/flappy-game.tsx`
-- Create `src/app/app/rooms/[id]/games/flappy/page.tsx`
-
-**Tetris**
-- Create `src/lib/games/tetris/engine.ts`, `tests/unit/tetris-engine.test.ts`
-- Create `src/components/games/tetris/tetris-game.tsx`
-- Create `src/app/app/rooms/[id]/games/tetris/page.tsx`
-
-**2048** (route folder + gameKey are the string `2048`; code dirs are `twenty48`; copy key is `twenty48`)
-- Create `src/lib/games/twenty48/engine.ts`, `tests/unit/twenty48-engine.test.ts`
-- Create `src/components/games/twenty48/twenty48-game.tsx`
-- Create `src/app/app/rooms/[id]/games/2048/page.tsx`
-
-**Shared UI**
-- Modify `src/app/app/rooms/[id]/games/page.tsx` — three new `GameCard`s.
-- Modify `src/lib/copy.ts` — Dutch copy blocks `copy.games.{flappy,tetris,twenty48}`.
-- Modify `tests/unit/games-validation.test.ts` — fix the `tetris`-is-unknown assumption, cover new keys + `runId`.
-- Modify `tests/unit/game-sessions.test.ts` only if it references removed exports (it does not — verified).
+- Modify `src/lib/validation/games.ts` — add `tetris`, `2048` keys.
+- Modify `src/lib/bibcoins/config.ts` — add `arcadePerEvent = 10`, `ARCADE_HOURLY_CAP = 250`; remove `snakeBestPerPoint`, `flappyBestPerPoint`.
+- Create `src/lib/games/arcade-coins.ts` — `arcadeCoins` + `cappedCoins`.
+- Modify `src/lib/bibcoins/earn.ts` — delete `earnFromSnake` + `earnFromFlappy`; add `earnFromArcade`.
+- Modify `src/app/_actions/games.ts` — route `petconnect`→daily, else→`earnFromArcade`.
+- King: Modify `src/lib/games/constants.ts` (`GAME_KING_REWARD`), `src/lib/copy.ts` (`copy.games.king`), `src/components/games/leaderboard.tsx` (`kingLabel`); create `src/components/games/king-badge.tsx` (replaces `snake-king-badge.tsx`); add King props to `…/games/flappy/page.tsx` + `…/games/petconnect/page.tsx`; create `supabase/migrations/0048_game_kings.sql`.
+- Tetris: `src/lib/games/tetris/engine.ts` (+test), `src/components/games/tetris/tetris-game.tsx`, `…/games/tetris/page.tsx`.
+- 2048: `src/lib/games/twenty48/engine.ts` (+test), `src/components/games/twenty48/twenty48-game.tsx`, `…/games/2048/page.tsx`.
+- Modify `src/app/app/rooms/[id]/games/page.tsx` — Tetris + 2048 cards.
+- Modify `src/lib/copy.ts` — `copy.games.tetris`, `copy.games.twenty48`.
+- Modify `tests/unit/games-validation.test.ts`.
 
 ---
 
-## Task 1: Validation & config
+## Task 1: Validation keys + config
 
-**Files:**
-- Modify: `src/lib/validation/games.ts`
-- Modify: `src/lib/bibcoins/config.ts`
-- Test: `tests/unit/games-validation.test.ts`
+**Files:** Modify `src/lib/validation/games.ts`, `src/lib/bibcoins/config.ts`; Test `tests/unit/games-validation.test.ts`.
 
-- [ ] **Step 1: Update the validation test (RED)**
-
-Replace the whole body of `tests/unit/games-validation.test.ts` with:
+- [ ] **Step 1: Update the validation test (RED)** — replace the body of `tests/unit/games-validation.test.ts` with:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -74,15 +48,14 @@ describe("submitScoreSchema", () => {
     roomId: "11111111-1111-1111-8111-111111111111",
     gameKey: "snake" as const,
     score: 10,
-    runId: "22222222-2222-4222-8222-222222222222",
   };
 
   it("accepts a valid input", () => {
     expect(submitScoreSchema.safeParse(baseInput).success).toBe(true);
   });
 
-  it("accepts the new skill-game keys", () => {
-    for (const gameKey of ["flappy", "tetris", "2048"] as const) {
+  it("accepts the skill-game keys", () => {
+    for (const gameKey of ["snake", "flappy", "tetris", "2048"] as const) {
       expect(
         submitScoreSchema.safeParse({ ...baseInput, gameKey }).success,
       ).toBe(true);
@@ -90,60 +63,48 @@ describe("submitScoreSchema", () => {
   });
 
   it("rejects a non-uuid roomId", () => {
-    const result = submitScoreSchema.safeParse({ ...baseInput, roomId: "abc" });
-    expect(result.success).toBe(false);
+    expect(
+      submitScoreSchema.safeParse({ ...baseInput, roomId: "abc" }).success,
+    ).toBe(false);
   });
 
   it("rejects an unknown gameKey", () => {
-    const result = submitScoreSchema.safeParse({
-      ...baseInput,
-      gameKey: "pacman",
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects a missing runId", () => {
-    const { runId: _omit, ...withoutRun } = baseInput;
-    expect(submitScoreSchema.safeParse(withoutRun).success).toBe(false);
-  });
-
-  it("rejects a non-uuid runId", () => {
-    const result = submitScoreSchema.safeParse({ ...baseInput, runId: "nope" });
-    expect(result.success).toBe(false);
+    expect(
+      submitScoreSchema.safeParse({ ...baseInput, gameKey: "pacman" }).success,
+    ).toBe(false);
   });
 
   it("rejects a negative score", () => {
-    const result = submitScoreSchema.safeParse({ ...baseInput, score: -1 });
-    expect(result.success).toBe(false);
+    expect(
+      submitScoreSchema.safeParse({ ...baseInput, score: -1 }).success,
+    ).toBe(false);
   });
 
   it("rejects a non-integer score", () => {
-    const result = submitScoreSchema.safeParse({ ...baseInput, score: 1.5 });
-    expect(result.success).toBe(false);
+    expect(
+      submitScoreSchema.safeParse({ ...baseInput, score: 1.5 }).success,
+    ).toBe(false);
   });
 
   it("rejects scores above the sanity cap", () => {
-    const result = submitScoreSchema.safeParse({
-      ...baseInput,
-      score: 100_001,
-    });
-    expect(result.success).toBe(false);
+    expect(
+      submitScoreSchema.safeParse({ ...baseInput, score: 100_001 }).success,
+    ).toBe(false);
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 2: Run it (FAIL)** — `pnpm exec vitest run tests/unit/games-validation.test.ts` → `tetris`/`2048` rejected.
 
-Run: `pnpm exec vitest run tests/unit/games-validation.test.ts`
-Expected: FAIL — new keys rejected and `runId` not part of the schema yet.
-
-- [ ] **Step 3: Update `src/lib/validation/games.ts`**
-
-Replace the file with:
+- [ ] **Step 3: Add keys** — in `src/lib/validation/games.ts` change:
 
 ```ts
-import { z } from "zod";
+export const GAME_KEYS = ["snake", "petconnect", "flappy"] as const;
+```
 
+to:
+
+```ts
 export const GAME_KEYS = [
   "snake",
   "petconnect",
@@ -151,77 +112,56 @@ export const GAME_KEYS = [
   "tetris",
   "2048",
 ] as const;
-export const gameKeySchema = z.enum(GAME_KEYS);
-export type GameKey = z.infer<typeof gameKeySchema>;
-
-export const submitScoreSchema = z.object({
-  roomId: z.string().uuid(),
-  gameKey: gameKeySchema,
-  score: z.number().int().min(0).max(100_000),
-  /** Unique per played run — the idempotency key for the coin payout. */
-  runId: z.string().uuid(),
-  cheated: z.boolean().optional(),
-});
-
-export type SubmitScoreInput = z.infer<typeof submitScoreSchema>;
 ```
 
-- [ ] **Step 4: Add the config knob**
-
-In `src/lib/bibcoins/config.ts`, inside the `REWARD` object, replace the `snakeBestPerPoint` line:
+- [ ] **Step 4: Config** — in `src/lib/bibcoins/config.ts`, inside `REWARD`, add an `arcadePerEvent` line right after `flappyBestPerPoint` (keep both `*PerPoint` for now — removed in Task 3):
 
 ```ts
-  /** Per +1 of a new honest Snake personal best. */
-  snakeBestPerPoint: 1,
+  /** Per Flappy Bird point, paid on every run (no cap). */
+  flappyBestPerPoint: 1,
+  /** Coins per event in a per-event skill game (apple/pipe/line; 2048 tile). */
+  arcadePerEvent: 10,
 ```
 
-with:
+Then add, just below the `STEPS_REWARD_DAILY_CAP_THOUSANDS` line at the end of the file:
 
 ```ts
-  /** Coins per coin-event in a skill game (apple / pipe / line / 2048 tile). */
-  arcadePerEvent: 1,
+/** Shared cap on per-event skill-game coins per rolling hour (anti-OP). */
+export const ARCADE_HOURLY_CAP = 250;
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
-
-Run: `pnpm exec vitest run tests/unit/games-validation.test.ts`
-Expected: PASS (all assertions).
+- [ ] **Step 5: Run it (PASS)** — `pnpm exec vitest run tests/unit/games-validation.test.ts`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add src/lib/validation/games.ts src/lib/bibcoins/config.ts tests/unit/games-validation.test.ts
-git commit -m "feat(games): validate new skill-game keys + per-run runId"
+git commit -m "feat(games): add tetris/2048 keys; arcade reward + hourly cap config"
 ```
 
 ---
 
-## Task 2: Pure coin math
+## Task 2: Pure coin math (`arcadeCoins` + `cappedCoins`)
 
-**Files:**
-- Create: `src/lib/games/arcade-coins.ts`
-- Test: `tests/unit/arcade-coins.test.ts`
+**Files:** Create `src/lib/games/arcade-coins.ts`; Test `tests/unit/arcade-coins.test.ts`.
 
-- [ ] **Step 1: Write the failing test (RED)**
-
-Create `tests/unit/arcade-coins.test.ts`:
+- [ ] **Step 1: Write the failing test (RED)** — create `tests/unit/arcade-coins.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
 
-import { arcadeCoins } from "@/lib/games/arcade-coins";
+import { arcadeCoins, cappedCoins } from "@/lib/games/arcade-coins";
 
 describe("arcadeCoins", () => {
-  it("pays one coin per event for snake/flappy/tetris", () => {
+  it("is one unit per event for snake/flappy/tetris", () => {
     expect(arcadeCoins("snake", 17)).toBe(17);
     expect(arcadeCoins("flappy", 4)).toBe(4);
     expect(arcadeCoins("tetris", 9)).toBe(9);
   });
 
-  it("pays per new-highest-tile milestone for 2048", () => {
-    expect(arcadeCoins("2048", 2)).toBe(0); // start tile, no milestone
+  it("is per new-highest-tile milestone for 2048", () => {
+    expect(arcadeCoins("2048", 2)).toBe(0);
     expect(arcadeCoins("2048", 4)).toBe(1);
-    expect(arcadeCoins("2048", 8)).toBe(2);
     expect(arcadeCoins("2048", 256)).toBe(7);
     expect(arcadeCoins("2048", 2048)).toBe(10);
   });
@@ -229,30 +169,39 @@ describe("arcadeCoins", () => {
   it("never pays for a zero or negative score", () => {
     expect(arcadeCoins("snake", 0)).toBe(0);
     expect(arcadeCoins("flappy", -3)).toBe(0);
-    expect(arcadeCoins("2048", 0)).toBe(0);
+  });
+});
+
+describe("cappedCoins", () => {
+  it("pays the full amount under the cap", () => {
+    expect(cappedCoins(100, 0, 250)).toBe(100);
+    expect(cappedCoins(100, 100, 250)).toBe(100);
+  });
+
+  it("clamps to the remaining headroom", () => {
+    expect(cappedCoins(100, 200, 250)).toBe(50);
+  });
+
+  it("pays nothing at or over the cap, never negative", () => {
+    expect(cappedCoins(100, 250, 250)).toBe(0);
+    expect(cappedCoins(100, 300, 250)).toBe(0);
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 2: Run it (FAIL)** — `pnpm exec vitest run tests/unit/arcade-coins.test.ts`.
 
-Run: `pnpm exec vitest run tests/unit/arcade-coins.test.ts`
-Expected: FAIL — `arcadeCoins` does not exist.
-
-- [ ] **Step 3: Write the implementation**
-
-Create `src/lib/games/arcade-coins.ts`:
+- [ ] **Step 3: Implement** — create `src/lib/games/arcade-coins.ts`:
 
 ```ts
 import type { GameKey } from "@/lib/validation/games";
 
 /**
- * Coins earned for one finished skill-game run, from its submitted score.
- *
- * snake / flappy / tetris: 1 coin per event (apples / pipes / lines), so
- * coins == score. 2048's score is the highest tile reached (a power of two);
- * it pays 1 coin per new milestone tile from 4 up to that tile, i.e.
- * log2(tile) - 1 (256 = 2^8 -> 7). Math.round keeps it integer-safe.
+ * Coin-events for one finished skill-game run, from its submitted score
+ * (snake / flappy / tetris / 2048). snake/flappy/tetris = score (apples /
+ * pipes / lines). 2048's score is the highest tile (a power of two); it earns
+ * one event per new milestone tile from 4 up, i.e. log2(tile) - 1 (256 -> 7).
+ * Multiply by REWARD.arcadePerEvent at the call site for the coin amount.
  */
 export function arcadeCoins(gameKey: GameKey, score: number): number {
   if (score <= 0) return 0;
@@ -261,90 +210,119 @@ export function arcadeCoins(gameKey: GameKey, score: number): number {
   }
   return score;
 }
+
+/** Clamp a desired payout to the remaining hourly headroom (never negative). */
+export function cappedCoins(
+  desired: number,
+  earnedThisHour: number,
+  cap: number,
+): number {
+  return Math.max(0, Math.min(desired, cap - earnedThisHour));
+}
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
-
-Run: `pnpm exec vitest run tests/unit/arcade-coins.test.ts`
-Expected: PASS.
+- [ ] **Step 4: Run it (PASS)** — `pnpm exec vitest run tests/unit/arcade-coins.test.ts`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add src/lib/games/arcade-coins.ts tests/unit/arcade-coins.test.ts
-git commit -m "feat(games): pure coin math for skill games"
+git commit -m "feat(games): pure coin math + hourly-cap clamp for skill games"
 ```
 
 ---
 
-## Task 3: earnFromArcade + wire submit + Snake fix
+## Task 3: `earnFromArcade` with shared hourly cap + wiring
 
-This is the Snake "fix": Snake's coin payout changes from best-only to 1 coin/apple every run, and the same path serves all skill games. No new test file — covered by Task 2's math + the existing `tsc`/`lint` gate; behaviour is exercised manually in Task 10.
+Replaces `earnFromSnake` **and** `earnFromFlappy` with one capped path for
+`snake`/`flappy`/`tetris`/`2048`. No client changes (server-side ref).
 
-**Files:**
-- Modify: `src/lib/bibcoins/earn.ts`
-- Modify: `src/app/_actions/games.ts`
-- Modify: `src/components/games/snake/snake-game.tsx`
-- Modify: `src/components/petconnect/petconnect-board.tsx`
+**Files:** Modify `src/lib/bibcoins/earn.ts`, `src/lib/bibcoins/config.ts`, `src/app/_actions/games.ts`.
 
-- [ ] **Step 1: Replace `earnFromSnake` with `earnFromArcade` in `src/lib/bibcoins/earn.ts`**
-
-At the top of the file, update the imports:
+- [ ] **Step 1: Edit `src/lib/bibcoins/earn.ts`** — add imports at the top (keep existing ones):
 
 ```ts
-import { awardBibcoins } from "@/lib/bibcoins/award";
-import {
-  DAILY_CHAT_THRESHOLD,
-  REWARD,
-  STEPS_REWARD_DAILY_CAP_THOUSANDS,
-} from "@/lib/bibcoins/config";
-import { unlockAchievement } from "@/lib/bibcoins/unlock";
-import { arcadeCoins } from "@/lib/games/arcade-coins";
-import { dayTotal } from "@/lib/steps/aggregate";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { todayInBrussels } from "@/lib/time";
+import { ARCADE_HOURLY_CAP } from "@/lib/bibcoins/config";
+import { arcadeCoins, cappedCoins } from "@/lib/games/arcade-coins";
 import type { GameKey } from "@/lib/validation/games";
 ```
 
-Then delete the entire `earnFromSnake` function (the block starting at the
-`/** Honest Snake runs pay out up to your all-time best ... */` comment through
-its closing brace) and replace it with:
+(If the file already imports `REWARD` etc. from `@/lib/bibcoins/config`, just add
+`ARCADE_HOURLY_CAP` to that existing import line instead of a second import.)
+
+Delete the entire `earnFromSnake` function **and** the entire `earnFromFlappy`
+function, and in their place add:
 
 ```ts
+/** Per-event skill games whose payouts share the hourly cap (also the ledger
+ * `reason` for each). */
+const ARCADE_REASONS = ["snake", "flappy", "tetris", "2048"] as const;
+
 /**
- * A finished skill-game run pays 1 coin per coin-event (apples / pipes / lines,
- * or 2048 tile milestones). Keyed on the per-run `runId`, so a network retry of
- * the same run pays once, but a fresh run pays again — no cap, by design.
- * Cheated (autopilot) runs earn nothing. Snake score milestones still unlock
- * the snake achievements.
+ * A finished per-event skill run pays `arcadeCoins × arcadePerEvent` coins,
+ * clamped so these four games together pay at most ARCADE_HOURLY_CAP per rolling
+ * hour. A fresh server-side ref means every run can pay (the cap, not
+ * idempotency, governs the total). Cheated (autopilot) runs earn nothing; Snake
+ * keeps its score achievements.
  */
 export async function earnFromArcade(
   userId: string,
   gameKey: GameKey,
   score: number,
-  runId: string,
   cheated: boolean,
 ): Promise<void> {
   if (cheated || score <= 0) return;
-
-  const coins = arcadeCoins(gameKey, score) * REWARD.arcadePerEvent;
-  if (coins > 0) {
-    await awardBibcoins(userId, coins, `${gameKey}_play`, runId);
-  }
 
   if (gameKey === "snake") {
     if (score >= 25) await unlockAchievement(userId, "snake_25");
     if (score >= 100) await unlockAchievement(userId, "snake_100");
   }
+
+  const desired = arcadeCoins(gameKey, score) * REWARD.arcadePerEvent;
+  if (desired <= 0) return;
+
+  const admin = createAdminClient();
+  if (!admin) return;
+
+  const sinceIso = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { data } = await admin
+    .from("bibcoin_transactions")
+    .select("amount")
+    .eq("user_id", userId)
+    .in("reason", ARCADE_REASONS as unknown as string[])
+    .gte("created_at", sinceIso);
+  const earnedThisHour = (data ?? []).reduce(
+    (sum: number, row: { amount: number }) => sum + row.amount,
+    0,
+  );
+
+  const coins = cappedCoins(desired, earnedThisHour, ARCADE_HOURLY_CAP);
+  if (coins > 0) {
+    await awardBibcoins(userId, coins, gameKey, crypto.randomUUID());
+  }
 }
 ```
 
-- [ ] **Step 2: Route the action through `earnFromArcade` in `src/app/_actions/games.ts`**
-
-Change the import line:
+- [ ] **Step 2: Remove the now-unused rewards** — in `src/lib/bibcoins/config.ts` delete these two lines (their only callers are gone):
 
 ```ts
-import { earnFromPetConnect, earnFromSnake } from "@/lib/bibcoins/earn";
+  /** Per +1 of a new honest Snake personal best. */
+  snakeBestPerPoint: 1,
+```
+
+```ts
+  /** Per Flappy Bird point, paid on every run (no cap). */
+  flappyBestPerPoint: 1,
+```
+
+- [ ] **Step 3: Route in `src/app/_actions/games.ts`** — change the import:
+
+```ts
+import {
+  earnFromFlappy,
+  earnFromPetConnect,
+  earnFromSnake,
+} from "@/lib/bibcoins/earn";
 ```
 
 to:
@@ -353,7 +331,7 @@ to:
 import { earnFromArcade, earnFromPetConnect } from "@/lib/bibcoins/earn";
 ```
 
-Then replace this block:
+and replace the routing block:
 
 ```ts
   if (parsed.data.gameKey === "snake") {
@@ -364,6 +342,8 @@ Then replace this block:
     );
   } else if (parsed.data.gameKey === "petconnect") {
     await earnFromPetConnect(access.userId);
+  } else if (parsed.data.gameKey === "flappy") {
+    await earnFromFlappy(access.userId, parsed.data.score);
   }
 ```
 
@@ -377,673 +357,278 @@ with:
       access.userId,
       parsed.data.gameKey,
       parsed.data.score,
-      parsed.data.runId,
       parsed.data.cheated ?? false,
     );
   }
 ```
 
-- [ ] **Step 3: Send a `runId` from Snake**
-
-In `src/components/games/snake/snake-game.tsx`, add a run-id ref next to the
-existing refs (after `const cheatedRef = useRef(false);`):
-
-```ts
-  const runIdRef = useRef<string>(crypto.randomUUID());
-```
-
-In the submit effect, change the call:
-
-```ts
-    void submitGameScore({
-      roomId,
-      gameKey: "snake",
-      score: finalScore,
-      cheated: cheatedRef.current,
-    }).then(
-```
-
-to:
-
-```ts
-    void submitGameScore({
-      roomId,
-      gameKey: "snake",
-      score: finalScore,
-      cheated: cheatedRef.current,
-      runId: runIdRef.current,
-    }).then(
-```
-
-In `restart`, mint a fresh run id (so the next run pays again). Change:
-
-```ts
-  const restart = useCallback(() => {
-    submittedRef.current = false;
-    cheatedRef.current = false;
-    setState(createInitialState(makeSeed()));
-  }, []);
-```
-
-to:
-
-```ts
-  const restart = useCallback(() => {
-    submittedRef.current = false;
-    cheatedRef.current = false;
-    runIdRef.current = crypto.randomUUID();
-    setState(createInitialState(makeSeed()));
-  }, []);
-```
-
-- [ ] **Step 4: Send a `runId` from Pet Connect (schema now requires it)**
-
-In `src/components/petconnect/petconnect-board.tsx`, change:
-
-```ts
-      await submitGameScore({ roomId, gameKey: "petconnect", score });
-```
-
-to:
-
-```ts
-      await submitGameScore({
-        roomId,
-        gameKey: "petconnect",
-        score,
-        runId: crypto.randomUUID(),
-      });
-```
-
-- [ ] **Step 5: Type-check, lint and run the whole suite**
-
-Run: `pnpm exec tsc --noEmit && pnpm lint && pnpm test`
-Expected: PASS — no references to the removed `earnFromSnake` remain, all tests green.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add src/lib/bibcoins/earn.ts src/app/_actions/games.ts src/components/games/snake/snake-game.tsx src/components/petconnect/petconnect-board.tsx
-git commit -m "feat(games): Snake pays 1 coin/apple every run via earnFromArcade"
-```
-
----
-
-## Task 4: Flappy Bird engine
-
-**Files:**
-- Create: `src/lib/games/flappy/engine.ts`
-- Test: `tests/unit/flappy-engine.test.ts`
-
-- [ ] **Step 1: Write the failing test (RED)**
-
-Create `tests/unit/flappy-engine.test.ts`:
-
-```ts
-import { describe, expect, it } from "vitest";
-
-import {
-  HEIGHT,
-  createInitialState,
-  flap,
-  tick,
-  type FlappyState,
-} from "@/lib/games/flappy/engine";
-
-describe("flappy engine — initial state", () => {
-  it("centres the bird with one pipe ahead", () => {
-    const s = createInitialState(42);
-    expect(s.birdY).toBe(HEIGHT / 2);
-    expect(s.vel).toBe(0);
-    expect(s.score).toBe(0);
-    expect(s.gameOver).toBe(false);
-    expect(s.pipes).toHaveLength(1);
-  });
-
-  it("is deterministic for the same seed", () => {
-    expect(createInitialState(7).pipes[0]).toEqual(
-      createInitialState(7).pipes[0],
-    );
-  });
-});
-
-describe("flappy engine — physics", () => {
-  it("gravity pulls the bird down over a tick", () => {
-    const s = createInitialState(42);
-    const next = tick(s);
-    expect(next.vel).toBeGreaterThan(0);
-    expect(next.birdY).toBeGreaterThan(s.birdY);
-    expect(next.tickCount).toBe(1);
-  });
-
-  it("flap sets an upward velocity", () => {
-    const s = createInitialState(42);
-    expect(flap(s).vel).toBeLessThan(0);
-  });
-
-  it("ends the game when the bird hits the floor", () => {
-    let s: FlappyState = { ...createInitialState(42), birdY: HEIGHT - 1, vel: 5 };
-    s = tick(s);
-    expect(s.gameOver).toBe(true);
-  });
-
-  it("does not advance once gameOver is true", () => {
-    const dead: FlappyState = { ...createInitialState(42), gameOver: true };
-    expect(tick(dead)).toEqual(dead);
-    expect(flap(dead)).toEqual(dead);
-  });
-});
-
-describe("flappy engine — scoring", () => {
-  it("scores when a pipe clears the bird", () => {
-    const base = createInitialState(42);
-    const s: FlappyState = {
-      ...base,
-      pipes: [{ x: 10, gapY: 100, passed: false }],
-      birdY: 150, // inside the gap [100, 240] so no collision
-    };
-    const next = tick(s);
-    expect(next.score).toBe(1);
-    expect(next.pipes[0]?.passed).toBe(true);
-  });
-});
-```
-
-- [ ] **Step 2: Run the test to verify it fails**
-
-Run: `pnpm exec vitest run tests/unit/flappy-engine.test.ts`
-Expected: FAIL — module not found.
-
-- [ ] **Step 3: Write the engine**
-
-Create `src/lib/games/flappy/engine.ts`:
-
-```ts
-export const WIDTH = 320;
-export const HEIGHT = 480;
-export const BIRD_X = 70;
-export const BIRD_RADIUS = 12;
-export const PIPE_WIDTH = 52;
-export const PIPE_GAP = 140;
-
-const GRAVITY = 0.4;
-const FLAP_VELOCITY = -6.5;
-const MAX_FALL = 9;
-const PIPE_SPEED = 2;
-const PIPE_SPACING = 170;
-const GAP_MARGIN = 60;
-const GAP_RANGE = HEIGHT - 2 * GAP_MARGIN - PIPE_GAP; // vertical room for the gap top
-
-export interface Pipe {
-  x: number;
-  gapY: number;
-  passed: boolean;
-}
-
-export interface FlappyState {
-  birdY: number;
-  vel: number;
-  pipes: Pipe[];
-  score: number;
-  gameOver: boolean;
-  tickCount: number;
-  rngSeed: number;
-}
-
-/** xorshift32 — returns [nextSeed, float in [0, 1)] (same shape as snake). */
-function nextRng(seed: number): [number, number] {
-  let s = seed | 0;
-  if (s === 0) s = 1;
-  s ^= s << 13;
-  s ^= s >>> 17;
-  s ^= s << 5;
-  return [s | 0, ((s >>> 0) % 1_000_000) / 1_000_000];
-}
-
-function gapFrom(r: number): number {
-  return GAP_MARGIN + Math.floor(r * (GAP_RANGE + 1));
-}
-
-export function createInitialState(seed: number): FlappyState {
-  const [rngSeed, r] = nextRng(seed);
-  return {
-    birdY: HEIGHT / 2,
-    vel: 0,
-    pipes: [{ x: WIDTH, gapY: gapFrom(r), passed: false }],
-    score: 0,
-    gameOver: false,
-    tickCount: 0,
-    rngSeed,
-  };
-}
-
-export function flap(state: FlappyState): FlappyState {
-  if (state.gameOver) return state;
-  return { ...state, vel: FLAP_VELOCITY };
-}
-
-export function tick(state: FlappyState): FlappyState {
-  if (state.gameOver) return state;
-
-  const vel = Math.min(state.vel + GRAVITY, MAX_FALL);
-  const birdY = state.birdY + vel;
-  let rngSeed = state.rngSeed;
-  let score = state.score;
-
-  // Move pipes left.
-  let pipes = state.pipes.map((p) => ({ ...p, x: p.x - PIPE_SPEED }));
-
-  // Score a pipe once its trailing edge passes the bird.
-  pipes = pipes.map((p) => {
-    if (!p.passed && p.x + PIPE_WIDTH < BIRD_X - BIRD_RADIUS) {
-      score += 1;
-      return { ...p, passed: true };
-    }
-    return p;
-  });
-
-  // Drop pipes that scrolled off the left edge.
-  pipes = pipes.filter((p) => p.x + PIPE_WIDTH > 0);
-
-  // Spawn the next pipe once the rightmost has advanced one spacing.
-  const rightmost = pipes.reduce((max, p) => Math.max(max, p.x), -Infinity);
-  if (rightmost <= WIDTH - PIPE_SPACING) {
-    const [next, r] = nextRng(rngSeed);
-    rngSeed = next;
-    pipes = [...pipes, { x: WIDTH, gapY: gapFrom(r), passed: false }];
-  }
-
-  // Collisions: floor/ceiling, then each overlapping pipe's solid parts.
-  let gameOver = birdY - BIRD_RADIUS < 0 || birdY + BIRD_RADIUS > HEIGHT;
-  for (const p of pipes) {
-    const overlapsX =
-      BIRD_X + BIRD_RADIUS > p.x && BIRD_X - BIRD_RADIUS < p.x + PIPE_WIDTH;
-    const insideGap =
-      birdY - BIRD_RADIUS > p.gapY && birdY + BIRD_RADIUS < p.gapY + PIPE_GAP;
-    if (overlapsX && !insideGap) gameOver = true;
-  }
-
-  return {
-    ...state,
-    birdY,
-    vel,
-    pipes,
-    score,
-    gameOver,
-    tickCount: state.tickCount + 1,
-    rngSeed,
-  };
-}
-```
-
-- [ ] **Step 4: Run the test to verify it passes**
-
-Run: `pnpm exec vitest run tests/unit/flappy-engine.test.ts`
-Expected: PASS.
+- [ ] **Step 4: Gate** — `pnpm exec tsc --noEmit && pnpm lint && pnpm test` → green (no refs to `earnFromSnake`/`earnFromFlappy`/`snakeBestPerPoint`/`flappyBestPerPoint`).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/lib/games/flappy/engine.ts tests/unit/flappy-engine.test.ts
-git commit -m "feat(flappy): seeded, unit-tested engine"
+git add src/lib/bibcoins/earn.ts src/lib/bibcoins/config.ts src/app/_actions/games.ts
+git commit -m "feat(games): unified arcade earning, 10/event, shared 250/hour cap"
 ```
 
 ---
 
-## Task 5: Flappy Bird UI (client + page + card + copy)
+## Task 4: Daily Kings for the other skill games
 
-**Files:**
-- Create: `src/components/games/flappy/flappy-game.tsx`
-- Create: `src/app/app/rooms/[id]/games/flappy/page.tsx`
-- Modify: `src/lib/copy.ts`
-- Modify: `src/app/app/rooms/[id]/games/page.tsx`
+Adds a 500/day King for Flappy, Tetris, 2048 and Pet Connect (Snake King 0047
+unchanged), and generalises the crown badge.
 
-- [ ] **Step 1: Add the Dutch copy**
+**Files:** Modify `src/lib/games/constants.ts`, `src/lib/copy.ts`, `src/components/games/leaderboard.tsx`, `…/games/flappy/page.tsx`, `…/games/petconnect/page.tsx`; Create `src/components/games/king-badge.tsx` (and `git rm` `snake-king-badge.tsx`); Create `supabase/migrations/0048_game_kings.sql`.
 
-In `src/lib/copy.ts`, inside the `games:` object, immediately after the `snake: { ... },` block, insert:
+- [ ] **Step 1: Constant** — in `src/lib/games/constants.ts` add (keep `SNAKE_KING_REWARD`):
 
 ```ts
-    flappy: {
-      title: "Flappy Bird",
-      subtitle: "Tik om te fladderen — 1 coin per buis",
-      score: "Score",
-      controls: "Tik, klik of spatie om te fladderen",
-      gameOver: "Game over",
-      restart: "Opnieuw",
-      newHighScore: "Nieuwe high score!",
-      saved: (n: number) => `Score ${n} opgeslagen`,
-    },
-    tetris: {
-      title: "Tetris",
-      subtitle: "Maak rijen vol — 1 coin per rij",
-      score: "Rijen",
-      controls: "Pijltjes om te bewegen, ↑ draaien, spatie laten vallen",
-      gameOver: "Game over",
-      restart: "Opnieuw",
-      newHighScore: "Nieuwe high score!",
-      saved: (n: number) => `${n} rijen opgeslagen`,
-      left: "Links",
-      right: "Rechts",
-      rotate: "Draai",
-      drop: "Laten vallen",
-    },
-    twenty48: {
-      title: "2048",
-      subtitle: "Veeg en combineer — 1 coin per nieuwe tegel",
-      score: "Hoogste tegel",
-      controls: "Pijltjes of vegen om te schuiven",
-      gameOver: "Geen zetten meer",
-      restart: "Opnieuw",
-      newHighScore: "Nieuwe high score!",
-      saved: (n: number) => `Tegel ${n} bereikt`,
+/**
+ * Daily bibcoins paid to the reigning King of each non-Snake skill game
+ * (Flappy / Tetris / 2048 / Pet Connect). Keep in sync with the 500 in
+ * supabase/migrations/0048_game_kings.sql.
+ */
+export const GAME_KING_REWARD = 500;
+```
+
+- [ ] **Step 2: Copy** — in `src/lib/copy.ts`, inside the `games:` object, replace the existing `snakeKing` block:
+
+```ts
+    snakeKing: {
+      label: "Snake King",
+      tooltip: (n: number) => `Snake King · +${n} bibcoins/dag 👑`,
     },
 ```
 
-- [ ] **Step 2: Write the Flappy client component**
+with a generic block:
 
-Create `src/components/games/flappy/flappy-game.tsx`:
+```ts
+    king: {
+      tooltip: (label: string, n: number) =>
+        `${label} · +${n} bibcoins/dag 👑`,
+      snake: "Snake King",
+      flappy: "Flappy King",
+      tetris: "Tetris King",
+      twenty48: "2048 King",
+      petconnect: "Pet Connect King",
+    },
+```
+
+- [ ] **Step 3: Generalise the badge** — create `src/components/games/king-badge.tsx`:
 
 ```tsx
-"use client";
+import { Crown } from "lucide-react";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-
-import { submitGameScore } from "@/app/_actions/games";
-import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
-import {
-  BIRD_RADIUS,
-  BIRD_X,
-  HEIGHT,
-  PIPE_GAP,
-  PIPE_WIDTH,
-  WIDTH,
-  createInitialState,
-  flap,
-  tick,
-  type FlappyState,
-} from "@/lib/games/flappy/engine";
+import { cn } from "@/lib/utils";
 
-const TICK_MS = 24;
-
-function makeSeed(): number {
-  return (Date.now() ^ Math.floor(Math.random() * 0xffffff)) | 0;
-}
-
-interface FlappyGameProps {
-  roomId: string;
-  myBest: number | null;
-}
-
-export function FlappyGame({ roomId, myBest }: FlappyGameProps) {
-  const [state, setState] = useState<FlappyState>(() =>
-    createInitialState(makeSeed()),
-  );
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const submittedRef = useRef(false);
-  const runIdRef = useRef<string>(crypto.randomUUID());
-
-  const doFlap = useCallback(() => {
-    setState((s) => (s.gameOver ? s : flap(s)));
-  }, []);
-
-  // Game loop.
-  useEffect(() => {
-    if (state.gameOver) return;
-    const id = window.setInterval(() => setState((s) => tick(s)), TICK_MS);
-    return () => window.clearInterval(id);
-  }, [state.gameOver]);
-
-  // Keyboard.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.code === "Space") {
-        e.preventDefault();
-        doFlap();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [doFlap]);
-
-  // Submit once on game over.
-  useEffect(() => {
-    if (!state.gameOver || submittedRef.current || state.score === 0) return;
-    submittedRef.current = true;
-    const score = state.score;
-    const beatBest = score > (myBest ?? 0);
-    void submitGameScore({
-      roomId,
-      gameKey: "flappy",
-      score,
-      runId: runIdRef.current,
-    }).then((r) => {
-      if (!r.ok) {
-        toast.error(r.error);
-        return;
-      }
-      toast.success(
-        beatBest ? copy.games.flappy.newHighScore : copy.games.flappy.saved(score),
-      );
-    });
-  }, [state.gameOver, state.score, roomId, myBest]);
-
-  // Render.
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.fillStyle = "#0ea5e9";
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-    ctx.fillStyle = "#16a34a";
-    for (const p of state.pipes) {
-      ctx.fillRect(p.x, 0, PIPE_WIDTH, p.gapY);
-      ctx.fillRect(p.x, p.gapY + PIPE_GAP, PIPE_WIDTH, HEIGHT - p.gapY - PIPE_GAP);
-    }
-
-    ctx.fillStyle = "#facc15";
-    ctx.beginPath();
-    ctx.arc(BIRD_X, state.birdY, BIRD_RADIUS, 0, Math.PI * 2);
-    ctx.fill();
-  }, [state]);
-
-  const restart = useCallback(() => {
-    submittedRef.current = false;
-    runIdRef.current = crypto.randomUUID();
-    setState(createInitialState(makeSeed()));
-  }, []);
-
+/**
+ * Gold crown badge for a game's reigning #1 honest scorer. `label` is the crown
+ * text (e.g. "Snake King"); `reward` is the daily bibcoins payout (tooltip).
+ * Kept in sync with the cron jobs in 0047/0048.
+ */
+export function KingBadge({
+  reward,
+  label,
+  className,
+}: {
+  reward: number;
+  label: string;
+  className?: string;
+}) {
+  const tooltip = copy.games.king.tooltip(label, reward);
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm">
-          <span className="text-muted-foreground">
-            {copy.games.flappy.score}:
-          </span>{" "}
-          <span className="font-mono tabular-nums font-semibold">
-            {state.score}
-          </span>
-        </p>
-        <Button size="sm" variant="outline" onClick={restart}>
-          {copy.games.flappy.restart}
-        </Button>
-      </div>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH}
-        height={HEIGHT}
-        onPointerDown={(e) => {
-          e.preventDefault();
-          doFlap();
-        }}
-        className="touch-none rounded-lg border"
-        aria-label={copy.games.flappy.title}
-      />
-      <p className="text-sm text-muted-foreground">{copy.games.flappy.controls}</p>
-      {state.gameOver && (
-        <p className="text-sm font-medium text-destructive">
-          {copy.games.flappy.gameOver}
-        </p>
+    <span
+      title={tooltip}
+      aria-label={tooltip}
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-amber-300 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-amber-950 shadow-sm ring-1 ring-amber-500/40",
+        className,
       )}
-    </div>
+    >
+      <Crown className="size-3 fill-amber-950" aria-hidden />
+      {label}
+    </span>
   );
 }
 ```
 
-- [ ] **Step 3: Write the Flappy page**
+Then delete the old file:
 
-Create `src/app/app/rooms/[id]/games/flappy/page.tsx`:
+```bash
+git rm src/components/games/snake-king-badge.tsx
+```
 
-```tsx
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+- [ ] **Step 4: Leaderboard** — in `src/components/games/leaderboard.tsx`:
 
-import { FlappyGame } from "@/components/games/flappy/flappy-game";
-import { copy } from "@/lib/copy";
-import { getMyBestScore } from "@/lib/games/queries";
-import { requireRoomAccess } from "@/lib/rooms/queries";
+Change the import:
 
-interface FlappyPageProps {
-  params: Promise<{ id: string }>;
-}
+```ts
+import { SnakeKingBadge } from "@/components/games/snake-king-badge";
+```
 
-export async function generateMetadata({
-  params,
-}: FlappyPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const access = await requireRoomAccess(id);
-  return {
-    title: access
-      ? `${copy.games.flappy.title} · ${access.room.name}`
-      : copy.games.flappy.title,
-  };
-}
+to:
 
-export default async function FlappyPage({ params }: FlappyPageProps) {
-  const { id } = await params;
-  const access = await requireRoomAccess(id);
-  if (!access) notFound();
+```ts
+import { KingBadge } from "@/components/games/king-badge";
+```
 
-  const myBest = await getMyBestScore(id, access.userId, "flappy");
+Add a `kingLabel` prop — change:
 
-  return (
-    <section className="space-y-3">
-      <div>
-        <h2 className="text-lg font-semibold tracking-tight">
-          {copy.games.flappy.title}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {copy.games.flappy.subtitle}
-        </p>
-      </div>
-      <FlappyGame roomId={id} myBest={myBest} />
-    </section>
-  );
+```ts
+  /** If set, the honest #1 is the daily Snake King earning this many coins/day. */
+  kingReward?: number;
 }
 ```
 
-- [ ] **Step 4: Add the Flappy GameCard**
+to:
 
-In `src/app/app/rooms/[id]/games/page.tsx`, add `flappyBest` to the destructured
-`Promise.all`. Change:
+```ts
+  /** If set, the honest #1 is the daily King earning this many coins/day. */
+  kingReward?: number;
+  /** Crown text for the King badge; defaults to "Snake King". */
+  kingLabel?: string;
+}
+```
+
+Destructure it — change `kingReward,` in the props destructure to:
+
+```ts
+  kingReward,
+  kingLabel,
+```
+
+And change the badge render:
 
 ```tsx
-  const [snakeBest, snakeBoard, showCheated, balance, petBest, sessions, wealth] =
-    await Promise.all([
-      getMyBestScore(id, access.userId, "snake"),
-      getRoomLeaderboard(id, "snake"),
-      getShowCheated(id),
-      getBibcoins(access.userId),
-      getMyBestScore(id, access.userId, "petconnect"),
-      getSessionStandings(id),
-      getRoomWealth(id),
-    ]);
+                {kingReward != null && !showCheated && index === 0 && (
+                  <SnakeKingBadge reward={kingReward} />
+                )}
 ```
 
 to:
 
 ```tsx
-  const [
-    snakeBest,
-    snakeBoard,
-    showCheated,
-    balance,
-    petBest,
-    sessions,
-    wealth,
-    flappyBest,
-    tetrisBest,
-    twenty48Best,
-  ] = await Promise.all([
-    getMyBestScore(id, access.userId, "snake"),
-    getRoomLeaderboard(id, "snake"),
-    getShowCheated(id),
-    getBibcoins(access.userId),
-    getMyBestScore(id, access.userId, "petconnect"),
-    getSessionStandings(id),
-    getRoomWealth(id),
-    getMyBestScore(id, access.userId, "flappy"),
-    getMyBestScore(id, access.userId, "tetris"),
-    getMyBestScore(id, access.userId, "2048"),
-  ]);
+                {kingReward != null && !showCheated && index === 0 && (
+                  <KingBadge
+                    reward={kingReward}
+                    label={kingLabel ?? copy.games.king.snake}
+                  />
+                )}
 ```
 
-Then, immediately after the Snake `<GameCard ... emoji="🐍" myBest={snakeBest} />`,
-insert all three new skill-game cards (Tetris and 2048 are wired up in their own
-tasks but added here so the grid is done once):
+(`copy` is already imported in this file. The Snake page passes only
+`kingReward`, so it falls back to "Snake King" — unchanged.)
+
+- [ ] **Step 5: Flappy page King** — in `src/app/app/rooms/[id]/games/flappy/page.tsx` add the import:
+
+```ts
+import { GAME_KING_REWARD } from "@/lib/games/constants";
+```
+
+and add the two props to the existing `<Leaderboard …>` (after `initialShowCheated={false}`):
 
 ```tsx
-        <GameCard
-          href={`/app/rooms/${id}/games/flappy`}
-          title={copy.games.flappy.title}
-          subtitle={copy.games.flappy.subtitle}
-          emoji="🐦"
-          myBest={flappyBest}
-        />
-        <GameCard
-          href={`/app/rooms/${id}/games/tetris`}
-          title={copy.games.tetris.title}
-          subtitle={copy.games.tetris.subtitle}
-          emoji="🧩"
-          myBest={tetrisBest}
-        />
-        <GameCard
-          href={`/app/rooms/${id}/games/2048`}
-          title={copy.games.twenty48.title}
-          subtitle={copy.games.twenty48.subtitle}
-          emoji="🔢"
-          myBest={twenty48Best}
-        />
+        kingReward={GAME_KING_REWARD}
+        kingLabel={copy.games.king.flappy}
 ```
 
-- [ ] **Step 5: Type-check + lint**
+- [ ] **Step 6: Pet Connect page King** — in `src/app/app/rooms/[id]/games/petconnect/page.tsx` add the import:
 
-Run: `pnpm exec tsc --noEmit && pnpm lint`
-Expected: PASS. (Tetris/2048 pages don't exist yet, but the cards are just
-`Link`s — `tsc`/`lint` are clean; the links 404 until Tasks 7 & 9. That's fine.)
+```ts
+import { GAME_KING_REWARD } from "@/lib/games/constants";
+```
 
-- [ ] **Step 6: Commit**
+and add to the existing `<Leaderboard …>` (after `initialShowCheated={showCheated}`):
+
+```tsx
+        kingReward={GAME_KING_REWARD}
+        kingLabel={copy.games.king.petconnect}
+```
+
+- [ ] **Step 7: Cron migration** — create `supabase/migrations/0048_game_kings.sql`:
+
+```sql
+-- ============================================================================
+-- BibSync — daily "King" for the non-Snake skill games (Flappy, Tetris, 2048,
+-- Pet Connect). Mirrors 0047_snake_king.sql but pays 500 and covers four games.
+-- Just after Brussels midnight, the top HONEST scorer per room per game wins
+-- 500 bibcoins. Idempotent per (game, room, Brussels date) via the
+-- award_bibcoins ledger. Two UTC cron times cover both DST offsets. Requires
+-- pg_cron. Run manually in the Supabase SQL editor, after 0047.
+--
+-- NOTE: the 500 below must stay in sync with GAME_KING_REWARD in
+-- src/lib/games/constants.ts.
+-- ============================================================================
+
+create extension if not exists pg_cron;
+
+create or replace function public.award_game_kings()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  _today date := (now() at time zone 'Europe/Brussels')::date;
+  _game  text;
+  _games text[] := array['flappy','tetris','2048','petconnect'];
+  _rec   record;
+begin
+  foreach _game in array _games loop
+    for _rec in
+      select distinct on (room_id) room_id, user_id
+      from public.game_scores
+      where game_key = _game and not cheated
+      order by room_id, score desc, created_at asc -- ties: earliest record holder
+    loop
+      perform public.award_bibcoins(
+        _rec.user_id,
+        500,
+        _game || '_king',
+        _rec.room_id::text || ':' || _today::text
+      );
+    end loop;
+  end loop;
+end;
+$$;
+
+revoke execute on function public.award_game_kings() from public, authenticated;
+grant execute on function public.award_game_kings() to service_role;
+
+do $$
+begin
+  perform cron.unschedule('game-kings-winter');
+exception when others then null;
+end $$;
+do $$
+begin
+  perform cron.unschedule('game-kings-summer');
+exception when others then null;
+end $$;
+
+select cron.schedule('game-kings-winter', '1 23 * * *',
+  $$select public.award_game_kings()$$);
+select cron.schedule('game-kings-summer', '1 22 * * *',
+  $$select public.award_game_kings()$$);
+```
+
+- [ ] **Step 8: Gate** — `pnpm exec tsc --noEmit && pnpm lint && pnpm test` → green.
+
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/components/games/flappy/flappy-game.tsx src/app/app/rooms/[id]/games/flappy/page.tsx src/lib/copy.ts src/app/app/rooms/[id]/games/page.tsx
-git commit -m "feat(flappy): playable Flappy Bird that pays 1 coin/pipe"
+git add src/lib/games/constants.ts src/lib/copy.ts src/components/games/king-badge.tsx src/components/games/leaderboard.tsx "src/app/app/rooms/[id]/games/flappy/page.tsx" "src/app/app/rooms/[id]/games/petconnect/page.tsx" supabase/migrations/0048_game_kings.sql
+git commit -m "feat(games): daily King (500) for flappy/tetris/2048/petconnect"
 ```
 
 ---
 
-## Task 6: Tetris engine
+## Task 5: Tetris engine
 
-**Files:**
-- Create: `src/lib/games/tetris/engine.ts`
-- Test: `tests/unit/tetris-engine.test.ts`
+**Files:** Create `src/lib/games/tetris/engine.ts`; Test `tests/unit/tetris-engine.test.ts`.
 
-- [ ] **Step 1: Write the failing test (RED)**
-
-Create `tests/unit/tetris-engine.test.ts`:
+- [ ] **Step 1: Write the failing test (RED)** — create `tests/unit/tetris-engine.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -1084,16 +669,13 @@ describe("tetris engine — initial state", () => {
 describe("tetris engine — movement", () => {
   it("moves left and right within the walls", () => {
     const s = createInitialState(42);
-    const left = moveLeft(s);
-    expect(left.active.x).toBe(s.active.x - 1);
-    const right = moveRight(s);
-    expect(right.active.x).toBe(s.active.x + 1);
+    expect(moveLeft(s).active.x).toBe(s.active.x - 1);
+    expect(moveRight(s).active.x).toBe(s.active.x + 1);
   });
 
   it("gravity moves the active piece down one row", () => {
     const s = createInitialState(42);
-    const next = tick(s);
-    expect(next.active.y).toBe(s.active.y + 1);
+    expect(tick(s).active.y).toBe(s.active.y + 1);
   });
 });
 
@@ -1114,7 +696,6 @@ describe("tetris engine — line clear", () => {
     };
     const after = hardDrop(state);
     expect(after.lines).toBe(1);
-    // The cleared bottom row is gone; the column it filled is now mostly empty.
     expect(after.board[ROWS - 1].filter((c) => c !== 0).length).toBeLessThan(
       COLS,
     );
@@ -1136,20 +717,14 @@ describe("tetris engine — game over", () => {
       gameOver: false,
       tickCount: 0,
     };
-    const after = hardDrop(state);
-    expect(after.gameOver).toBe(true);
+    expect(hardDrop(state).gameOver).toBe(true);
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 2: Run it (FAIL)** — `pnpm exec vitest run tests/unit/tetris-engine.test.ts`.
 
-Run: `pnpm exec vitest run tests/unit/tetris-engine.test.ts`
-Expected: FAIL — module not found.
-
-- [ ] **Step 3: Write the engine**
-
-Create `src/lib/games/tetris/engine.ts`:
+- [ ] **Step 3: Implement** — create `src/lib/games/tetris/engine.ts`:
 
 ```ts
 export const COLS = 10;
@@ -1178,13 +753,7 @@ const ALL_PIECES: PieceType[] = ["I", "O", "T", "S", "Z", "J", "L"];
 
 /** Colour id per piece, used by the renderer. */
 export const PIECE_ID: Record<PieceType, number> = {
-  I: 1,
-  O: 2,
-  T: 3,
-  S: 4,
-  Z: 5,
-  J: 6,
-  L: 7,
+  I: 1, O: 2, T: 3, S: 4, Z: 5, J: 6, L: 7,
 };
 
 /** Spawn-orientation cells inside a `size`x`size` box. */
@@ -1207,11 +776,10 @@ function nextRng(seed: number): [number, number] {
   return [s | 0, ((s >>> 0) % 1_000_000) / 1_000_000];
 }
 
-/** Rotated cells for a piece at rotation `rot` (CW), still in box coords. */
 function rotatedCells(type: PieceType, rot: number): [number, number][] {
   const { size, cells } = PIECES[type];
   let cs = cells;
-  const times = (((rot % 4) + 4) % 4);
+  const times = ((rot % 4) + 4) % 4;
   for (let r = 0; r < times; r++) {
     cs = cs.map(([x, y]) => [size - 1 - y, x] as [number, number]);
   }
@@ -1228,17 +796,13 @@ export function cellsOf(piece: ActivePiece): [number, number][] {
 function isValid(board: number[][], piece: ActivePiece): boolean {
   for (const [x, y] of cellsOf(piece)) {
     if (x < 0 || x >= COLS || y >= ROWS) return false;
-    if (y >= 0 && board[y][x] !== 0) return false; // y < 0 is allowed above the top
+    if (y >= 0 && board[y][x] !== 0) return false; // y < 0 allowed above top
   }
   return true;
 }
 
-function spawnX(type: PieceType): number {
-  return type === "O" ? 4 : 3;
-}
-
 function spawnPiece(type: PieceType): ActivePiece {
-  return { type, rot: 0, x: spawnX(type), y: 0 };
+  return { type, rot: 0, x: type === "O" ? 4 : 3, y: 0 };
 }
 
 function refillBag(seed: number): { bag: PieceType[]; rngSeed: number } {
@@ -1367,10 +931,7 @@ export function hardDrop(state: TetrisState): TetrisState {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
-
-Run: `pnpm exec vitest run tests/unit/tetris-engine.test.ts`
-Expected: PASS.
+- [ ] **Step 4: Run it (PASS)** — `pnpm exec vitest run tests/unit/tetris-engine.test.ts`.
 
 - [ ] **Step 5: Commit**
 
@@ -1381,18 +942,30 @@ git commit -m "feat(tetris): seeded, unit-tested engine"
 
 ---
 
-## Task 7: Tetris UI (client + page)
+## Task 6: Tetris UI (client + page + card + copy)
 
-Copy and the GameCard were added in Task 5. This task adds the playable client
-and its page.
+**Files:** Create `src/components/games/tetris/tetris-game.tsx`, `…/games/tetris/page.tsx`; Modify `src/lib/copy.ts`, `src/app/app/rooms/[id]/games/page.tsx`.
 
-**Files:**
-- Create: `src/components/games/tetris/tetris-game.tsx`
-- Create: `src/app/app/rooms/[id]/games/tetris/page.tsx`
+- [ ] **Step 1: Copy** — in `src/lib/copy.ts`, inside `games:`, immediately after the existing `flappy: { … },` block, insert:
 
-- [ ] **Step 1: Write the Tetris client component**
+```ts
+    tetris: {
+      title: "Tetris",
+      subtitle: "Maak rijen vol — coins per rij",
+      score: "Rijen",
+      controls: "Pijltjes om te bewegen, ↑ draaien, spatie laten vallen",
+      gameOver: "Game over",
+      restart: "Opnieuw",
+      newHighScore: "Nieuwe high score!",
+      saved: (n: number) => `${n} rijen opgeslagen`,
+      left: "Links",
+      right: "Rechts",
+      rotate: "Draai",
+      drop: "Laten vallen",
+    },
+```
 
-Create `src/components/games/tetris/tetris-game.tsx`:
+- [ ] **Step 2: Client** — create `src/components/games/tetris/tetris-game.tsx`:
 
 ```tsx
 "use client";
@@ -1405,6 +978,7 @@ import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
 import {
   COLS,
+  PIECE_ID,
   ROWS,
   cellsOf,
   createInitialState,
@@ -1423,13 +997,8 @@ const HEIGHT = ROWS * CELL;
 const TICK_MS = 500;
 
 const COLOURS: Record<number, string> = {
-  1: "#22d3ee",
-  2: "#facc15",
-  3: "#a855f7",
-  4: "#22c55e",
-  5: "#ef4444",
-  6: "#3b82f6",
-  7: "#f97316",
+  1: "#22d3ee", 2: "#facc15", 3: "#a855f7", 4: "#22c55e",
+  5: "#ef4444", 6: "#3b82f6", 7: "#f97316",
 };
 
 function makeSeed(): number {
@@ -1447,16 +1016,13 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
   );
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const submittedRef = useRef(false);
-  const runIdRef = useRef<string>(crypto.randomUUID());
 
-  // Gravity loop.
   useEffect(() => {
     if (state.gameOver) return;
     const id = window.setInterval(() => setState((s) => tick(s)), TICK_MS);
     return () => window.clearInterval(id);
   }, [state.gameOver]);
 
-  // Keyboard.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const map: Record<string, (s: TetrisState) => TetrisState> = {
@@ -1475,18 +1041,12 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Submit once on game over.
   useEffect(() => {
     if (!state.gameOver || submittedRef.current || state.lines === 0) return;
     submittedRef.current = true;
     const score = state.lines;
     const beatBest = score > (myBest ?? 0);
-    void submitGameScore({
-      roomId,
-      gameKey: "tetris",
-      score,
-      runId: runIdRef.current,
-    }).then((r) => {
+    void submitGameScore({ roomId, gameKey: "tetris", score }).then((r) => {
       if (!r.ok) {
         toast.error(r.error);
         return;
@@ -1497,7 +1057,6 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
     });
   }, [state.gameOver, state.lines, roomId, myBest]);
 
-  // Render board + active piece.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1518,9 +1077,7 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
         if (id !== 0) paint(x, y, COLOURS[id] ?? "#999");
       }
     }
-    const activeColour = COLOURS[
-      ({ I: 1, O: 2, T: 3, S: 4, Z: 5, J: 6, L: 7 } as const)[state.active.type]
-    ];
+    const activeColour = COLOURS[PIECE_ID[state.active.type]] ?? "#999";
     for (const [x, y] of cellsOf(state.active)) {
       if (y >= 0) paint(x, y, activeColour);
     }
@@ -1528,7 +1085,6 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
 
   const restart = useCallback(() => {
     submittedRef.current = false;
-    runIdRef.current = crypto.randomUUID();
     setState(createInitialState(makeSeed()));
   }, []);
 
@@ -1582,17 +1138,21 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
 }
 ```
 
-- [ ] **Step 2: Write the Tetris page**
-
-Create `src/app/app/rooms/[id]/games/tetris/page.tsx`:
+- [ ] **Step 3: Page (with King leaderboard)** — create `src/app/app/rooms/[id]/games/tetris/page.tsx`:
 
 ```tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { Leaderboard } from "@/components/games/leaderboard";
 import { TetrisGame } from "@/components/games/tetris/tetris-game";
 import { copy } from "@/lib/copy";
-import { getMyBestScore } from "@/lib/games/queries";
+import { GAME_KING_REWARD } from "@/lib/games/constants";
+import {
+  getMyBestScore,
+  getRoomLeaderboard,
+  getShowCheated,
+} from "@/lib/games/queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 
 interface TetrisPageProps {
@@ -1616,47 +1176,99 @@ export default async function TetrisPage({ params }: TetrisPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const myBest = await getMyBestScore(id, access.userId, "tetris");
+  const [myBest, board, showCheated] = await Promise.all([
+    getMyBestScore(id, access.userId, "tetris"),
+    getRoomLeaderboard(id, "tetris"),
+    getShowCheated(id),
+  ]);
 
   return (
-    <section className="space-y-3">
-      <div>
-        <h2 className="text-lg font-semibold tracking-tight">
-          {copy.games.tetris.title}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {copy.games.tetris.subtitle}
-        </p>
-      </div>
-      <TetrisGame roomId={id} myBest={myBest} />
-    </section>
+    <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">
+            {copy.games.tetris.title}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {copy.games.tetris.subtitle}
+          </p>
+        </div>
+        <TetrisGame roomId={id} myBest={myBest} />
+      </section>
+      <Leaderboard
+        title={`${copy.games.leaderboard} — ${copy.games.tetris.title}`}
+        roomId={id}
+        full={board.full}
+        honest={board.honest}
+        initialShowCheated={showCheated}
+        kingReward={GAME_KING_REWARD}
+        kingLabel={copy.games.king.tetris}
+      />
+    </div>
   );
 }
 ```
 
-- [ ] **Step 3: Type-check + lint**
+- [ ] **Step 4: GameCard** — in `src/app/app/rooms/[id]/games/page.tsx`, add `tetrisBest` to the destructure — change:
 
-Run: `pnpm exec tsc --noEmit && pnpm lint`
-Expected: PASS.
+```tsx
+    wealth,
+    flappyBest,
+  ] = await Promise.all([
+```
 
-- [ ] **Step 4: Commit**
+to:
+
+```tsx
+    wealth,
+    flappyBest,
+    tetrisBest,
+  ] = await Promise.all([
+```
+
+and the fetch — change:
+
+```tsx
+    getMyBestScore(id, access.userId, "flappy"),
+  ]);
+```
+
+to:
+
+```tsx
+    getMyBestScore(id, access.userId, "flappy"),
+    getMyBestScore(id, access.userId, "tetris"),
+  ]);
+```
+
+Then add the card right after the existing Flappy `<GameCard … emoji="🐤" myBest={flappyBest} />`:
+
+```tsx
+        <GameCard
+          href={`/app/rooms/${id}/games/tetris`}
+          title={copy.games.tetris.title}
+          subtitle={copy.games.tetris.subtitle}
+          emoji="🧩"
+          myBest={tetrisBest}
+        />
+```
+
+- [ ] **Step 5: Gate** — `pnpm exec tsc --noEmit && pnpm lint`.
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/components/games/tetris/tetris-game.tsx src/app/app/rooms/[id]/games/tetris/page.tsx
-git commit -m "feat(tetris): playable Tetris that pays 1 coin/line"
+git add src/components/games/tetris/tetris-game.tsx "src/app/app/rooms/[id]/games/tetris/page.tsx" src/lib/copy.ts "src/app/app/rooms/[id]/games/page.tsx"
+git commit -m "feat(tetris): playable Tetris with King leaderboard"
 ```
 
 ---
 
-## Task 8: 2048 engine
+## Task 7: 2048 engine
 
-**Files:**
-- Create: `src/lib/games/twenty48/engine.ts`
-- Test: `tests/unit/twenty48-engine.test.ts`
+**Files:** Create `src/lib/games/twenty48/engine.ts`; Test `tests/unit/twenty48-engine.test.ts`.
 
-- [ ] **Step 1: Write the failing test (RED)**
-
-Create `tests/unit/twenty48-engine.test.ts`:
+- [ ] **Step 1: Write the failing test (RED)** — create `tests/unit/twenty48-engine.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -1682,8 +1294,7 @@ describe("2048 engine — row slide", () => {
 describe("2048 engine — initial state", () => {
   it("seeds exactly two tiles, deterministically", () => {
     const a = createInitialState(42);
-    const filled = a.grid.flat().filter((n) => n !== 0);
-    expect(filled).toHaveLength(2);
+    expect(a.grid.flat().filter((n) => n !== 0)).toHaveLength(2);
     expect(a.gameOver).toBe(false);
     expect(createInitialState(42).grid).toEqual(a.grid);
   });
@@ -1705,9 +1316,8 @@ describe("2048 engine — move", () => {
       moves: 0,
     };
     const moved = move(state, "left");
-    const count = moved.grid.flat().filter((n) => n !== 0).length;
     expect(moved.grid[0][0]).toBe(4);
-    expect(count).toBe(2); // the merged 4 plus one freshly spawned tile
+    expect(moved.grid.flat().filter((n) => n !== 0).length).toBe(2);
     expect(moved.highestTile).toBe(4);
   });
 
@@ -1725,42 +1335,38 @@ describe("2048 engine — move", () => {
       rngSeed: 1,
       moves: 0,
     };
-    const moved = move(state, "left");
-    expect(moved.grid).toEqual(grid);
+    expect(move(state, "left").grid).toEqual(grid);
   });
 });
 
 describe("2048 engine — game over", () => {
   it("detects a full, unmergeable board", () => {
-    const grid = [
-      [2, 4, 2, 4],
-      [4, 2, 4, 2],
-      [2, 4, 2, 4],
-      [4, 2, 4, 2],
-    ];
-    expect(canMove(grid)).toBe(false);
+    expect(
+      canMove([
+        [2, 4, 2, 4],
+        [4, 2, 4, 2],
+        [2, 4, 2, 4],
+        [4, 2, 4, 2],
+      ]),
+    ).toBe(false);
   });
 
   it("allows a move when neighbours can merge", () => {
-    const grid = [
-      [2, 2, 4, 8],
-      [4, 8, 16, 32],
-      [2, 4, 8, 16],
-      [4, 8, 16, 32],
-    ];
-    expect(canMove(grid)).toBe(true);
+    expect(
+      canMove([
+        [2, 2, 4, 8],
+        [4, 8, 16, 32],
+        [2, 4, 8, 16],
+        [4, 8, 16, 32],
+      ]),
+    ).toBe(true);
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 2: Run it (FAIL)** — `pnpm exec vitest run tests/unit/twenty48-engine.test.ts`.
 
-Run: `pnpm exec vitest run tests/unit/twenty48-engine.test.ts`
-Expected: FAIL — module not found.
-
-- [ ] **Step 3: Write the engine**
-
-Create `src/lib/games/twenty48/engine.ts`:
+- [ ] **Step 3: Implement** — create `src/lib/games/twenty48/engine.ts`:
 
 ```ts
 export const SIZE = 4;
@@ -1888,10 +1494,7 @@ export function move(state: Game2048State, dir: Direction): Game2048State {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
-
-Run: `pnpm exec vitest run tests/unit/twenty48-engine.test.ts`
-Expected: PASS.
+- [ ] **Step 4: Run it (PASS)** — `pnpm exec vitest run tests/unit/twenty48-engine.test.ts`.
 
 - [ ] **Step 5: Commit**
 
@@ -1902,18 +1505,26 @@ git commit -m "feat(2048): seeded, unit-tested engine"
 
 ---
 
-## Task 9: 2048 UI (client + page)
+## Task 8: 2048 UI (client + page + card + copy)
 
-Copy and the GameCard were added in Task 5. This task adds the playable client
-and its page (route folder is the literal `2048`).
+**Files:** Create `src/components/games/twenty48/twenty48-game.tsx`, `…/games/2048/page.tsx`; Modify `src/lib/copy.ts`, `src/app/app/rooms/[id]/games/page.tsx`.
 
-**Files:**
-- Create: `src/components/games/twenty48/twenty48-game.tsx`
-- Create: `src/app/app/rooms/[id]/games/2048/page.tsx`
+- [ ] **Step 1: Copy** — in `src/lib/copy.ts`, inside `games:`, immediately after the `tetris: { … },` block from Task 6, insert:
 
-- [ ] **Step 1: Write the 2048 client component**
+```ts
+    twenty48: {
+      title: "2048",
+      subtitle: "Veeg en combineer — coins per nieuwe tegel",
+      score: "Hoogste tegel",
+      controls: "Pijltjes of vegen om te schuiven",
+      gameOver: "Geen zetten meer",
+      restart: "Opnieuw",
+      newHighScore: "Nieuwe high score!",
+      saved: (n: number) => `Tegel ${n} bereikt`,
+    },
+```
 
-Create `src/components/games/twenty48/twenty48-game.tsx`:
+- [ ] **Step 2: Client** — create `src/components/games/twenty48/twenty48-game.tsx`:
 
 ```tsx
 "use client";
@@ -1969,14 +1580,12 @@ export function Game2048({ roomId, myBest }: Game2048Props) {
     createInitialState(makeSeed()),
   );
   const submittedRef = useRef(false);
-  const runIdRef = useRef<string>(crypto.randomUUID());
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   const doMove = useCallback((dir: Direction) => {
     setState((s) => move(s, dir));
   }, []);
 
-  // Keyboard.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const dir = KEY_DIR[e.key];
@@ -1988,18 +1597,12 @@ export function Game2048({ roomId, myBest }: Game2048Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [doMove]);
 
-  // Submit once on game over.
   useEffect(() => {
     if (!state.gameOver || submittedRef.current) return;
     submittedRef.current = true;
     const score = state.highestTile;
     const beatBest = score > (myBest ?? 0);
-    void submitGameScore({
-      roomId,
-      gameKey: "2048",
-      score,
-      runId: runIdRef.current,
-    }).then((r) => {
+    void submitGameScore({ roomId, gameKey: "2048", score }).then((r) => {
       if (!r.ok) {
         toast.error(r.error);
         return;
@@ -2012,7 +1615,6 @@ export function Game2048({ roomId, myBest }: Game2048Props) {
 
   const restart = useCallback(() => {
     submittedRef.current = false;
-    runIdRef.current = crypto.randomUUID();
     setState(createInitialState(makeSeed()));
   }, []);
 
@@ -2069,17 +1671,21 @@ export function Game2048({ roomId, myBest }: Game2048Props) {
 }
 ```
 
-- [ ] **Step 2: Write the 2048 page**
-
-Create `src/app/app/rooms/[id]/games/2048/page.tsx`:
+- [ ] **Step 3: Page (with King leaderboard)** — create `src/app/app/rooms/[id]/games/2048/page.tsx`:
 
 ```tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { Leaderboard } from "@/components/games/leaderboard";
 import { Game2048 } from "@/components/games/twenty48/twenty48-game";
 import { copy } from "@/lib/copy";
-import { getMyBestScore } from "@/lib/games/queries";
+import { GAME_KING_REWARD } from "@/lib/games/constants";
+import {
+  getMyBestScore,
+  getRoomLeaderboard,
+  getShowCheated,
+} from "@/lib/games/queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 
 interface Game2048PageProps {
@@ -2103,78 +1709,123 @@ export default async function Game2048Page({ params }: Game2048PageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
-  const myBest = await getMyBestScore(id, access.userId, "2048");
+  const [myBest, board, showCheated] = await Promise.all([
+    getMyBestScore(id, access.userId, "2048"),
+    getRoomLeaderboard(id, "2048"),
+    getShowCheated(id),
+  ]);
 
   return (
-    <section className="space-y-3">
-      <div>
-        <h2 className="text-lg font-semibold tracking-tight">
-          {copy.games.twenty48.title}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {copy.games.twenty48.subtitle}
-        </p>
-      </div>
-      <Game2048 roomId={id} myBest={myBest} />
-    </section>
+    <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">
+            {copy.games.twenty48.title}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {copy.games.twenty48.subtitle}
+          </p>
+        </div>
+        <Game2048 roomId={id} myBest={myBest} />
+      </section>
+      <Leaderboard
+        title={`${copy.games.leaderboard} — ${copy.games.twenty48.title}`}
+        roomId={id}
+        full={board.full}
+        honest={board.honest}
+        initialShowCheated={showCheated}
+        kingReward={GAME_KING_REWARD}
+        kingLabel={copy.games.king.twenty48}
+      />
+    </div>
   );
 }
 ```
 
-- [ ] **Step 3: Type-check + lint**
+- [ ] **Step 4: GameCard** — in `src/app/app/rooms/[id]/games/page.tsx`, add `twenty48Best` to the destructure — change:
 
-Run: `pnpm exec tsc --noEmit && pnpm lint`
-Expected: PASS.
+```tsx
+    wealth,
+    flappyBest,
+    tetrisBest,
+  ] = await Promise.all([
+```
 
-- [ ] **Step 4: Commit**
+to:
+
+```tsx
+    wealth,
+    flappyBest,
+    tetrisBest,
+    twenty48Best,
+  ] = await Promise.all([
+```
+
+and the fetch — change:
+
+```tsx
+    getMyBestScore(id, access.userId, "tetris"),
+  ]);
+```
+
+to:
+
+```tsx
+    getMyBestScore(id, access.userId, "tetris"),
+    getMyBestScore(id, access.userId, "2048"),
+  ]);
+```
+
+Then add the card right after the Tetris `<GameCard … emoji="🧩" myBest={tetrisBest} />` (🔢 is Keno's, so 2048 uses 🧮):
+
+```tsx
+        <GameCard
+          href={`/app/rooms/${id}/games/2048`}
+          title={copy.games.twenty48.title}
+          subtitle={copy.games.twenty48.subtitle}
+          emoji="🧮"
+          myBest={twenty48Best}
+        />
+```
+
+- [ ] **Step 5: Gate** — `pnpm exec tsc --noEmit && pnpm lint`.
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/components/games/twenty48/twenty48-game.tsx "src/app/app/rooms/[id]/games/2048/page.tsx"
-git commit -m "feat(2048): playable 2048 that pays 1 coin per new tile"
+git add src/components/games/twenty48/twenty48-game.tsx "src/app/app/rooms/[id]/games/2048/page.tsx" src/lib/copy.ts "src/app/app/rooms/[id]/games/page.tsx"
+git commit -m "feat(2048): playable 2048 with King leaderboard"
 ```
 
 ---
 
-## Task 10: Full verification & manual smoke
+## Task 9: Full verification, migration & manual smoke
 
-**Files:** none (verification only)
+**Files:** docs only.
 
-- [ ] **Step 1: Full gate**
+- [ ] **Step 1: Full gate** — `pnpm exec tsc --noEmit && pnpm lint && pnpm test` → all green. Ignore a `next/font` `pnpm build` failure (sandbox).
 
-Run: `pnpm exec tsc --noEmit && pnpm lint && pnpm test`
-Expected: All green. If `pnpm build` is attempted and fails on `next/font`, ignore
-(sandbox limitation noted in CLAUDE.md); rely on Vercel for the production build.
+- [ ] **Step 2: Run the cron migration** — in the Supabase SQL editor, run `supabase/migrations/0048_game_kings.sql` (after 0047). Confirm `select cron.jobname from cron.job;` lists `game-kings-winter` / `game-kings-summer`.
 
-- [ ] **Step 2: Manual smoke (dev server)**
+- [ ] **Step 3: Manual smoke** — `pnpm dev`, open `/app/rooms/<id>/games`:
+  - Grid shows 🐍 Snake, 🐤 Flappy, 🧩 Tetris, 🧮 2048 (+ existing cards).
+  - **Snake/Flappy/Tetris/2048:** finish a run; the header balance rises by
+    `10 × events` (2048: `10 × (log2−1)`), and **stops at +250 within an hour**
+    across these games combined (play several runs to confirm the shared cap).
+  - **Each game page** shows its leaderboard with the correct crown label
+    (Snake King / Flappy King / Tetris King / 2048 King; Pet Connect King on
+    `/petconnect`).
+  - Optionally run `select public.award_game_kings();` in SQL and confirm the top
+    scorers gained 500 (idempotent on a second run).
 
-Run: `pnpm dev`, open a room's `/app/rooms/<id>/games`, then verify each:
-- The grid shows 🐍 Snake, 🐦 Flappy Bird, 🧩 Tetris, 🔢 2048 cards (plus the
-  existing gambling cards), each with a "Jouw beste" stat.
-- **Snake:** eat several apples, die — a toast confirms the score and your
-  bibcoin balance (header) rises by the number of apples eaten. Play again and
-  confirm it pays *again* (no cap).
-- **Flappy:** tap/space to fly through pipes; the score counts pipes; on death
-  the balance rises by the pipe count.
-- **Tetris:** clear at least one line; on game over the balance rises by lines
-  cleared.
-- **2048:** reach 16 or 32; on "no moves left" the balance rises by
-  `log2(highest) − 1`.
-
-- [ ] **Step 3: Verify idempotency note (optional, SQL editor)**
-
-In Supabase, confirm new ledger rows exist with reasons
-`snake_play` / `flappy_play` / `tetris_play` / `2048_play`, one per run (distinct
-`ref` UUIDs). No daily cap is enforced — this is by design.
-
-- [ ] **Step 4: Update `todo.md` and the migration/architecture note (docs)**
-
-Tick the relevant roadmap item in `todo.md` if present, and add a one-line note
-to `CLAUDE.md`'s games section that Snake/Flappy/Tetris/2048 are skill games
-paying coins per event via `earnFromArcade` (no migration). Commit:
+- [ ] **Step 4: Docs** — tick the `todo.md` item if present; add one line to
+  `CLAUDE.md`'s games section: skill games pay `10/event` via `earnFromArcade`
+  (shared 250/hour cap, server-side ref, no migration) and every skill game has a
+  daily King (Snake 1000 / others 500, cron `0048`). Commit:
 
 ```bash
 git add todo.md CLAUDE.md
-git commit -m "docs: note skill games pay coins per event (no cap)"
+git commit -m "docs: note arcade earning cap + per-game Kings"
 ```
 
 ---
@@ -2182,27 +1833,23 @@ git commit -m "docs: note skill games pay coins per event (no cap)"
 ## Self-Review
 
 **Spec coverage:**
-- Snake → 1 coin/apple every run, no cap → Task 3 (`earnFromArcade`, `snake` branch). King prize + achievements preserved (achievements in Task 3; King untouched — no code change). ✓
-- Flappy Bird, 1 coin/pipe → Tasks 4–5. ✓
-- Tetris, 1 coin/line → Tasks 6–7. ✓
-- 2048, 1 coin per new highest tile via `log2−1` → Tasks 2, 8–9. ✓
-- No cap, idempotent per-run via `runId` → Tasks 1 (schema) + 3 (`awardBibcoins(..., runId)`). ✓
-- 100 000 per-run safety bound → Task 1 (`score.max(100_000)`), unchanged. ✓
-- Zero migrations → no migration task anywhere; `game_scores.game_key` is text. ✓
-- GameCards show best via `getMyBestScore` → Task 5. ✓
-- Dutch copy in `copy.ts` → Task 5. ✓
-- No dedicated leaderboards / King prizes for the new three → pages omit `<Leaderboard>`. ✓
+- Snake pays per apple every run → Task 3 (`earnFromArcade`). King 1000 preserved (0047 untouched). ✓
+- Flappy: game untouched, earning unified to 10/event + cap → Task 3 routes it; only its page gains King props (Task 4). ✓
+- Tetris (10/line) → Tasks 5–6; 2048 (10 per tile via log2) → Tasks 7–8. ✓
+- 10/event = `arcadePerEvent` (Task 1) × `arcadeCoins` (Task 2). ✓
+- Shared 250/hour cap → `ARCADE_HOURLY_CAP` (Task 1) + `cappedCoins` (Task 2) + ledger sum over `ARCADE_REASONS` in `earnFromArcade` (Task 3). ✓
+- King for every skill game → Task 4 (Flappy/Tetris/2048/Pet Connect at 500, migration 0048) + Snake 1000 unchanged; Tetris/2048 leaderboards in Tasks 6/8. ✓
+- No client `runId`; Snake & Pet Connect clients untouched. ✓
+- Only DB change = manual cron `0048`. ✓
 
-**Placeholder scan:** No TBD/TODO/"handle edge cases"; every code step has full code. ✓
+**Placeholder scan:** none — every code step is complete. ✓
 
 **Type consistency:**
-- `arcadeCoins(gameKey, score)` defined in Task 2, used in Task 3. ✓
-- `earnFromArcade(userId, gameKey, score, runId, cheated)` defined in Task 3, called with that exact arity in `games.ts`. ✓
-- `submitScoreSchema` gains `runId` (Task 1), supplied by every `submitGameScore` caller: snake + petconnect (Task 3), flappy (Task 5), tetris (Task 7), 2048 (Task 9). ✓
-- Engine exports referenced by clients: flappy (`WIDTH/HEIGHT/BIRD_X/BIRD_RADIUS/PIPE_WIDTH/PIPE_GAP/createInitialState/flap/tick/FlappyState`), tetris (`COLS/ROWS/cellsOf/createInitialState/hardDrop/moveLeft/moveRight/rotate/softDrop/tick/TetrisState`), 2048 (`createInitialState/move/Direction/Game2048State`) — all exported in their Task. ✓
-- `GameKey` now includes `"2048"`; `getMyBestScore(..., "2048")` type-checks. ✓
+- `arcadeCoins(gameKey, score)` & `cappedCoins(desired, earned, cap)` defined Task 2, used Task 3. ✓
+- `earnFromArcade(userId, gameKey, score, cheated)` defined Task 3, called with that arity in `games.ts`. ✓
+- `KingBadge({ reward, label })` (Task 4) used by `Leaderboard` with `label={kingLabel ?? copy.games.king.snake}`; `copy.games.king.{snake,flappy,tetris,twenty48,petconnect}` all defined in Task 4. ✓
+- `GAME_KING_REWARD` defined Task 4, imported by Flappy/Pet Connect (Task 4) and Tetris/2048 pages (Tasks 6/8). ✓
+- Tetris client uses `COLS/ROWS/PIECE_ID/cellsOf/createInitialState/hardDrop/moveLeft/moveRight/rotate/softDrop/tick/TetrisState`; 2048 client uses `createInitialState/move/Direction/Game2048State` — all exported in their engine task. ✓
+- Task ordering keeps each step `tsc`-clean: `snakeBestPerPoint`/`flappyBestPerPoint` removed in Task 3 alongside their functions; new keys added before use. ✓
 
-**Note on `2048` as a key/route:** the gameKey string and route folder are
-`2048`; only JS identifiers (copy key `twenty48`, component `Game2048`, dirs
-`twenty48`) avoid the leading digit. The Task 9 commit quotes the bracketed path
-for the shell.
+**Untouched-by-contract:** Flappy game/engine, Keno, Snake/Pet Connect clients, Snake King 0047. Flappy & Pet Connect *pages* gain only King props. ✓
