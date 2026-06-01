@@ -1,6 +1,7 @@
 import { awardBibcoins } from "@/lib/bibcoins/award";
 import {
   DAILY_CHAT_THRESHOLD,
+  FLAPPY_HOURLY_CAP,
   REWARD,
   STEPS_REWARD_DAILY_CAP_THOUSANDS,
 } from "@/lib/bibcoins/config";
@@ -108,19 +109,37 @@ export async function earnFromSnake(
   if (score >= 100) await unlockAchievement(userId, "snake_100");
 }
 
-/** Flappy Bird pays 10 bibcoins per point on every run (farmable by design). */
+/** Flappy Bird pays 10 bibcoins per point on every run, capped at 250/hour. */
 export async function earnFromFlappy(
   userId: string,
   score: number,
 ): Promise<void> {
   if (score <= 0) return;
-  // Unique ref per run so every game pays out (not just new records).
-  await awardBibcoins(
-    userId,
-    score * REWARD.flappyBestPerPoint,
-    "flappy",
-    crypto.randomUUID(),
+
+  const admin = createAdminClient();
+  if (!admin) return;
+
+  // Sum Flappy earnings in the last rolling hour to enforce the cap.
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { data } = await admin
+    .from("bibcoin_transactions")
+    .select("amount")
+    .eq("user_id", userId)
+    .eq("reason", "flappy")
+    .gte("created_at", since);
+  const earnedThisHour = (data ?? []).reduce(
+    (sum: number, row: { amount: number }) => sum + row.amount,
+    0,
   );
+
+  const grant = Math.min(
+    score * REWARD.flappyBestPerPoint,
+    Math.max(0, FLAPPY_HOURLY_CAP - earnedThisHour),
+  );
+  if (grant > 0) {
+    // Unique ref per run so every (uncapped) game pays out.
+    await awardBibcoins(userId, grant, "flappy", crypto.randomUUID());
+  }
 }
 
 /** Clearing a Pet Connect board: a once-a-day coin reward + achievement. */
