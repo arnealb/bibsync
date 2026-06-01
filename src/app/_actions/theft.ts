@@ -105,11 +105,17 @@ export async function claimRobbed(): Promise<ClaimResult> {
   if (!admin) return { ok: false, error: copy.theft.unavailable };
   const victimId = ctx.user.id;
 
-  const { data: pending } = await admin
+  const { data: pending, error: pendingError } = await admin
     .from("thefts")
     .select("id, thief_id, amount, created_at")
     .eq("victim_id", victimId)
     .eq("status", "pending");
+
+  // Don't charge a penalty if we couldn't even read the table.
+  if (pendingError) {
+    console.error("[claimRobbed]", pendingError);
+    return { ok: false, error: copy.theft.unavailable };
+  }
 
   // No theft on record → false claim → penalty to the casino.
   if (!pending || pending.length === 0) {

@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { Coins } from "lucide-react";
 
+import { ClaimRobbed } from "@/components/bibcoins/claim-robbed";
 import { GiftBibcoins } from "@/components/bibcoins/gift-bibcoins";
 import { StealBibcoins } from "@/components/bibcoins/steal-bibcoins";
 import { Card, CardContent } from "@/components/ui/card";
@@ -132,6 +133,7 @@ export default async function UserProfilePage({
             />
           </div>
         )}
+        {isSelf && <ClaimRobbed />}
       </div>
 
       <div className="grid grid-cols-3 gap-3">
