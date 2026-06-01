@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import type { ActionResult } from "@/app/_actions/types";
-import { earnFromPetConnect, earnFromSnake } from "@/lib/bibcoins/earn";
+import {
+  earnFromFlappy,
+  earnFromPetConnect,
+  earnFromSnake,
+} from "@/lib/bibcoins/earn";
 import { copy } from "@/lib/copy";
 import { getShowCheated } from "@/lib/games/queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
@@ -45,6 +49,8 @@ export async function submitGameScore(
     );
   } else if (parsed.data.gameKey === "petconnect") {
     await earnFromPetConnect(access.userId);
+  } else if (parsed.data.gameKey === "flappy") {
+    await earnFromFlappy(access.userId, parsed.data.score);
   }
 
   revalidatePath(`/app/rooms/${parsed.data.roomId}/games`);

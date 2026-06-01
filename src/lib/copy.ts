@@ -956,6 +956,17 @@ export const copy = {
       subtitle: "Texas Hold'em met je bibcoins tegen elkaar",
       stat: "Jouw bibcoins",
     },
+    flappy: {
+      title: "Flappy Bird",
+      subtitle: "Tik/spatie om te fladderen. 10 bibcoins per punt (van je record).",
+      score: "Score",
+      best: "Record",
+      tapToStart: "Tik of spatie om te starten",
+      gameOver: "Game over",
+      restart: "Opnieuw",
+      saved: (n: number) => `Score ${n} opgeslagen`,
+      newBest: "Nieuw record! 🎉",
+    },
   },
   pwa: {
     title: "Installeer als app",

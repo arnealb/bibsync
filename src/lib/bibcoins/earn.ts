@@ -108,6 +108,32 @@ export async function earnFromSnake(
   if (score >= 100) await unlockAchievement(userId, "snake_100");
 }
 
+/** Flappy Bird runs pay out 10 per point, up to your all-time best (no farming). */
+export async function earnFromFlappy(
+  userId: string,
+  score: number,
+): Promise<void> {
+  if (score <= 0) return;
+
+  const admin = createAdminClient();
+  if (!admin) return;
+
+  const { data } = await admin
+    .from("bibcoin_transactions")
+    .select("amount")
+    .eq("user_id", userId)
+    .eq("reason", "flappy_best");
+  const alreadyAwarded = (data ?? []).reduce(
+    (sum: number, row: { amount: number }) => sum + row.amount,
+    0,
+  );
+
+  const delta = score * REWARD.flappyBestPerPoint - alreadyAwarded;
+  if (delta > 0) {
+    await awardBibcoins(userId, delta, "flappy_best", String(score));
+  }
+}
+
 /** Clearing a Pet Connect board: a once-a-day coin reward + achievement. */
 export async function earnFromPetConnect(userId: string): Promise<void> {
   await unlockAchievement(userId, "petconnect_clear");
