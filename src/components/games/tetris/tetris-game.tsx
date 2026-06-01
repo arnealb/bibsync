@@ -118,8 +118,10 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
     setState(createInitialState(makeSeed()));
   }, []);
 
-  const press = (fn: (s: TetrisState) => TetrisState) => () =>
-    setState((s) => fn(s));
+  const onLeft = useCallback(() => setState((s) => moveLeft(s)), []);
+  const onRotate = useCallback(() => setState((s) => rotate(s)), []);
+  const onRight = useCallback(() => setState((s) => moveRight(s)), []);
+  const onHardDrop = useCallback(() => setState((s) => hardDrop(s)), []);
 
   return (
     <div className="space-y-3">
@@ -140,20 +142,21 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
         ref={canvasRef}
         width={WIDTH}
         height={HEIGHT}
+        tabIndex={0}
         className="rounded-lg border"
         aria-label={copy.games.tetris.title}
       />
       <div className="flex flex-wrap gap-2 sm:hidden">
-        <Button size="sm" variant="outline" onClick={press(moveLeft)}>
+        <Button size="sm" variant="outline" onClick={onLeft}>
           {copy.games.tetris.left}
         </Button>
-        <Button size="sm" variant="outline" onClick={press(rotate)}>
+        <Button size="sm" variant="outline" onClick={onRotate}>
           {copy.games.tetris.rotate}
         </Button>
-        <Button size="sm" variant="outline" onClick={press(moveRight)}>
+        <Button size="sm" variant="outline" onClick={onRight}>
           {copy.games.tetris.right}
         </Button>
-        <Button size="sm" variant="outline" onClick={press(hardDrop)}>
+        <Button size="sm" variant="outline" onClick={onHardDrop}>
           {copy.games.tetris.drop}
         </Button>
       </div>
