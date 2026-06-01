@@ -416,7 +416,7 @@ export const copy = {
     potential: (n: number) => `Nu waard: ${n}`,
     cashedOut: (n: number) => `Uitgecasht: +${n} bibcoins 🎉`,
     busted: (card: string) => `💥 ${card} — fout gegokt!`,
-    hint: "Kies je inzet en start.",
+    hint: "Kies je inzet en start. Zelfde kaart telt als juist gegokt.",
   },
   wheel: {
     title: "Wheel",

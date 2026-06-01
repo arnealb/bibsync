@@ -1,6 +1,8 @@
 /** Pure Hi-Lo (hoger/lager) math. No persistence here.
  *  Cards are ranks 2..14 (J=11, Q=12, K=13, A=14), drawn uniformly with
- *  replacement. A tie counts as a loss for the chosen side. */
+ *  replacement. A tie (same card again) counts as a WIN for the chosen side;
+ *  the win chance and multiplier below include that tie so the house edge
+ *  stays exactly 1% (no +EV bet). */
 
 export const HILO_HOUSE_EDGE = 0.01;
 export const HILO_MIN_CARD = 2;
@@ -31,9 +33,12 @@ export function drawCard(rng: () => number): number {
   return HILO_MIN_CARD + Math.min(HILO_RANKS - 1, Math.floor(rng() * HILO_RANKS));
 }
 
-/** How many ranks satisfy a guess against `card` (ties excluded). */
+/** How many ranks satisfy a guess against `card` — the tie (same rank) counts,
+ *  so "higher" wins on ranks ≥ card and "lower" on ranks ≤ card. */
 export function winCount(direction: HiloDirection, card: number): number {
-  return direction === "higher" ? HILO_MAX_CARD - card : card - HILO_MIN_CARD;
+  return direction === "higher"
+    ? HILO_MAX_CARD - card + 1
+    : card - HILO_MIN_CARD + 1;
 }
 
 /** Win probability (0..1) of a guess against `card`. */
@@ -43,8 +48,8 @@ export function winChance(direction: HiloDirection, card: number): number {
 
 /**
  * Multiplier factor a correct guess earns: fair odds shaved by the house edge.
- * Returns 0 when the guess is impossible (a guaranteed loss) — that option is
- * disabled.
+ * Since a tie always wins, every guess has at least one winning rank, so no
+ * option is ever impossible (the guard stays as a safety net).
  */
 export function optionMultiplier(
   direction: HiloDirection,
@@ -55,13 +60,14 @@ export function optionMultiplier(
   return (1 - HILO_HOUSE_EDGE) / (w / HILO_RANKS);
 }
 
-/** Did the guess win? `higher` needs next > current, `lower` next < current. */
+/** Did the guess win? A tie counts as correct, so `higher` needs next ≥ current
+ *  and `lower` needs next ≤ current. */
 export function guessWins(
   direction: HiloDirection,
   current: number,
   next: number,
 ): boolean {
-  return direction === "higher" ? next > current : next < current;
+  return direction === "higher" ? next >= current : next <= current;
 }
 
 /** Whole-bibcoin payout for cashing out (floored). */
