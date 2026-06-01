@@ -579,6 +579,8 @@ export const copy = {
     tooSoon: (mins: number) =>
       `Je moet minstens een uur blijven — nog ${mins} min.`,
     lockedFor: (mins: number) => `Vrijkopen kan over ${mins} min`,
+    buyOffHint: (cost: number) => `daarna ${cost} bibcoins`,
+    silenced: "Je staat aan de schandpaal — je kan even niet stemmen.",
   },
   foodBets: {
     title: "Waar eten we? (zet bibcoins in)",

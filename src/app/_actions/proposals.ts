@@ -5,6 +5,7 @@ import { earnFromProposal, earnFromVote } from "@/lib/bibcoins/earn";
 import { copy } from "@/lib/copy";
 import { isUserPresent } from "@/lib/presence/queries";
 import { sendRoomPush, sendUserPush } from "@/lib/push/send";
+import { isOnPillory } from "@/lib/rooms/pillory-queries";
 import { BREAK_SLOTS, conflictingSlot } from "@/lib/slots";
 import { createClient } from "@/lib/supabase/server";
 import { formatTime } from "@/lib/time";
@@ -45,6 +46,9 @@ export async function createProposal(
 
   if (!(await isUserPresent(parsed.data.roomId, user.id))) {
     return { ok: false, error: copy.proposals.validation.notPresent };
+  }
+  if (await isOnPillory(parsed.data.roomId, user.id)) {
+    return { ok: false, error: copy.pillory.silenced };
   }
 
   // Free proposals may not step on a fixed slot — use the "vast moment" instead.
@@ -166,6 +170,9 @@ export async function castVote(input: CastVoteInput): Promise<ActionResult> {
   if (!(await isUserPresent(proposal.room_id, user.id))) {
     return { ok: false, error: copy.proposals.validation.notPresent };
   }
+  if (await isOnPillory(proposal.room_id, user.id)) {
+    return { ok: false, error: copy.pillory.silenced };
+  }
 
   const { error } = await supabase.from("votes").upsert(
     {
@@ -235,6 +242,9 @@ export async function setSlotPreference(input: {
 
   if (!(await isUserPresent(parsed.data.roomId, user.id))) {
     return { ok: false, error: copy.proposals.validation.notPresent };
+  }
+  if (await isOnPillory(parsed.data.roomId, user.id)) {
+    return { ok: false, error: copy.pillory.silenced };
   }
 
   const destination = parsed.data.destination?.trim() || null;

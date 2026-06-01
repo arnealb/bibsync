@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { Gavel, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 import { buyOffPillory } from "@/app/_actions/pillory";
@@ -12,7 +13,7 @@ import type { MemberMap } from "@/lib/members";
 import { PILLORY_BUYOFF_COST, PILLORY_MIN_MS } from "@/lib/rooms/pillory";
 import type { PilloryEntry } from "@/lib/rooms/pillory-queries";
 
-/** Public banner naming everyone on the room's schandpaal (and why). */
+/** Public "wanted poster" naming everyone on the room's schandpaal (and why). */
 export function PilloryBanner({
   roomId,
   userId,
@@ -41,7 +42,7 @@ export function PilloryBanner({
 
   const mine = entries.find((e) => e.userId === userId);
 
-  // Tick once a minute while still locked, so the countdown stays fresh.
+  // Tick once every 30s while still locked, so the countdown stays fresh.
   useEffect(() => {
     if (!mine) return;
     const id = setInterval(() => setNow(Date.now()), 30_000);
@@ -70,41 +71,76 @@ export function PilloryBanner({
   return (
     <div
       role="alert"
-      className="-mx-4 mb-4 border-y-2 border-amber-700 bg-amber-600 px-4 py-3 text-white shadow-md"
+      className="overflow-hidden rounded-xl border border-amber-500/40 bg-gradient-to-b from-amber-950/60 to-background shadow-sm ring-1 ring-amber-500/10"
     >
-      <p className="flex items-center gap-2 font-bold">
-        <span className="text-xl">🔨</span>
-        {copy.pillory.title}
-      </p>
-      <ul className="mt-1.5 space-y-1">
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2.5">
+        <Gavel className="size-4 text-amber-500" />
+        <h2 className="text-sm font-bold tracking-wide text-amber-200 uppercase">
+          {copy.pillory.title}
+        </h2>
+        <span className="ml-auto rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-300 tabular-nums">
+          {entries.length}
+        </span>
+      </div>
+
+      {/* Offenders */}
+      <ul className="divide-y divide-amber-500/10">
         {entries.map((e) => (
-          <li key={e.userId} className="flex items-center gap-2 text-sm">
-            <UserAvatar
-              name={members[e.userId]?.name ?? "—"}
-              avatarUrl={members[e.userId]?.avatarUrl}
-              className="size-5"
-              fallbackClassName="text-[9px]"
-              loadout={members[e.userId]?.loadout}
-            />
-            <span className="font-semibold">
-              {members[e.userId]?.name ?? "—"}
-            </span>
-            {e.reason && <span className="text-white/90">— {e.reason}</span>}
+          <li
+            key={e.userId}
+            className="flex items-center gap-3 px-4 py-2.5"
+          >
+            <div className="relative shrink-0">
+              <UserAvatar
+                name={members[e.userId]?.name ?? "—"}
+                avatarUrl={members[e.userId]?.avatarUrl}
+                className="size-8 grayscale"
+                fallbackClassName="text-xs"
+                loadout={members[e.userId]?.loadout}
+              />
+              <span className="absolute -right-1.5 -bottom-1.5 text-sm">
+                🔨
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-foreground">
+                {members[e.userId]?.name ?? "—"}
+              </p>
+              {e.reason && (
+                <p className="truncate text-sm text-muted-foreground italic">
+                  &ldquo;{e.reason}&rdquo;
+                </p>
+              )}
+            </div>
           </li>
         ))}
       </ul>
+
+      {/* Buy-off (only for someone who's on it) */}
       {mine && (
-        <Button
-          size="sm"
-          variant="secondary"
-          className="mt-2"
-          disabled={pending || locked}
-          onClick={buyOff}
-        >
-          {locked
-            ? copy.pillory.lockedFor(minsLeft)
-            : copy.pillory.buyOff(PILLORY_BUYOFF_COST)}
-        </Button>
+        <div className="flex items-center gap-2 border-t border-amber-500/20 bg-amber-500/5 px-4 py-2.5">
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={pending || locked}
+            onClick={buyOff}
+          >
+            {locked ? (
+              <>
+                <Lock className="size-3.5" />
+                {copy.pillory.lockedFor(minsLeft)}
+              </>
+            ) : (
+              copy.pillory.buyOff(PILLORY_BUYOFF_COST)
+            )}
+          </Button>
+          {locked && (
+            <span className="text-xs text-muted-foreground">
+              {copy.pillory.buyOffHint(PILLORY_BUYOFF_COST)}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

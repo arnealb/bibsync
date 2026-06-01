@@ -25,3 +25,23 @@ export async function getRoomPillory(roomId: string): Promise<PilloryEntry[]> {
     createdAt: r.created_at,
   }));
 }
+
+/** True when a member is currently on the room's schandpaal. */
+export async function isOnPillory(
+  roomId: string,
+  userId: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("room_pillory")
+    .select("user_id")
+    .eq("room_id", roomId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[isOnPillory]", error);
+    return false;
+  }
+  return data != null;
+}
