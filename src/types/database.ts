@@ -1008,6 +1008,78 @@ export interface Database {
         };
         Relationships: [];
       };
+      casino_stock: {
+        Row: {
+          id: boolean;
+          shares: number;
+          treasury: number;
+          baseline_net: number;
+          version: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          id?: boolean;
+          shares?: number;
+          treasury?: number;
+          baseline_net?: number;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          id?: boolean;
+          shares?: number;
+          treasury?: number;
+          baseline_net?: number;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      casino_holdings: {
+        Row: {
+          user_id: string;
+          shares: number;
+          cost_basis: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          user_id: string;
+          shares?: number;
+          cost_basis?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          user_id?: string;
+          shares?: number;
+          cost_basis?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      casino_stock_history: {
+        Row: {
+          id: number;
+          price: number;
+          shares: number;
+          net: number;
+          recorded_at: Timestamp;
+        };
+        Insert: {
+          id?: number;
+          price: number;
+          shares: number;
+          net: number;
+          recorded_at?: Timestamp;
+        };
+        Update: {
+          id?: number;
+          price?: number;
+          shares?: number;
+          net?: number;
+          recorded_at?: Timestamp;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {

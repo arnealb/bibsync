@@ -168,6 +168,14 @@ export default async function GamesPage({ params }: GamesPageProps) {
           statLabel={copy.plinko.stat}
         />
         <GameCard
+          href={`/app/rooms/${id}/games/stock`}
+          title={copy.stock.title}
+          subtitle={copy.stock.subtitle}
+          emoji="📈"
+          myBest={balance}
+          statLabel={copy.stock.stat}
+        />
+        <GameCard
           href={`/app/rooms/${id}/games/petconnect`}
           title={copy.petconnect.title}
           subtitle={copy.petconnect.subtitle}
