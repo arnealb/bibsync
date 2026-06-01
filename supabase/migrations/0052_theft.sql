@@ -14,10 +14,7 @@
 
 create table if not exists public.thefts (
   id          uuid primary key default gen_random_uuid(),
-  -- Theft is global (initiated from a user's profile, not a room), so room_id
-  -- is optional. The steal action omits it; keep it nullable or the insert
-  -- fails on a fresh install.
-  room_id     uuid references public.rooms(id) on delete cascade,
+  room_id     uuid not null references public.rooms(id) on delete cascade,
   thief_id    uuid not null references public.profiles(id) on delete cascade,
   victim_id   uuid not null references public.profiles(id) on delete cascade,
   amount      integer not null check (amount > 0),
