@@ -15,4 +15,4 @@ export const ROULETTE_RESULT_MS = 6_000;
 export const ROULETTE_MAX_BETS = 200;
 
 /** Chip denominations offered in the UI. */
-export const ROULETTE_CHIPS = [10, 50, 100, 500] as const;
+export const ROULETTE_CHIPS = [10, 50, 100, 500, 1000, 5000] as const;

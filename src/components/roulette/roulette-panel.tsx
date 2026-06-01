@@ -373,7 +373,7 @@ export function RoulettePanel({
             onClick={() => setChip(c)}
             disabled={locked}
             className={cn(
-              "size-9 rounded-full border-2 text-xs font-bold tabular-nums transition",
+              "h-9 min-w-9 rounded-full border-2 px-3 text-xs font-bold tabular-nums transition",
               chip === c
                 ? "border-amber-400 bg-amber-400/20 text-amber-500"
                 : "border-border text-muted-foreground hover:border-amber-400/50",
