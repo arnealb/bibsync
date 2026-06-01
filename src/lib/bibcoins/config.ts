@@ -40,3 +40,15 @@ export const STEPS_REWARD_DAILY_CAP_THOUSANDS = 20;
 
 /** Max bibcoins earnable from Flappy Bird per rolling hour (anti-abuse). */
 export const FLAPPY_HOURLY_CAP = 250;
+
+/**
+ * Coins per coin-event, tuned per game so faster/easier points pay less:
+ * snake/flappy = per apple/pipe, tetris = per line, 2048 = per new tile
+ * (a milestone = log2−1). Shared 250/hour cap bounds the total.
+ */
+export const ARCADE_COINS_PER_EVENT = {
+  snake: 3,
+  flappy: 3,
+  tetris: 8,
+  "2048": 12,
+} as const;
