@@ -62,6 +62,11 @@ export function RoomTabs({ roomId, userId }: RoomTabsProps) {
       label: copy.rooms.tabs.screenTime,
       matches: (p) => p.startsWith(`${base}/schermtijd`),
     },
+    {
+      href: `${base}/voetbal`,
+      label: copy.rooms.tabs.voetbal,
+      matches: (p) => p.startsWith(`${base}/voetbal`),
+    },
   ];
 
   return (
