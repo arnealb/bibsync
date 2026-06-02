@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { submitGameScore } from "@/app/_actions/games";
 import { claimStateCoin } from "@/app/_actions/usstates";
 import { UsStatesMap } from "@/components/games/usstates/usstates-map";
+import { UsStatesSummary } from "@/components/games/usstates/usstates-summary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { copy } from "@/lib/copy";
@@ -14,7 +15,6 @@ import {
   USSTATES_DURATION_SECONDS,
   USSTATES_TOTAL,
 } from "@/lib/usstates/config";
-import { US_STATES } from "@/lib/usstates/states";
 
 type Status = "idle" | "running" | "ended";
 
@@ -66,13 +66,7 @@ export function UsStatesGame({
   useEffect(() => {
     if (status !== "running") return;
     const id = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          clearInterval(id);
-          return 0;
-        }
-        return s - 1;
-      });
+      setSecondsLeft((s) => (s <= 1 ? 0 : s - 1));
     }, 1000);
     return () => clearInterval(id);
   }, [status]);
@@ -105,12 +99,12 @@ export function UsStatesGame({
       if (res.ok) {
         setBalance(res.balance);
         if (res.awarded) toast.success(copy.usstates.coinAwarded);
+      } else {
+        toast.error(res.error);
       }
     });
     if (nextFound.size === USSTATES_TOTAL) endGame(USSTATES_TOTAL);
   }
-
-  const missed = US_STATES.filter((s) => !found.has(s.code));
 
   return (
     <div className="space-y-4">
@@ -163,26 +157,7 @@ export function UsStatesGame({
 
       {/* End summary */}
       {status === "ended" && (
-        <div className="space-y-2 rounded-xl border p-4">
-          <p className="font-medium">
-            {found.size === USSTATES_TOTAL
-              ? copy.usstates.finishedAll
-              : secondsLeft === 0
-                ? copy.usstates.finishedTime
-                : copy.usstates.finishedGaveUp}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {copy.usstates.resultLine(found.size, USSTATES_TOTAL)}
-          </p>
-          {missed.length > 0 && (
-            <p className="text-sm">
-              <span className="font-medium">{copy.usstates.missedHeading}:</span>{" "}
-              <span className="text-muted-foreground">
-                {missed.map((s) => s.name).join(", ")}
-              </span>
-            </p>
-          )}
-        </div>
+        <UsStatesSummary found={found} secondsLeft={secondsLeft} />
       )}
     </div>
   );
