@@ -110,6 +110,11 @@ export const copy = {
       total: "Totaal",
       reward: (perMinute: number) =>
         `Je verdient ${perMinute} bibcoins per minuut dat de app openstaat.`,
+      history: "Per dag",
+      colDay: "Dag",
+      colTime: "Schermtijd",
+      colCoins: "Bibcoins",
+      empty: "Nog geen schermtijd geregistreerd.",
     },
   },
   appHome: {
