@@ -3,6 +3,7 @@
 import { spendBibcoins } from "@/lib/bibcoins/award";
 import { copy } from "@/lib/copy";
 import { isUserPresent } from "@/lib/presence/queries";
+import { isOnPillory } from "@/lib/rooms/pillory-queries";
 import { createClient } from "@/lib/supabase/server";
 import {
   stakeFoodPlaceSchema,
@@ -30,6 +31,9 @@ export async function stakeFoodPlace(
 
   if (!(await isUserPresent(roomId, user.id))) {
     return { ok: false, error: copy.proposals.validation.notPresent };
+  }
+  if (await isOnPillory(roomId, user.id)) {
+    return { ok: false, error: copy.pillory.frozen };
   }
 
   const ref = `food:${roomId}:${slotDate}:${slotKey}:${user.id}:${crypto.randomUUID()}`;

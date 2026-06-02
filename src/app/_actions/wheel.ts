@@ -33,6 +33,7 @@ export async function spinWheelBet(
 
   const access = await requireRoomAccess(roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
   if (!createAdminClient()) {
     return { ok: false, error: copy.wheel.unavailable };
   }

@@ -596,6 +596,8 @@ export const copy = {
     lockedFor: (mins: number) => `Vrijkopen kan over ${mins} min`,
     buyOffHint: (cost: number) => `daarna ${cost} bibcoins`,
     silenced: "Je staat aan de schandpaal — je kan even niet stemmen.",
+    frozen:
+      "Je staat aan de schandpaal — je kan niets doen behalve stelen. Koop jezelf vrij.",
   },
   foodBets: {
     title: "Waar eten we? (zet bibcoins in)",

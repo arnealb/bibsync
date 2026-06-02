@@ -50,6 +50,7 @@ export type HogerLagerRound =
 export async function nextHogerLager(roomId: string): Promise<HogerLagerRound> {
   const access = await requireRoomAccess(roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
 
   const a = randInt(STAT_PLAYERS.length);
   let b = randInt(STAT_PLAYERS.length);
@@ -86,6 +87,7 @@ export async function guessHogerLager(
 
   const access = await requireRoomAccess(roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
   const admin = createAdminClient();
   if (!admin) return { ok: false, error: copy.voetbal.unavailable };
 
@@ -128,6 +130,7 @@ export type QuizRound =
 export async function nextQuiz(roomId: string): Promise<QuizRound> {
   const access = await requireRoomAccess(roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
 
   const qi = randInt(QUIZ_QUESTIONS.length);
   const question = QUIZ_QUESTIONS[qi];
@@ -163,6 +166,7 @@ export async function answerQuiz(input: QuizAnswerInput): Promise<QuizResult> {
 
   const access = await requireRoomAccess(roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
   const admin = createAdminClient();
   if (!admin) return { ok: false, error: copy.voetbal.unavailable };
 
@@ -196,6 +200,7 @@ export type MysteryRound =
 export async function nextMystery(roomId: string): Promise<MysteryRound> {
   const access = await requireRoomAccess(roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
 
   const pi = randInt(STAT_PLAYERS.length);
   const p = STAT_PLAYERS[pi];
@@ -223,6 +228,7 @@ export async function guessMystery(
 
   const access = await requireRoomAccess(roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
   const admin = createAdminClient();
   if (!admin) return { ok: false, error: copy.voetbal.unavailable };
 

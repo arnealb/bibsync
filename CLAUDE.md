@@ -327,6 +327,15 @@ Hooks in `src/hooks/use-*-realtime.ts`:
 - **Timeouts:** owners/admins (`canManage`) can put a member in timeout via the
   `/timeout <naam>` chat command (name completion) or `/untimeout`; the target
   sees a red `TimeoutBanner`. Backed by `room_timeouts` (see migration 0027).
+- **Schandpaal (pillory):** a member on the room's schandpaal (`room_pillory`,
+  migration 0049) is **frozen out of every room action** — games, chat,
+  reactions, voting, proposing, commenting, marketplace, food bets, instant
+  break. Enforcement: `requireRoomAccess` now resolves `isPilloried`
+  (`isOnPillory`), and each mutation bails with `copy.pillory.frozen` (helper
+  `pilloryGuard`, or an inline `access.isPilloried` / `isOnPillory(...)` check in
+  the auth-context actions). The **only** escape is buying yourself off
+  (`buyOffPillory`); **stealing stays allowed** because it's a global profile
+  action that never routes through a room's `requireRoomAccess`.
 
 ## Gotchas
 

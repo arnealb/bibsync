@@ -87,6 +87,7 @@ export async function startVoetbalRound(
 
   const access = await requireRoomAccess(parsed.data.roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
 
   const meta = categoryMeta(parsed.data.categoryKey);
   const data = categoryData(parsed.data.categoryKey);
@@ -149,6 +150,7 @@ export async function guessVoetbal(
 
   const access = await requireRoomAccess(roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
 
   const data = categoryData(categoryKey);
   if (!data) return { ok: false, error: copy.common.genericError };

@@ -59,6 +59,7 @@ async function authorize(
 > {
   const access = await requireRoomAccess(roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
   const admin = createAdminClient();
   if (!admin) return { ok: false, error: copy.merge.unavailable };
   return { ok: true, userId: access.userId, admin };

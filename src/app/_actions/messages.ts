@@ -6,6 +6,7 @@ import { isGifUrl } from "@/lib/chat/gif";
 import { mentionedUserIds } from "@/lib/chat/mentions";
 import { copy } from "@/lib/copy";
 import { sendRoomPush, sendUserPush } from "@/lib/push/send";
+import { isOnPillory } from "@/lib/rooms/pillory-queries";
 import { getRoomMembers } from "@/lib/rooms/queries";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -34,6 +35,9 @@ export async function sendMessage(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: copy.common.notAuthenticated };
+  if (await isOnPillory(parsed.data.roomId, user.id)) {
+    return { ok: false, error: copy.pillory.frozen };
+  }
 
   const { data, error } = await supabase
     .from("messages")
