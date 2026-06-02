@@ -7,6 +7,7 @@ import { copy } from "@/lib/copy";
 import {
   CAUGHT_MULTIPLIER,
   FALSE_CLAIM_PENALTY,
+  OPEN_THEFT_TTL_MS,
   STEAL_COOLDOWN_MS,
   THEFT_REASON_PREFIX,
 } from "@/lib/theft/config";
@@ -67,13 +68,16 @@ export async function stealCoins(input: StealInput): Promise<StealResult> {
     return { ok: false, error: copy.theft.cooldown };
   }
 
-  // One open theft per (thief, victim) pair.
+  // One open theft per (thief, victim) pair, but only while it's fresh —
+  // a pending theft older than OPEN_THEFT_TTL_MS no longer blocks a new steal.
+  const openSince = new Date(Date.now() - OPEN_THEFT_TTL_MS).toISOString();
   const { data: open } = await admin
     .from("thefts")
     .select("id")
     .eq("thief_id", thiefId)
     .eq("victim_id", victimId)
     .eq("status", "pending")
+    .gte("created_at", openSince)
     .limit(1);
   if (open && open.length > 0) {
     return { ok: false, error: copy.theft.alreadyOpen };
@@ -105,7 +109,12 @@ export async function stealCoins(input: StealInput): Promise<StealResult> {
     // Roll the coins back so a failed record doesn't strand the theft.
     await spendBibcoins(thiefId, amount, "theft_gain_refund", ref);
     await awardBibcoins(victimId, amount, "theft_loss_refund", ref);
-    return { ok: false, error: copy.common.genericError };
+    // A pre-0059 DB still has the one-pending-per-pair unique index; surface the
+    // accurate "already open" message instead of a generic error.
+    return {
+      ok: false,
+      error: error.code === "23505" ? copy.theft.alreadyOpen : copy.common.genericError,
+    };
   }
 
   return { ok: true, balance: await getBibcoins(thiefId) };
@@ -185,20 +194,21 @@ export async function claimRobbed(): Promise<ClaimResult> {
     return { ok: true, kind: "late" };
   }
 
-  // Caught! Reclaim 2× from each thief (bounded by their balance) and pay it
-  // to the victim. No minting — the victim only gets what the thieves can pay.
-  let recovered = 0;
+  // Caught! The victim always gets back 2× of every claimed theft, and each
+  // thief loses 2× of what they stole. The thief is debited as much of the 2×
+  // as their balance allows (the all-or-nothing spend can't go negative, so a
+  // broke thief is simply drained to 0); the victim is still paid the full 2×.
+  let reward = 0;
   for (const t of claimable) {
-    // Read the thief's *real* balance with the service role, then clamp the
-    // reclaim to it so the (all-or-nothing) spend always succeeds — otherwise a
-    // thief who can't cover the full 2× pays nothing and the victim gets 0.
+    const penalty = t.amount * CAUGHT_MULTIPLIER;
+    // Read the thief's *real* balance with the service role, then take the most
+    // of the 2× they can cover so the spend succeeds instead of failing.
     const thiefBalance = await walletBalance(admin, t.thiefId);
-    const reclaim = Math.min(t.amount * CAUGHT_MULTIPLIER, thiefBalance);
-    const ref = `caught:${t.id}`;
-    if (reclaim > 0) {
-      const took = await spendBibcoins(t.thiefId, reclaim, "theft_caught", ref);
-      if (took) recovered += reclaim;
+    const take = Math.min(penalty, thiefBalance);
+    if (take > 0) {
+      await spendBibcoins(t.thiefId, take, "theft_caught", `caught:${t.id}`);
     }
+    reward += penalty;
   }
 
   await admin
@@ -209,10 +219,10 @@ export async function claimRobbed(): Promise<ClaimResult> {
       claimable.map((t) => t.id),
     );
 
-  if (recovered > 0) {
+  if (reward > 0) {
     await awardBibcoins(
       victimId,
-      recovered,
+      reward,
       "theft_reward",
       `reward:${victimId}:${crypto.randomUUID()}`,
     );
@@ -221,7 +231,7 @@ export async function claimRobbed(): Promise<ClaimResult> {
   return {
     ok: true,
     kind: "reward",
-    amount: recovered,
+    amount: reward,
     balance: await getBibcoins(victimId),
   };
 }

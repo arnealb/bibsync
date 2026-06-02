@@ -4,6 +4,7 @@ import { transferBibcoins } from "@/lib/bibcoins/award";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { copy } from "@/lib/copy";
 import { sendUserPush } from "@/lib/push/send";
+import { isOnPillory } from "@/lib/rooms/pillory-queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -49,6 +50,9 @@ export async function createOffer(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: copy.common.notAuthenticated };
+  if (await isOnPillory(parsed.data.roomId, user.id)) {
+    return { ok: false, error: copy.pillory.frozen };
+  }
 
   const { data, error } = await supabase
     .from("service_offers")
@@ -87,6 +91,7 @@ export async function hireOffer(offerId: string): Promise<OfferActionResult> {
 
   const access = await requireRoomAccess(offer.room_id);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
   if (offer.author_id === access.userId) {
     return { ok: false, error: copy.marketplace.ownOffer };
   }
@@ -133,6 +138,9 @@ export async function placeBid(input: PlaceBidInput): Promise<OfferActionResult>
     .maybeSingle();
   if (!offer || offer.kind !== "request" || offer.status !== "open") {
     return { ok: false, error: copy.marketplace.gone };
+  }
+  if (await isOnPillory(offer.room_id, user.id)) {
+    return { ok: false, error: copy.pillory.frozen };
   }
   if (offer.author_id === user.id) {
     return { ok: false, error: copy.marketplace.ownOffer };

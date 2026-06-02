@@ -22,6 +22,7 @@ export async function submitGameScore(
 
   const access = await requireRoomAccess(parsed.data.roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
 
   const supabase = await createClient();
   const { error } = await supabase.from("game_scores").insert({

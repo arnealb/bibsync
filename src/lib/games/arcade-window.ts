@@ -1,6 +1,13 @@
 /** Per-event skill games that share the hourly cap (also each one's ledger reason). */
 export const ARCADE_REASONS = ["snake", "flappy", "tetris", "2048"] as const;
 
+/**
+ * All ledger reasons that draw from the shared ARCADE_HOURLY_CAP. Merge Valley
+ * order payouts share the same hourly pool so they can't be farmed past the cap
+ * alongside the arcade games.
+ */
+export const CAPPED_EARN_REASONS = [...ARCADE_REASONS, "merge_order"] as const;
+
 const HOUR_MS = 3_600_000;
 
 /**

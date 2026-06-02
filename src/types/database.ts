@@ -729,6 +729,30 @@ export interface Database {
         Update: { room_id?: string; user_id?: string; mines?: number[] };
         Relationships: [];
       };
+      merge_games: {
+        Row: {
+          room_id: string;
+          user_id: string;
+          state: Record<string, unknown>;
+          version: number;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          room_id: string;
+          user_id: string;
+          state: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Update: {
+          room_id?: string;
+          user_id?: string;
+          state?: Record<string, unknown>;
+          version?: number;
+          updated_at?: Timestamp;
+        };
+        Relationships: [];
+      };
       crash_rounds: {
         Row: {
           room_id: string;
@@ -990,6 +1014,42 @@ export interface Database {
         };
         Relationships: [];
       };
+      screen_time: {
+        Row: {
+          user_id: string;
+          day: string;
+          seconds: number;
+          awarded_coins: number;
+        };
+        Insert: {
+          user_id: string;
+          day: string;
+          seconds?: number;
+          awarded_coins?: number;
+        };
+        Update: {
+          user_id?: string;
+          day?: string;
+          seconds?: number;
+          awarded_coins?: number;
+        };
+        Relationships: [];
+      };
+      screen_time_state: {
+        Row: {
+          user_id: string;
+          last_ping_at: Timestamp | null;
+        };
+        Insert: {
+          user_id: string;
+          last_ping_at?: Timestamp | null;
+        };
+        Update: {
+          user_id?: string;
+          last_ping_at?: Timestamp | null;
+        };
+        Relationships: [];
+      };
       health_tokens: {
         Row: {
           user_id: string;
@@ -1172,6 +1232,14 @@ export interface Database {
           messages: number;
         }[];
       };
+      record_screen_time: {
+        Args: { _user_id: string; _resume?: boolean };
+        Returns: { total_seconds: number; coins_earned: number }[];
+      };
+      shares_room: {
+        Args: { _a: string; _b: string };
+        Returns: boolean;
+      };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
@@ -1215,5 +1283,7 @@ export type UserAchievement =
   Database["public"]["Tables"]["user_achievements"]["Row"];
 export type StepSession =
   Database["public"]["Tables"]["step_sessions"]["Row"];
+export type ScreenTime =
+  Database["public"]["Tables"]["screen_time"]["Row"];
 export type HealthToken =
   Database["public"]["Tables"]["health_tokens"]["Row"];

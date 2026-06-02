@@ -56,6 +56,12 @@ export function formatDateLong(value: Date | string): string {
   return format(new TZDate(date, TIME_ZONE), "EEEE d MMMM", { locale: nl });
 }
 
+/** Format a date string (YYYY-MM-DD) compactly as `EEE d MMM` (e.g. "ma 5 mei"). */
+export function formatDayShort(value: Date | string): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return format(new TZDate(date, TIME_ZONE), "EEE d MMM", { locale: nl });
+}
+
 /** Trim a SQL `time` value (`HH:MM[:SS]`) to `HH:MM`. */
 export function formatTime(time: string): string {
   return time.slice(0, 5);

@@ -7,6 +7,7 @@ import {
   INSTANT_BREAK_WINDOW_SECONDS,
 } from "@/lib/instant-break/config";
 import { isBreakActive } from "@/lib/instant-break/status";
+import { isOnPillory } from "@/lib/rooms/pillory-queries";
 import { createClient } from "@/lib/supabase/server";
 import {
   pushInstantBreakSchema,
@@ -31,6 +32,10 @@ export async function pushInstantBreak(
   if (!user) return { ok: false, error: copy.common.notAuthenticated };
 
   const { roomId, durationMinutes } = parsed.data;
+
+  if (await isOnPillory(roomId, user.id)) {
+    return { ok: false, error: copy.pillory.frozen };
+  }
 
   // Already on a break? Pressing again is a no-op.
   const { data: latest } = await supabase

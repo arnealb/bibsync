@@ -3,6 +3,7 @@ import { cache } from "react";
 import { getLoadouts } from "@/lib/cosmetics/queries";
 import { resolveLoadout, type ResolvedLoadout } from "@/lib/cosmetics/resolve";
 import { getAuthContext } from "@/lib/auth";
+import { isOnPillory } from "@/lib/rooms/pillory-queries";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, Room } from "@/types/database";
 
@@ -24,6 +25,8 @@ export interface RoomAccess {
   isAdmin: boolean;
   /** Owner or admin — may rename / delete / manage the room. */
   canManage: boolean;
+  /** On the room's schandpaal → frozen out of every action (see `pilloryGuard`). */
+  isPilloried: boolean;
 }
 
 /** Rooms the current user owns or is a member of, with member counts. */
@@ -78,6 +81,7 @@ export const requireRoomAccess = cache(
       isOwner,
       isAdmin: ctx.isAdmin,
       canManage: isOwner || ctx.isAdmin,
+      isPilloried: await isOnPillory(roomId, ctx.user.id),
     };
   },
 );

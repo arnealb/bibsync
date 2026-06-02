@@ -83,6 +83,10 @@ export function StockPanel({
   const buyCost = Math.ceil(quote.price * qty);
   const avg = quote.myShares > 0 ? quote.myCostBasis / quote.myShares : 0;
   const pnlPositive = quote.myPnl >= 0;
+  const overCap = quote.myShares + qty > quote.holdingCap;
+  const feePct = `${(quote.feeDaily * 100).toLocaleString("nl-BE", {
+    maximumFractionDigits: 2,
+  })}%`;
 
   return (
     <div className="space-y-4">
@@ -183,7 +187,7 @@ export function StockPanel({
 
           <div className="grid grid-cols-2 gap-2">
             <Button
-              disabled={pending || buyCost > quote.balance}
+              disabled={pending || buyCost > quote.balance || overCap}
               onClick={() => trade("buy")}
             >
               {copy.stock.buy} · {fmt(buyCost)}
@@ -204,6 +208,12 @@ export function StockPanel({
             </span>
           </p>
           <p className="text-xs text-muted-foreground">{copy.stock.hint}</p>
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            {copy.stock.feeNote(feePct)}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {copy.stock.holdingCapNote(quote.holdingCap)}
+          </p>
         </CardContent>
       </Card>
     </div>

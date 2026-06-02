@@ -5,6 +5,7 @@ import { earnFromComment } from "@/lib/bibcoins/earn";
 import { copy } from "@/lib/copy";
 import { isUserPresent } from "@/lib/presence/queries";
 import { sendUserPush } from "@/lib/push/send";
+import { isOnPillory } from "@/lib/rooms/pillory-queries";
 import { createClient } from "@/lib/supabase/server";
 import { addCommentSchema, type AddCommentInput } from "@/lib/validation/comments";
 import type { ProposalComment } from "@/types/database";
@@ -37,6 +38,9 @@ export async function addProposalComment(
 
   if (!(await isUserPresent(proposal.room_id, user.id))) {
     return { ok: false, error: copy.proposals.validation.notPresent };
+  }
+  if (await isOnPillory(proposal.room_id, user.id)) {
+    return { ok: false, error: copy.pillory.frozen };
   }
 
   const { data, error } = await supabase

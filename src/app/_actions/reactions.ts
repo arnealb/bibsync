@@ -2,6 +2,7 @@
 
 import type { ActionResult } from "@/app/_actions/types";
 import { copy } from "@/lib/copy";
+import { isOnPillory } from "@/lib/rooms/pillory-queries";
 import { createClient } from "@/lib/supabase/server";
 import {
   toggleReactionSchema,
@@ -20,6 +21,16 @@ export async function toggleMessageReaction(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: copy.common.notAuthenticated };
+
+  const { data: msg } = await supabase
+    .from("messages")
+    .select("room_id")
+    .eq("id", parsed.data.messageId)
+    .maybeSingle();
+  if (!msg) return { ok: false, error: copy.common.genericError };
+  if (await isOnPillory(msg.room_id, user.id)) {
+    return { ok: false, error: copy.pillory.frozen };
+  }
 
   const match = supabase
     .from("message_reactions")
@@ -44,18 +55,11 @@ export async function toggleMessageReaction(
     return { ok: true };
   }
 
-  const { data: message } = await supabase
-    .from("messages")
-    .select("room_id")
-    .eq("id", parsed.data.messageId)
-    .maybeSingle();
-  if (!message) return { ok: false, error: copy.common.genericError };
-
   const { error } = await supabase.from("message_reactions").insert({
     message_id: parsed.data.messageId,
     user_id: user.id,
     emoji: parsed.data.emoji,
-    room_id: message.room_id,
+    room_id: msg.room_id,
   });
   if (error) {
     console.error("[toggleMessageReaction:insert]", error);

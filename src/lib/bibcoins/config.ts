@@ -34,6 +34,18 @@ export const DAILY_CHAT_THRESHOLD = 20;
 /** Max thousands of daily steps that earn bibcoins (anti-abuse cap). */
 export const STEPS_REWARD_DAILY_CAP_THOUSANDS = 20;
 
+/**
+ * Screen-time reward: bibcoins per full minute the app is open. Mirrors the
+ * `record_screen_time` RPC in SQL (display only — the RPC is authoritative).
+ */
+export const SCREEN_TIME_COINS_PER_MINUTE = 10;
+
+/** Max minutes of screen time rewarded per day (12h, anti-abuse). */
+export const SCREEN_TIME_REWARD_DAILY_CAP_MINUTES = 720;
+
+/** How often the browser sends a screen-time heartbeat while the tab is visible. */
+export const SCREEN_TIME_HEARTBEAT_MS = 60 * 1000;
+
 /** Shared cap on per-event skill-game coins (snake/flappy/tetris/2048) per
  * clock hour (anti-abuse). */
 export const ARCADE_HOURLY_CAP = 250;

@@ -209,6 +209,8 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   `/app/rooms/[id]/chat`, `/app/rooms/[id]/eten` (food),
   `/app/rooms/[id]/games` (Snake, poker, blackjack, roulette, mines, plinko,
   dice, Pet Connect under `/games/*`), `/app/rooms/[id]/stappen` (steps),
+  `/app/rooms/[id]/schermtijd` (screen-time overview),
+  `/app/rooms/[id]/voetbal` (footballer naming game),
   `/app/rooms/[id]/settings` (owner **or admin**), `/app/admin` (admin only),
   `/app/profile`. Room sub-tabs live in `RoomTabs`, which also renders the
   unread-chat badge on the Chat tab.
@@ -287,15 +289,53 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   seated (`armed`), **3 min without any interaction** auto-leaves so an AFK
   player can't block the table. No more ghosts "still sitting" after they've
   gone. Roulette has no seats (bets are per-round), so nothing to leave there.
+- **Voetbal (game hub):** the `/app/rooms/[id]/voetbal` tab is a hub
+  (`VoetbalHub`) with four modes (`src/lib/voetbal/modes.ts`): **Namen raden**
+  (type players in 120s), **Hoger/Lager** (compare market values),
+  **Voetbalquiz** (multiplechoice trivia) and **Raad de speler** (progressive
+  clues). All modes are **server-authoritative & stateless** — the action hands
+  the client only masked data (never the answer), validates server-side, and
+  pays via `awardVoetbalCapped` (`src/lib/voetbal/earn.ts`): idempotent per a
+  per-event ref, all sharing **one 750/hour ledger pool** (`VOETBAL_HOURLY_CAP`,
+  reason `voetbal`) so no mode can be farmed past the cap. Rewards:
+  name 25 / hoger-lager 20 / quiz 30 / mystery 60. Answer data is **server-only**
+  (`data.ts` / `players.ts` / `quiz.ts` — never import into a client component);
+  client-safe metadata is in `categories.ts` / `modes.ts`. Actions:
+  `_actions/voetbal.ts` (naming) + `_actions/voetbal-modes.ts` (the other three);
+  cap bar shared at hub level via `getVoetbalHourEarned`.
 - **Steps:** daily total per user per room. `health` rows carry the running
   daily total (take the **max**), `browser` pedometer rows are increments
   (**sum**) — see `src/lib/steps/aggregate.ts`; never just sum all rows.
+- **Schermtijd (screen time, migration 0057):** the always-mounted
+  `ScreenTimeTracker` (app layout) sends a heartbeat every 60s while the tab is
+  **visible**; `record_screen_time` (SECURITY DEFINER) credits only the real
+  wall-clock gap since the previous beat, capped at 90s/beat — so spamming can't
+  inflate it and a closed tab accrues nothing. A `_resume` beat (sent on
+  becoming visible) just resets the baseline, so hidden-tab time is never
+  counted. Reward: **10 bibcoins per full minute/day**, capped at 720 min/day,
+  idempotent via the per-day `awarded_coins` guard. Shown on `/app/profile`
+  (`getScreenTime`, with a per-day stats table) and per-room on the
+  **Schermtijd** tab (`/app/rooms/[id]/schermtijd`): a ranked leaderboard +
+  coins-earned + a 14-day bar chart (`getRoomScreenTime` → pure
+  `aggregateRoomScreenTime`). Cross-user reads use migration **0058**'s
+  `shares_room()` SECURITY DEFINER helper + the `screen_time_roommates` RLS
+  policy (members may read fellow members' rows). Pure helpers in
+  `src/lib/screen-time/`.
 - **Inside joke (poker/games chips were bibcoins):** poker buy-in moves your
   whole balance to chips; blackjack/roulette bet per round straight from the
   wallet.
 - **Timeouts:** owners/admins (`canManage`) can put a member in timeout via the
   `/timeout <naam>` chat command (name completion) or `/untimeout`; the target
   sees a red `TimeoutBanner`. Backed by `room_timeouts` (see migration 0027).
+- **Schandpaal (pillory):** a member on the room's schandpaal (`room_pillory`,
+  migration 0049) is **frozen out of every room action** — games, chat,
+  reactions, voting, proposing, commenting, marketplace, food bets, instant
+  break. Enforcement: `requireRoomAccess` now resolves `isPilloried`
+  (`isOnPillory`), and each mutation bails with `copy.pillory.frozen` (helper
+  `pilloryGuard`, or an inline `access.isPilloried` / `isOnPillory(...)` check in
+  the auth-context actions). The **only** escape is buying yourself off
+  (`buyOffPillory`); **stealing stays allowed** because it's a global profile
+  action that never routes through a room's `requireRoomAccess`.
 
 ## Gotchas
 
