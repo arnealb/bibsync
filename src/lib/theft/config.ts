@@ -9,5 +9,12 @@ export const CAUGHT_MULTIPLIER = 2;
 /** Minimum time between a thief's steals (any victim), anti-spam. */
 export const STEAL_COOLDOWN_MS = 5 * 60 * 1000;
 
+/**
+ * How long an unresolved theft keeps blocking a new steal at the same victim.
+ * After this, the "je hebt al een openstaande diefstal" guard expires so the
+ * thief can try again even if the old one was never claimed/resolved.
+ */
+export const OPEN_THEFT_TTL_MS = 60 * 60 * 1000;
+
 /** Ledger reasons that are part of the theft mechanic (never a "real" spend). */
 export const THEFT_REASON_PREFIX = "theft_";

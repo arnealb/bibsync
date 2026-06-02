@@ -7,6 +7,7 @@ import { copy } from "@/lib/copy";
 import {
   CAUGHT_MULTIPLIER,
   FALSE_CLAIM_PENALTY,
+  OPEN_THEFT_TTL_MS,
   STEAL_COOLDOWN_MS,
   THEFT_REASON_PREFIX,
 } from "@/lib/theft/config";
@@ -67,13 +68,16 @@ export async function stealCoins(input: StealInput): Promise<StealResult> {
     return { ok: false, error: copy.theft.cooldown };
   }
 
-  // One open theft per (thief, victim) pair.
+  // One open theft per (thief, victim) pair, but only while it's fresh —
+  // a pending theft older than OPEN_THEFT_TTL_MS no longer blocks a new steal.
+  const openSince = new Date(Date.now() - OPEN_THEFT_TTL_MS).toISOString();
   const { data: open } = await admin
     .from("thefts")
     .select("id")
     .eq("thief_id", thiefId)
     .eq("victim_id", victimId)
     .eq("status", "pending")
+    .gte("created_at", openSince)
     .limit(1);
   if (open && open.length > 0) {
     return { ok: false, error: copy.theft.alreadyOpen };
