@@ -28,6 +28,7 @@ export async function claimStateCoin(
 
   const access = await requireRoomAccess(parsed.data.roomId);
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
+  if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
 
   const ref = `usstates:${access.userId}:${parsed.data.code}:${todayInBrussels()}`;
   const awarded = await awardBibcoins(
