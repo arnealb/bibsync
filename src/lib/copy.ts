@@ -806,6 +806,29 @@ export const copy = {
     double: "2×",
     hint: "Versleep de grens, kies boven/onder en gooi.",
   },
+  usstates: {
+    title: "USA Staten",
+    subtitle: "Benoem alle 50 staten van de VS op de kaart.",
+    stat: "Beste score",
+    instructions:
+      "Typ de Engelse naam van een staat. Klopt het, dan kleurt hij groen en verschijnt de naam op de kaart. Je hebt 5 minuten — zoveel mogelijk van de 50!",
+    coinHint: "+10 bibcoins per staat (max 1× per staat per dag).",
+    start: "Start",
+    giveUp: "Geef op",
+    playAgain: "Speel opnieuw",
+    placeholder: "Typ een staat…",
+    found: (n: number, total: number) => `${n}/${total} staten`,
+    timeLeft: (mmss: string) => `⏱ ${mmss}`,
+    coinAwarded: "+10 bibcoins",
+    finishedTime: "De tijd is op!",
+    finishedAll: "Alle 50 — knap gedaan! 🎉",
+    finishedGaveUp: "Opgegeven.",
+    resultLine: (n: number, total: number) =>
+      `Je had ${n} van de ${total} staten.`,
+    missedHeading: "Gemist",
+    newBest: (n: number) => `Nieuwe beste score: ${n}! 🏆`,
+    balance: (n: number) => `${n} bibcoins`,
+  },
   petconnect: {
     title: "Pet Connect",
     subtitle:
