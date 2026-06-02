@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored third-party map data (@svg-maps/usa, MIT) — generator input only.
+    "scripts/us-states-source.js",
   ]),
 ]);
 
