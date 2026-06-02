@@ -6,6 +6,15 @@ export const VOETBAL_ROUND_SECONDS = 120;
 /** Bibcoins per correct, unique player named (clamped to the hourly cap). */
 export const VOETBAL_COINS_PER_CORRECT = 25;
 
+/** Bibcoins per correct higher/lower call. */
+export const VOETBAL_HL_COINS = 20;
+
+/** Bibcoins per correct quiz answer. */
+export const VOETBAL_QUIZ_COINS = 30;
+
+/** Bibcoins for solving a "raad de speler" mystery. */
+export const VOETBAL_MYSTERY_COINS = 60;
+
 /** Generous own hourly cap so the game is worth grinding (its own ledger pool). */
 export const VOETBAL_HOURLY_CAP = 750;
 

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { VoetbalGame } from "@/components/voetbal/voetbal-game";
+import { VoetbalHub } from "@/components/voetbal/voetbal-hub";
+import { getVoetbalHourEarned } from "@/app/_actions/voetbal";
 import { copy } from "@/lib/copy";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 
@@ -26,15 +27,19 @@ export default async function VoetbalPage({ params }: VoetbalPageProps) {
   const access = await requireRoomAccess(id);
   if (!access) notFound();
 
+  const hourEarned = await getVoetbalHourEarned();
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold tracking-tight">
           {copy.voetbal.title}
         </h2>
-        <p className="text-sm text-muted-foreground">{copy.voetbal.subtitle}</p>
+        <p className="text-sm text-muted-foreground">
+          {copy.voetbal.hubSubtitle}
+        </p>
       </div>
-      <VoetbalGame roomId={id} />
+      <VoetbalHub roomId={id} initialHourEarned={hourEarned} />
     </div>
   );
 }

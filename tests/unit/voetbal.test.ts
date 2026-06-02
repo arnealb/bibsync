@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { initials, matchGuess, normalizeName } from "@/lib/voetbal/match";
+import { STAT_PLAYERS } from "@/lib/voetbal/players";
+import { QUIZ_QUESTIONS } from "@/lib/voetbal/quiz";
 
 const players = [
   { accept: ["de bruyne", "kevin de bruyne", "kdb"] },
@@ -38,5 +40,32 @@ describe("matchGuess", () => {
     expect(matchGuess(players, "messi")).toBe(-1);
     expect(matchGuess(players, "   ")).toBe(-1);
     expect(matchGuess(players, "")).toBe(-1);
+  });
+});
+
+describe("stat player data", () => {
+  it("every player has a positive value and at least one club + accept", () => {
+    for (const p of STAT_PLAYERS) {
+      expect(p.value).toBeGreaterThan(0);
+      expect(p.clubs.length).toBeGreaterThan(0);
+      expect(p.accept.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("each player is solvable by at least one of its accepted answers", () => {
+    STAT_PLAYERS.forEach((p, i) => {
+      expect(matchGuess([{ accept: p.accept }], p.accept[0])).toBe(0);
+      expect(i).toBeGreaterThanOrEqual(0);
+    });
+  });
+});
+
+describe("quiz data", () => {
+  it("every question has a valid correct index and ≥2 options", () => {
+    for (const q of QUIZ_QUESTIONS) {
+      expect(q.options.length).toBeGreaterThanOrEqual(2);
+      expect(q.correct).toBeGreaterThanOrEqual(0);
+      expect(q.correct).toBeLessThan(q.options.length);
+    }
   });
 });

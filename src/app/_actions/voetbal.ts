@@ -1,21 +1,17 @@
 "use server";
 
 import { getAuthContext } from "@/lib/auth";
-import { awardBibcoins } from "@/lib/bibcoins/award";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { copy } from "@/lib/copy";
-import { cappedCoins } from "@/lib/games/arcade-coins";
-import { hourStartMs } from "@/lib/games/arcade-window";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { categoryMeta } from "@/lib/voetbal/categories";
 import {
   VOETBAL_COINS_PER_CORRECT,
-  VOETBAL_HOURLY_CAP,
-  VOETBAL_REASON,
   VOETBAL_WIN_FRACTION,
 } from "@/lib/voetbal/config";
 import { categoryData } from "@/lib/voetbal/data";
+import { awardVoetbalCapped, voetbalEarnedThisHour } from "@/lib/voetbal/earn";
 import { initials, matchGuess } from "@/lib/voetbal/match";
 import {
   guessVoetbalSchema,
@@ -60,24 +56,6 @@ export type GuessResult =
       hourEarned: number;
     }
   | { ok: false; error: string };
-
-/** Coins this user earned from voetbal in the current clock hour. */
-async function voetbalEarnedThisHour(
-  admin: NonNullable<ReturnType<typeof createAdminClient>>,
-  userId: string,
-): Promise<number> {
-  const sinceIso = new Date(hourStartMs(Date.now())).toISOString();
-  const { data } = await admin
-    .from("bibcoin_transactions")
-    .select("amount")
-    .eq("user_id", userId)
-    .eq("reason", VOETBAL_REASON)
-    .gte("created_at", sinceIso);
-  return (data ?? []).reduce(
-    (sum: number, row: { amount: number }) => sum + row.amount,
-    0,
-  );
-}
 
 /** Coins earned this hour for the cap bar (own pool). */
 export async function getVoetbalHourEarned(): Promise<number> {
@@ -189,30 +167,20 @@ export async function guessVoetbal(
     };
   }
 
-  const earned = await voetbalEarnedThisHour(admin, access.userId);
-  const coins = cappedCoins(
+  const { coins, hourEarned } = await awardVoetbalCapped(
+    admin,
+    access.userId,
     VOETBAL_COINS_PER_CORRECT,
-    earned,
-    VOETBAL_HOURLY_CAP,
+    `voetbal:${roundId}:${id}`,
   );
-  let granted = 0;
-  if (coins > 0) {
-    const ok = await awardBibcoins(
-      access.userId,
-      coins,
-      VOETBAL_REASON,
-      `voetbal:${roundId}:${id}`,
-    );
-    if (ok) granted = coins;
-  }
 
   return {
     ok: true,
     correct: true,
     id,
     name: data.players[id].name,
-    coins: granted,
+    coins,
     balance: await getBibcoins(access.userId),
-    hourEarned: earned + granted,
+    hourEarned,
   };
 }

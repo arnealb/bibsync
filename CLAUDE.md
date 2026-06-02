@@ -289,17 +289,20 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   seated (`armed`), **3 min without any interaction** auto-leaves so an AFK
   player can't block the table. No more ghosts "still sitting" after they've
   gone. Roulette has no seats (bets are per-round), so nothing to leave there.
-- **Voetbal (footballer naming game):** the `/app/rooms/[id]/voetbal` tab — pick
-  a list (Wereldsterren / Legendes / Rode Duivels / Oranje) and type as many
-  players as you can in 120s. **Server-authoritative & stateless:** the action
-  hands the client only masked cards (flag + position + initials, never names);
-  `guessVoetbal` normalises the guess (`src/lib/voetbal/match.ts`) and pays
-  `VOETBAL_COINS_PER_CORRECT` (25) per newly-named player, idempotent per
-  `voetbal:${roundId}:${id}` and clamped to its own 750/hour ledger pool
-  (`VOETBAL_HOURLY_CAP`, reason `voetbal`). Answer data is **server-only**
-  (`src/lib/voetbal/data.ts` — never import into a client component); client-safe
-  metadata is in `categories.ts`. `revealVoetbal` returns the full list only for
-  the end-of-round summary.
+- **Voetbal (game hub):** the `/app/rooms/[id]/voetbal` tab is a hub
+  (`VoetbalHub`) with four modes (`src/lib/voetbal/modes.ts`): **Namen raden**
+  (type players in 120s), **Hoger/Lager** (compare market values),
+  **Voetbalquiz** (multiplechoice trivia) and **Raad de speler** (progressive
+  clues). All modes are **server-authoritative & stateless** — the action hands
+  the client only masked data (never the answer), validates server-side, and
+  pays via `awardVoetbalCapped` (`src/lib/voetbal/earn.ts`): idempotent per a
+  per-event ref, all sharing **one 750/hour ledger pool** (`VOETBAL_HOURLY_CAP`,
+  reason `voetbal`) so no mode can be farmed past the cap. Rewards:
+  name 25 / hoger-lager 20 / quiz 30 / mystery 60. Answer data is **server-only**
+  (`data.ts` / `players.ts` / `quiz.ts` — never import into a client component);
+  client-safe metadata is in `categories.ts` / `modes.ts`. Actions:
+  `_actions/voetbal.ts` (naming) + `_actions/voetbal-modes.ts` (the other three);
+  cap bar shared at hub level via `getVoetbalHourEarned`.
 - **Steps:** daily total per user per room. `health` rows carry the running
   daily total (take the **max**), `browser` pedometer rows are increments
   (**sum**) — see `src/lib/steps/aggregate.ts`; never just sum all rows.
