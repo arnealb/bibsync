@@ -65,11 +65,10 @@ export const US_STATE_CODES: ReadonlySet<string> = new Set(
   US_STATES.map((s) => s.code),
 );
 
+const codes = US_STATES.map((s) => s.code);
+if (codes.length === 0) throw new Error("US_STATES must not be empty");
 /** Tuple form for `z.enum(...)` (single source of truth for the codes). */
-export const US_STATE_CODE_TUPLE = US_STATES.map((s) => s.code) as [
-  string,
-  ...string[],
-];
+export const US_STATE_CODE_TUPLE = codes as [string, ...string[]];
 
 /** Lookup a state by its postal code. */
 export function stateByCode(code: string): UsState | undefined {
