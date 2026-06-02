@@ -95,9 +95,9 @@ export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
   // True once the autopilot has driven at least one tick this game.
   const cheatedRef = useRef(false);
 
-  // Input
+  // Keyboard input (desktop)
   useEffect(() => {
-    if (isMobile || autopilot) return;
+    if (autopilot) return;
     function onKey(e: KeyboardEvent) {
       const dir = KEY_MAP[e.key];
       if (!dir) return;
@@ -106,11 +106,44 @@ export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isMobile, autopilot]);
+  }, [autopilot]);
+
+  // Swipe input (touch): a directional flick on the board turns the snake.
+  useEffect(() => {
+    if (autopilot) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const SWIPE_MIN = 20; // px — below this it's a tap, ignore
+    let start: { x: number; y: number } | null = null;
+
+    function onStart(e: TouchEvent) {
+      const t = e.touches[0];
+      start = { x: t.clientX, y: t.clientY };
+    }
+    function onEnd(e: TouchEvent) {
+      if (!start) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - start.x;
+      const dy = t.clientY - start.y;
+      start = null;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      if (Math.max(absX, absY) < SWIPE_MIN) return;
+      const dir: Direction =
+        absX > absY ? (dx > 0 ? "right" : "left") : dy > 0 ? "down" : "up";
+      setState((current) => applyInput(current, dir));
+    }
+    canvas.addEventListener("touchstart", onStart, { passive: true });
+    canvas.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      canvas.removeEventListener("touchstart", onStart);
+      canvas.removeEventListener("touchend", onEnd);
+    };
+  }, [autopilot]);
 
   // Tick loop — restarts when score changes (so speed steps up)
   useEffect(() => {
-    if (isMobile || state.gameOver) return;
+    if (state.gameOver) return;
     const interval = window.setInterval(() => {
       if (autopilot) cheatedRef.current = true;
       setState((current) =>
@@ -204,14 +237,6 @@ export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
     );
   }, []);
 
-  if (isMobile) {
-    return (
-      <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-        {copy.games.snake.mobileBlocked}
-      </p>
-    );
-  }
-
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
@@ -238,10 +263,16 @@ export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
         ref={canvasRef}
         width={CANVAS_SIZE}
         height={CANVAS_SIZE}
-        className="rounded-lg border"
+        style={{ maxWidth: CANVAS_SIZE }}
+        className="h-auto w-full touch-none rounded-lg border select-none"
         tabIndex={0}
         aria-label={copy.games.snake.title}
       />
+      {isMobile && !state.gameOver && (
+        <p className="text-center text-xs text-muted-foreground">
+          {copy.games.snake.swipeHint}
+        </p>
+      )}
       {state.gameOver && (
         <p className="text-sm font-medium text-destructive">
           {copy.games.snake.gameOver}

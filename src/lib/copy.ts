@@ -1183,15 +1183,14 @@ export const copy = {
     },
     snake: {
       title: "Snake",
-      subtitle: "Klassiek — pijltjes of WASD om te draaien",
+      subtitle: "Klassiek — pijltjes/WASD of veeg op gsm",
       score: "Score",
       gameOver: "Game over",
       restart: "Opnieuw",
       newHighScore: "Nieuwe high score!",
       saved: (n: number) => `Score ${n} opgeslagen`,
       saveResult: "Result opslaan",
-      mobileBlocked:
-        "Snake is enkel speelbaar op desktop — kom terug op een laptop.",
+      swipeHint: "Veeg over het speelveld om de slang te besturen.",
     },
     cap: {
       label: "Coins dit uur",
