@@ -109,7 +109,12 @@ export async function stealCoins(input: StealInput): Promise<StealResult> {
     // Roll the coins back so a failed record doesn't strand the theft.
     await spendBibcoins(thiefId, amount, "theft_gain_refund", ref);
     await awardBibcoins(victimId, amount, "theft_loss_refund", ref);
-    return { ok: false, error: copy.common.genericError };
+    // A pre-0059 DB still has the one-pending-per-pair unique index; surface the
+    // accurate "already open" message instead of a generic error.
+    return {
+      ok: false,
+      error: error.code === "23505" ? copy.theft.alreadyOpen : copy.common.genericError,
+    };
   }
 
   return { ok: true, balance: await getBibcoins(thiefId) };
