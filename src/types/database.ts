@@ -1236,6 +1236,10 @@ export interface Database {
         Args: { _user_id: string; _resume?: boolean };
         Returns: { total_seconds: number; coins_earned: number }[];
       };
+      shares_room: {
+        Args: { _a: string; _b: string };
+        Returns: boolean;
+      };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;

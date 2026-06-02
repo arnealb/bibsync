@@ -242,6 +242,7 @@ export const copy = {
       games: "Games",
       markt: "Markt",
       steps: "Stappen",
+      screenTime: "Schermtijd",
     },
     navLabel: "Sectie-navigatie",
   },
@@ -813,6 +814,23 @@ export const copy = {
     won: (score: number) => `Bord leeg! Score ${score} 🎉`,
     seconds: (s: number) => `${s}s`,
     left: (n: number) => `${n} over`,
+  },
+  screenTime: {
+    title: "Schermtijd",
+    subtitle:
+      "Hoelang heeft iedereen de app open — en hoeveel bibcoins verdienden ze daarmee?",
+    chartTitle: "Laatste 14 dagen",
+    chartSubtitle: "Totale schermtijd van de groep per dag.",
+    boardTitle: "Ranglijst",
+    totalTime: "Totale schermtijd",
+    totalCoins: "Samen verdiend",
+    mostActive: "Actiefste lid",
+    coinsLabel: "verdiend",
+    todaySuffix: (time: string) => `${time} vandaag`,
+    empty: "Nog niemand heeft schermtijd geregistreerd.",
+    you: "(jij)",
+    reward: (perMinute: number) =>
+      `Iedereen verdient ${perMinute} bibcoins per minuut dat de app openstaat.`,
   },
   steps: {
     title: "Stappen vergelijken",

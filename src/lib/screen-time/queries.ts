@@ -1,5 +1,13 @@
+import {
+  aggregateRoomScreenTime,
+  type RoomScreenTime,
+} from "@/lib/screen-time/aggregate";
+import { getRoomMembers } from "@/lib/rooms/queries";
 import { createClient } from "@/lib/supabase/server";
-import { todayInBrussels } from "@/lib/time";
+import { isoDatePlus, todayInBrussels } from "@/lib/time";
+
+/** Number of days shown in the room overview chart. */
+const CHART_DAYS = 14;
 
 export interface ScreenTimeDay {
   /** Brussels day (YYYY-MM-DD). */
@@ -44,4 +52,45 @@ export async function getScreenTime(
     totalSeconds: days.reduce((sum, d) => sum + d.seconds, 0),
     days,
   };
+}
+
+/**
+ * Screen-time overview for everyone in a room: a ranked leaderboard (with coins
+ * earned) plus the room's daily totals for the chart. Relies on the
+ * `screen_time_roommates` RLS policy so a member may read fellow members' rows.
+ */
+export async function getRoomScreenTime(
+  roomId: string,
+): Promise<RoomScreenTime> {
+  const members = await getRoomMembers(roomId);
+  const memberInfos = members.map((m) => ({
+    userId: m.user_id,
+    name: m.profile?.display_name ?? "—",
+    avatarUrl: m.profile?.avatar_url ?? null,
+    loadout: m.loadout,
+  }));
+
+  const axis = Array.from({ length: CHART_DAYS }, (_, i) =>
+    isoDatePlus(-(CHART_DAYS - 1 - i)),
+  );
+
+  if (memberInfos.length === 0) {
+    return aggregateRoomScreenTime([], [], todayInBrussels(), axis);
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("screen_time")
+    .select("user_id, day, seconds")
+    .in(
+      "user_id",
+      memberInfos.map((m) => m.userId),
+    );
+
+  if (error) {
+    console.error("[getRoomScreenTime]", error);
+    return aggregateRoomScreenTime([], memberInfos, todayInBrussels(), axis);
+  }
+
+  return aggregateRoomScreenTime(data ?? [], memberInfos, todayInBrussels(), axis);
 }
