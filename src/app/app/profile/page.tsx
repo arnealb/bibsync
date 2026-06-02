@@ -13,9 +13,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ACHIEVEMENTS } from "@/lib/bibcoins/achievements";
+import { SCREEN_TIME_COINS_PER_MINUTE } from "@/lib/bibcoins/config";
 import { getUnlockedAchievements } from "@/lib/bibcoins/queries";
 import { getAuthContext } from "@/lib/auth";
 import { copy } from "@/lib/copy";
+import { formatScreenTime } from "@/lib/screen-time/format";
+import { getScreenTime } from "@/lib/screen-time/queries";
 import { cn } from "@/lib/utils";
 import { formatDateTime, todayInBrussels } from "@/lib/time";
 
@@ -38,6 +41,7 @@ export default async function ProfilePage() {
   const changedToday =
     ctx.profile?.display_name_changed_on === todayInBrussels();
   const unlocked = new Set(await getUnlockedAchievements(ctx.user.id));
+  const screenTime = await getScreenTime(ctx.user.id);
 
   return (
     <div className="mx-auto max-w-lg space-y-6 px-4 py-12">
@@ -61,6 +65,28 @@ export default async function ProfilePage() {
               />
             )}
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            {copy.profile.screenTime.title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Field
+              label={copy.profile.screenTime.today}
+              value={formatScreenTime(screenTime.todaySeconds)}
+            />
+            <Field
+              label={copy.profile.screenTime.total}
+              value={formatScreenTime(screenTime.totalSeconds)}
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {copy.profile.screenTime.reward(SCREEN_TIME_COINS_PER_MINUTE)}
+          </p>
         </CardContent>
       </Card>
       <Card>

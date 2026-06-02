@@ -93,6 +93,33 @@ export async function claimHourlyBibcoins(userId: string): Promise<number> {
   return typeof data === "number" ? data : 0;
 }
 
+/**
+ * Record a screen-time heartbeat and credit any newly earned daily reward.
+ * The RPC only counts real wall-clock time since the previous beat (capped),
+ * so it is safe to call on a fixed interval. Returns today's total seconds and
+ * the coins just granted (both 0 without the service key).
+ */
+export async function recordScreenTime(
+  userId: string,
+  resume = false,
+): Promise<{ totalSeconds: number; coinsEarned: number }> {
+  const admin = createAdminClient();
+  if (!admin) return { totalSeconds: 0, coinsEarned: 0 };
+  const { data, error } = await admin.rpc("record_screen_time", {
+    _user_id: userId,
+    _resume: resume,
+  });
+  if (error) {
+    console.error("[recordScreenTime]", error);
+    return { totalSeconds: 0, coinsEarned: 0 };
+  }
+  const row = data?.[0];
+  return {
+    totalSeconds: row?.total_seconds ?? 0,
+    coinsEarned: row?.coins_earned ?? 0,
+  };
+}
+
 /** Credit the night-owl "Strijder" bonus (00:30–01:30 Brussels). Returns the
  *  amount granted (0 outside the window or already claimed today). */
 export async function claimStrijderBonus(userId: string): Promise<number> {

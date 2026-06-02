@@ -290,6 +290,15 @@ Hooks in `src/hooks/use-*-realtime.ts`:
 - **Steps:** daily total per user per room. `health` rows carry the running
   daily total (take the **max**), `browser` pedometer rows are increments
   (**sum**) — see `src/lib/steps/aggregate.ts`; never just sum all rows.
+- **Schermtijd (screen time, migration 0057):** the always-mounted
+  `ScreenTimeTracker` (app layout) sends a heartbeat every 60s while the tab is
+  **visible**; `record_screen_time` (SECURITY DEFINER) credits only the real
+  wall-clock gap since the previous beat, capped at 90s/beat — so spamming can't
+  inflate it and a closed tab accrues nothing. A `_resume` beat (sent on
+  becoming visible) just resets the baseline, so hidden-tab time is never
+  counted. Reward: **10 bibcoins per full minute/day**, capped at 720 min/day,
+  idempotent via the per-day `awarded_coins` guard. Shown on `/app/profile`
+  (`getScreenTime`); pure display helpers in `src/lib/screen-time/`.
 - **Inside joke (poker/games chips were bibcoins):** poker buy-in moves your
   whole balance to chips; blackjack/roulette bet per round straight from the
   wallet.

@@ -104,6 +104,13 @@ export const copy = {
       tooLarge: "Afbeelding mag max 5 MB zijn.",
       error: "Uploaden mislukt. Probeer opnieuw.",
     },
+    screenTime: {
+      title: "Schermtijd",
+      today: "Vandaag",
+      total: "Totaal",
+      reward: (perMinute: number) =>
+        `Je verdient ${perMinute} bibcoins per minuut dat de app openstaat.`,
+    },
   },
   appHome: {
     welcome: (name: string) => `Welkom ${name}`,
