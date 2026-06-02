@@ -1,11 +1,14 @@
 import { z } from "zod";
 
+import { US_STATE_CODE_TUPLE } from "@/lib/usstates/states";
+
 export const GAME_KEYS = [
   "snake",
   "petconnect",
   "flappy",
   "tetris",
   "2048",
+  "usstates",
 ] as const;
 export const gameKeySchema = z.enum(GAME_KEYS);
 export type GameKey = z.infer<typeof gameKeySchema>;
@@ -18,3 +21,10 @@ export const submitScoreSchema = z.object({
 });
 
 export type SubmitScoreInput = z.infer<typeof submitScoreSchema>;
+
+export const claimStateCoinSchema = z.object({
+  roomId: z.string().uuid(),
+  code: z.enum(US_STATE_CODE_TUPLE),
+});
+
+export type ClaimStateCoinInput = z.infer<typeof claimStateCoinSchema>;
