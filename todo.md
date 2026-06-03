@@ -32,6 +32,15 @@ unchecked item top-to-bottom.
       `ARCADE_COINS_PER_EVENT`, gedeelde **250/uur-cap** met statusbalk
       `ArcadeCapBar`) via `earnFromArcade`. Elke skill-game heeft een dagelijkse
       **King** (Snake 1000, rest 500 via migratie `0051_game_kings.sql`).
+- [x] **USA Staten (kennisquiz)** — Sporcle-stijl kaartspel in de Games-
+      bibliotheek (`/games/usstates`): blanco SVG-kaart van de 50 staten, 5-min
+      timer, typ de Engelse naam → staat kleurt groen + label op de kaart,
+      gemiste staten in het rood bij het einde. +10 bibcoins per staat
+      (idempotent, **max 1×/staat/dag** via de ledger-sleutel
+      `usstates:<user>:<code>:<datum>`), persoonlijke beste score hergebruikt
+      `game_scores` (`game_key="usstates"`, geen migratie). Pure, geteste logica
+      in `src/lib/usstates/`; kaart-geometrie gegenereerd uit `@svg-maps/usa`
+      (MIT) door `scripts/build-us-map.mjs`. Strikt, Engels; geen leaderboard/King.
 
 ## Now
 

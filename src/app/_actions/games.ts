@@ -40,7 +40,7 @@ export async function submitGameScore(
 
   if (parsed.data.gameKey === "petconnect") {
     await earnFromPetConnect(access.userId);
-  } else {
+  } else if (parsed.data.gameKey !== "usstates") {
     await earnFromArcade(
       access.userId,
       parsed.data.gameKey,
