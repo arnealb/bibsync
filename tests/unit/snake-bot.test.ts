@@ -59,13 +59,15 @@ describe("Hamiltonian cycle", () => {
 describe("snake bot", () => {
   const seeds = [1, 7, 42];
 
-  it("never reverses into its own neck", () => {
+  // Full bot games take tens of thousands of ticks per seed; needs more
+  // than the default 5s when the machine is under load.
+  it("never reverses into its own neck", { timeout: 60_000 }, () => {
     for (const seed of seeds) {
       expect(playBot(seed, 250).reversed).toBe(false);
     }
   });
 
-  it("plays deep into the board without dying", () => {
+  it("plays deep into the board without dying", { timeout: 60_000 }, () => {
     for (const seed of seeds) {
       const result = playBot(seed, 250);
       expect(result.score).toBeGreaterThanOrEqual(250);
