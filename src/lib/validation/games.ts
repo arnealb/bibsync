@@ -18,6 +18,8 @@ export const submitScoreSchema = z.object({
   gameKey: gameKeySchema,
   score: z.number().int().min(0).max(100_000),
   cheated: z.boolean().optional(),
+  /** Seconds to the run's last point — score ties rank the fastest first. */
+  durationSeconds: z.number().int().min(0).max(86_400).optional(),
 });
 
 export type SubmitScoreInput = z.infer<typeof submitScoreSchema>;

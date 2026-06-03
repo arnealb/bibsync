@@ -281,7 +281,11 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   Pure coin/window helpers in `src/lib/games/arcade-coins.ts` /
   `arcade-window.ts`. Every skill game has a daily **King** (top honest
   `game_scores` score per room): Snake 1000 (cron `0047`), the others 500
-  (cron `0051_game_kings.sql`); the crown is the generic `KingBadge`.
+  (cron `0051_game_kings.sql`; `0060` adds USA Staten to the same function);
+  the crown is the generic `KingBadge`. Score ties rank the **fastest run**
+  first (`game_scores.duration_seconds` = seconds to the last correct answer,
+  only USA Staten fills it; pure helpers in `src/lib/games/rank.ts`), then the
+  earliest record holder.
 - **Leaving a table frees the seat:** blackjack/poker panels use
   `useAutoLeaveTable` — SPA navigation away unmounts the panel and calls the
   (idempotent) leave action after a debounced tick (StrictMode-remount-safe);

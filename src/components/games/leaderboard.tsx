@@ -9,6 +9,7 @@ import { UserName } from "@/components/user-name";
 import { useLeaderboardSettingsRealtime } from "@/hooks/use-leaderboard-settings-realtime";
 import { copy } from "@/lib/copy";
 import type { LeaderboardEntry } from "@/lib/games/queries";
+import { mmss } from "@/lib/games/rank";
 
 interface LeaderboardProps {
   title: string;
@@ -87,6 +88,11 @@ export function Leaderboard({
               </span>
               <span className="font-mono tabular-nums text-sm font-semibold">
                 {entry.bestScore}
+                {entry.durationSeconds !== null && (
+                  <span className="ml-1.5 font-normal text-muted-foreground">
+                    {mmss(entry.durationSeconds)}
+                  </span>
+                )}
               </span>
             </li>
           ))}
