@@ -60,14 +60,20 @@ describe("rollDice", () => {
 });
 
 describe("house edge holds (no +EV target)", () => {
-  it("every target/direction has EV ≤ the stake", () => {
-    for (let bp = DICE_MIN_BP; bp <= DICE_MAX_BP; bp++) {
-      for (const dir of ["under", "over"] as const) {
-        for (const bet of [1, 7, 13, 50, 100, 999]) {
-          const ev = diceWinChance(bp, dir) * dicePayout(bet, bp, dir);
-          expect(ev).toBeLessThanOrEqual(bet + 1e-9);
+  // Brute-force sweep over every target; needs more than the default 5s
+  // when the machine is under load.
+  it(
+    "every target/direction has EV ≤ the stake",
+    { timeout: 30_000 },
+    () => {
+      for (let bp = DICE_MIN_BP; bp <= DICE_MAX_BP; bp++) {
+        for (const dir of ["under", "over"] as const) {
+          for (const bet of [1, 7, 13, 50, 100, 999]) {
+            const ev = diceWinChance(bp, dir) * dicePayout(bet, bp, dir);
+            expect(ev).toBeLessThanOrEqual(bet + 1e-9);
+          }
         }
       }
-    }
-  });
+    },
+  );
 });

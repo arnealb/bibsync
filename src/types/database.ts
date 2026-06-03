@@ -458,6 +458,7 @@ export interface Database {
           game_key: string;
           score: number;
           cheated: boolean;
+          duration_seconds: number | null;
           created_at: Timestamp;
         };
         Insert: {
@@ -467,6 +468,7 @@ export interface Database {
           game_key: string;
           score: number;
           cheated?: boolean;
+          duration_seconds?: number | null;
           created_at?: Timestamp;
         };
         Update: {
@@ -476,6 +478,7 @@ export interface Database {
           game_key?: string;
           score?: number;
           cheated?: boolean;
+          duration_seconds?: number | null;
           created_at?: Timestamp;
         };
         Relationships: [];

@@ -1205,6 +1205,7 @@ export const copy = {
       tetris: "Tetris King",
       twenty48: "2048 King",
       petconnect: "Pet Connect King",
+      usstates: "USA Staten King",
     },
     snake: {
       title: "Snake",

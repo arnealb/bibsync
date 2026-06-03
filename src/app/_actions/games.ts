@@ -12,6 +12,11 @@ import { requireRoomAccess } from "@/lib/rooms/queries";
 import { createClient } from "@/lib/supabase/server";
 import { submitScoreSchema, type SubmitScoreInput } from "@/lib/validation/games";
 
+/** True when an insert failed because a (not-yet-migrated) column is missing. */
+function isMissingColumn(error: { code?: string } | null): boolean {
+  return error?.code === "PGRST204" || error?.code === "42703";
+}
+
 export async function submitGameScore(
   input: SubmitScoreInput,
 ): Promise<ActionResult> {
@@ -24,14 +29,22 @@ export async function submitGameScore(
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
   if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("game_scores").insert({
+  const row = {
     room_id: parsed.data.roomId,
     user_id: access.userId,
     game_key: parsed.data.gameKey,
     score: parsed.data.score,
     cheated: parsed.data.cheated ?? false,
+  };
+  const supabase = await createClient();
+  let { error } = await supabase.from("game_scores").insert({
+    ...row,
+    duration_seconds: parsed.data.durationSeconds ?? null,
   });
+  if (isMissingColumn(error)) {
+    // duration_seconds (migration 0060) not applied yet — keep the score.
+    ({ error } = await supabase.from("game_scores").insert(row));
+  }
 
   if (error) {
     console.error("[submitGameScore]", error);

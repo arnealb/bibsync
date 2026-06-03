@@ -10,6 +10,7 @@ import { UsStatesSummary } from "@/components/games/usstates/usstates-summary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { copy } from "@/lib/copy";
+import { mmss } from "@/lib/games/rank";
 import { matchState } from "@/lib/usstates/match";
 import {
   USSTATES_DURATION_SECONDS,
@@ -17,12 +18,6 @@ import {
 } from "@/lib/usstates/config";
 
 type Status = "idle" | "running" | "ended";
-
-function mmss(total: number): string {
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
 
 export function UsStatesGame({
   roomId,
@@ -40,6 +35,8 @@ export function UsStatesGame({
   const [balance, setBalance] = useState(initialBalance);
   const inputRef = useRef<HTMLInputElement>(null);
   const endedRef = useRef(false);
+  // Elapsed seconds at the last correct guess — the leaderboard tie-breaker.
+  const lastFoundElapsedRef = useRef(0);
 
   // End the round exactly once, then persist the score.
   const endGame = useCallback(
@@ -52,6 +49,7 @@ export function UsStatesGame({
           roomId,
           gameKey: "usstates",
           score,
+          durationSeconds: lastFoundElapsedRef.current,
         });
         if (!res.ok) toast.error(res.error);
         else if (myBest === null || score > myBest) {
@@ -78,6 +76,7 @@ export function UsStatesGame({
 
   function startGame() {
     endedRef.current = false;
+    lastFoundElapsedRef.current = 0;
     setFound(new Set());
     setValue("");
     setSecondsLeft(USSTATES_DURATION_SECONDS);
@@ -91,6 +90,7 @@ export function UsStatesGame({
     const code = matchState(next, found);
     if (!code) return;
     // Correct, fresh state: accept it, clear the box, award the coin.
+    lastFoundElapsedRef.current = USSTATES_DURATION_SECONDS - secondsLeft;
     const nextFound = new Set(found);
     nextFound.add(code);
     setFound(nextFound);

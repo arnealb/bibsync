@@ -40,7 +40,11 @@ unchecked item top-to-bottom.
       `usstates:<user>:<code>:<datum>`), persoonlijke beste score hergebruikt
       `game_scores` (`game_key="usstates"`, geen migratie). Pure, geteste logica
       in `src/lib/usstates/`; kaart-geometrie gegenereerd uit `@svg-maps/usa`
-      (MIT) door `scripts/build-us-map.mjs`. Strikt, Engels; geen leaderboard/King.
+      (MIT) door `scripts/build-us-map.mjs`. Strikt, Engels. Per-kamer
+      leaderboard + dagelijkse **USA Staten King** (500, migratie
+      `0060_usstates_king.sql`); gelijke scores → snelste tijd wint
+      (`game_scores.duration_seconds` = seconden tot het laatste juiste
+      antwoord, getoond naast de score), daarna vroegste recordhouder.
 
 ## Now
 
