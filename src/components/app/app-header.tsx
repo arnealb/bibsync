@@ -8,7 +8,7 @@ import { resolveLoadout } from "@/lib/cosmetics/resolve";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
-import { getBibcoins } from "@/lib/bibcoins/queries";
+import { getWallet } from "@/lib/bibcoins/queries";
 import { getAuthContext } from "@/lib/auth";
 import { copy } from "@/lib/copy";
 import { getMyRooms } from "@/lib/rooms/queries";
@@ -16,9 +16,9 @@ import { getMyRooms } from "@/lib/rooms/queries";
 export async function AppHeader() {
   const [ctx, rooms] = await Promise.all([getAuthContext(), getMyRooms()]);
   const name = ctx?.profile?.display_name ?? ctx?.user.email ?? "?";
-  const [balance, loadout] = ctx
-    ? await Promise.all([getBibcoins(ctx.user.id), getLoadout(ctx.user.id)])
-    : [0, null];
+  const [wallet, loadout] = ctx
+    ? await Promise.all([getWallet(ctx.user.id), getLoadout(ctx.user.id)])
+    : [{ bibcoins: 0, debt: 0 }, null];
 
   return (
     <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur">
@@ -33,7 +33,11 @@ export async function AppHeader() {
           />
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <BibcoinsBalance userId={ctx?.user.id ?? ""} initialBalance={balance} />
+          <BibcoinsBalance
+            userId={ctx?.user.id ?? ""}
+            initialBalance={wallet.bibcoins}
+            initialDebt={wallet.debt}
+          />
           {ctx?.isAdmin && (
             <Button
               render={<Link href="/app/admin" />}

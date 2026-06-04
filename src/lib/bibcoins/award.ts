@@ -54,6 +54,25 @@ export async function spendBibcoins(
 }
 
 /**
+ * Add to a user's outstanding theft debt: half of their future income is garnished until
+ * the debt is repaid (migration 0061). Used for the uncovered part of a
+ * caught-thief penalty.
+ */
+export async function addWalletDebt(
+  userId: string,
+  amount: number,
+): Promise<void> {
+  if (amount <= 0) return;
+  const admin = createAdminClient();
+  if (!admin) return;
+  const { error } = await admin.rpc("add_wallet_debt", {
+    _user_id: userId,
+    _amount: amount,
+  });
+  if (error) console.error("[addWalletDebt]", amount, error);
+}
+
+/**
  * Atomically move `amount` bibcoins from one user to another. Returns true on
  * success, false if the sender can't afford it or the transfer was already
  * processed for this `ref`. No-op without the service key.

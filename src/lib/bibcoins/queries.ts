@@ -57,6 +57,19 @@ export async function getBibcoins(userId: string): Promise<number> {
   return data?.bibcoins ?? BIBCOINS_START;
 }
 
+/** The current user's balance + outstanding theft debt (RLS: own row only). */
+export async function getWallet(
+  userId: string,
+): Promise<{ bibcoins: number; debt: number }> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("wallets")
+    .select("bibcoins, debt")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return { bibcoins: data?.bibcoins ?? BIBCOINS_START, debt: data?.debt ?? 0 };
+}
+
 /** Ids of achievements the user has unlocked. */
 export async function getUnlockedAchievements(
   userId: string,

@@ -145,6 +145,10 @@ teammate merge, so the sequence jumps `0011 → 0014`):
     hidden bomb positions, RLS on / no policies). Wallet bet via `spend_/award_`,
     version-guarded persistence; pure engine in `src/lib/mines/`. (Migrations
     `0032`–`0035` exist but predate this list — trust the migration files.)
+26. `0061_theft_debt.sql` — **theft debt**: `wallets.debt` + the
+    `wallets_garnish_credit` BEFORE-UPDATE trigger (burns half of every wallet
+    credit while `debt > 0`; refund-style awards exempt — mirror
+    `isGarnishExempt` in `src/lib/theft/debt.ts`) + `add_wallet_debt` RPC.
 
 **Plinko** (`/games/plinko`) is a **stateless** gok: one `dropPlinko` action
 stakes the bet, rolls the ball server-side and pays out instantly — no table,
@@ -340,6 +344,15 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   the auth-context actions). The **only** escape is buying yourself off
   (`buyOffPillory`); **stealing stays allowed** because it's a global profile
   action that never routes through a room's `requireRoomAccess`.
+- **Stelen-schuld:** a caught thief owes 2×. Collection order: wallet drain →
+  forced sale of their BIB-aandelen (`seizeStockValue` in `_actions/theft.ts`,
+  version-guarded like `sellStock`; a lost race skips seizure) → the rest
+  becomes `wallets.debt`. While `debt > 0` the garnish trigger burns **half of
+  every wallet credit** (ledger reason `theft_debt_repayment` — the `theft_`
+  prefix keeps it out of the claim-window spend check), stealing is blocked
+  (`copy.theft.debtBlocked`), and the header balance shows a red `−debt` chip.
+  The victim is still paid the full 2× instantly; garnished coins are burned
+  to offset that mint.
 
 ## Gotchas
 

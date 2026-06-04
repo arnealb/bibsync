@@ -25,10 +25,12 @@ export function StealBibcoins({
   victimId,
   victimName,
   victimBalance,
+  viewerDebt = 0,
 }: {
   victimId: string;
   victimName: string;
   victimBalance: number;
+  viewerDebt?: number;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -62,7 +64,8 @@ export function StealBibcoins({
             variant="outline"
             size="sm"
             className="gap-1.5 border-red-500/40 text-red-600 hover:bg-red-500/10 dark:text-red-400"
-            disabled={victimBalance < 1}
+            disabled={victimBalance < 1 || viewerDebt > 0}
+            title={viewerDebt > 0 ? copy.theft.debtBlocked : undefined}
           >
             <Grab className="size-4" />
             {copy.theft.button}

@@ -8,9 +8,10 @@ import { createClient } from "@/lib/supabase/client";
 import { ensureRealtimeAuth } from "@/lib/supabase/realtime-auth";
 
 /**
- * Live wallet balance for the signed-in user. The `wallets` table is in the
- * realtime publication and RLS-scoped to your own row, so every server-side
- * balance change (games, voting, hourly/daily claim, shop) fires an event.
+ * Live wallet balance (and optional debt) for the signed-in user. The
+ * `wallets` table is in the realtime publication and RLS-scoped to your own
+ * row, so every server-side balance change (games, voting, hourly/daily claim,
+ * shop) fires an event. The `debt` column rides along for free in the payload.
  *
  * The socket must carry the user's JWT *before* the channel joins, otherwise
  * the RLS-scoped `postgres_changes` binding is created anonymously and never
@@ -20,7 +21,7 @@ import { ensureRealtimeAuth } from "@/lib/supabase/realtime-auth";
  */
 export function useBibcoinsRealtime(
   userId: string,
-  onBalance: (bibcoins: number) => void,
+  onBalance: (bibcoins: number, debt?: number) => void,
 ) {
   const ref = useRef(onBalance);
   useEffect(() => {
@@ -47,9 +48,12 @@ export function useBibcoinsRealtime(
             filter: `user_id=eq.${userId}`,
           },
           (p) => {
-            const row = p.new as { bibcoins?: number } | null;
+            const row = p.new as { bibcoins?: number; debt?: number } | null;
             if (row && typeof row.bibcoins === "number")
-              ref.current(row.bibcoins);
+              ref.current(
+                row.bibcoins,
+                typeof row.debt === "number" ? row.debt : undefined,
+              );
           },
         )
         .subscribe();
