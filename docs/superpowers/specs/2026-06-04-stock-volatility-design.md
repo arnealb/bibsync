@@ -145,6 +145,11 @@ Vitest, seeded PRNG (mulberry32-style local helper):
   the buy price floors at `MIN_PRICE` — no new guards needed.
 - Trades between ticks: unaffected; noise/events exist only at fold time, so
   nothing double-applies.
+- Trades concurrent with the tick: the fold update is version-guarded like the
+  trade actions (bumps `casino_stock.version`); on a lost race the tick skips
+  entirely (no fold, no history row) — a trade is never clobbered. The losing
+  side of the opposite race is the trade, which already returns its "busy"
+  error and the client retries.
 - Owner's manual price pinning (direct treasury/baseline_net/version update)
   keeps working; the next tick simply continues from the pinned value.
 - Old history rows: `event` is null — chart handles missing field.

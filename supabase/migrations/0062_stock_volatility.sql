@@ -40,10 +40,17 @@ declare
   _keep   double precision := power(1 - 0.02, 1.0 / 24);  -- 2%/day fee
   _skim   double precision := 0.75;   -- share of casino P&L burned
   _sd     double precision := 0.016;  -- hourly lognormal sigma
-  _z      double precision;
-  _factor double precision;
-  _roll   double precision;
-  _event  text := null;
+  _z          double precision;
+  _factor     double precision;
+  _roll       double precision;
+  _event      text := null;
+  _crash_p    double precision := 0.01;   -- chance/hour of a crash
+  _crash_min  double precision := 0.55;   -- worst crash factor (−45%)
+  _crash_max  double precision := 0.80;   -- mildest crash factor (−20%)
+  _rally_p    double precision := 0.02;   -- chance/hour of a rally
+  _rally_min  double precision := 1.10;   -- mildest rally factor (+10%)
+  _rally_max  double precision := 1.225;  -- best rally factor (+22.5%)
+  _updated    integer;
 begin
   select net into _net from public.casino_stats();
   select * into _stock from public.casino_stock where id;
@@ -53,26 +60,36 @@ begin
     _tre := _stock.treasury + (_net - _stock.baseline_net) * (1 - _skim);
     -- 2. management fee (hourly root of the daily rate)
     _tre := _tre * _keep;
-    -- 3. lognormal noise, arithmetic mean 1, clamped to ±7% per tick
-    --    (1 - random() avoids ln(0); Box–Muller)
+    -- 3. lognormal noise, arithmetic mean 1, clamped to ±7% per tick.
+    --    (1 - random() avoids ln(0); Box–Muller. Every random() call below is
+    --    a deliberate independent draw — caching one value would correlate
+    --    the Box–Muller pair and the event roll/size.)
     _z := sqrt(-2 * ln(1 - random())) * cos(2 * pi() * random());
     _factor := exp(_sd * _z - _sd * _sd / 2);
     _factor := least(1.07, greatest(0.93, _factor));
     _tre := _tre * _factor;
     -- 4. event roll: 1% crash (−20…−45%), 2% rally (+10…+22.5%) — EV-0
     _roll := random();
-    if _roll < 0.01 then
+    if _roll < _crash_p then
       _event := 'crash';
-      _tre := _tre * (0.55 + random() * 0.25);
-    elsif _roll < 0.03 then
+      _tre := _tre * (_crash_min + random() * (_crash_max - _crash_min));
+    elsif _roll < _crash_p + _rally_p then
       _event := 'rally';
-      _tre := _tre * (1.10 + random() * 0.125);
+      _tre := _tre * (_rally_min + random() * (_rally_max - _rally_min));
     end if;
     _tre := greatest(0, _tre);
 
+    -- Version-guarded like the trade actions: a trade that committed between
+    -- our read and this write must not be clobbered. On a lost race, skip the
+    -- whole fold (no stale history row either) — the next hour catches up.
     update public.casino_stock
-      set treasury = _tre, baseline_net = _net, updated_at = now()
-      where id;
+      set treasury = _tre, baseline_net = _net, updated_at = now(),
+          version = _stock.version + 1
+      where id and version = _stock.version;
+    get diagnostics _updated = row_count;
+    if _updated = 0 then
+      return;
+    end if;
     _price := greatest(1, _tre / _stock.shares);
   else
     _price := 100;
