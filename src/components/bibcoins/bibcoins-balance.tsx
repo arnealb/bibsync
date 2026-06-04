@@ -16,12 +16,18 @@ import { copy } from "@/lib/copy";
 export function BibcoinsBalance({
   userId,
   initialBalance,
+  initialDebt = 0,
 }: {
   userId: string;
   initialBalance: number;
+  initialDebt?: number;
 }) {
   const [balance, setBalance] = useState(initialBalance);
-  useBibcoinsRealtime(userId, setBalance);
+  const [debt, setDebt] = useState(initialDebt);
+  useBibcoinsRealtime(userId, (bibcoins, nextDebt) => {
+    setBalance(bibcoins);
+    if (typeof nextDebt === "number") setDebt(nextDebt);
+  });
 
   return (
     <Button
@@ -34,6 +40,14 @@ export function BibcoinsBalance({
     >
       <Coins className="size-4 text-amber-500" />
       {balance}
+      {debt > 0 && (
+        <span
+          className="font-semibold text-red-600 dark:text-red-400"
+          title={copy.theft.debtHint}
+        >
+          −{debt}
+        </span>
+      )}
     </Button>
   );
 }
