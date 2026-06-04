@@ -508,6 +508,7 @@ export interface Database {
           last_hourly_at: Timestamp;
           last_daily_on: string | null;
           daily_streak: number;
+          debt: number;
         };
         Insert: {
           user_id: string;
@@ -515,6 +516,7 @@ export interface Database {
           last_hourly_at?: Timestamp;
           last_daily_on?: string | null;
           daily_streak?: number;
+          debt?: number;
         };
         Update: {
           user_id?: string;
@@ -522,6 +524,7 @@ export interface Database {
           last_hourly_at?: Timestamp;
           last_daily_on?: string | null;
           daily_streak?: number;
+          debt?: number;
         };
         Relationships: [];
       };
@@ -1221,6 +1224,10 @@ export interface Database {
       claim_hourly_bibcoins: {
         Args: { _user_id: string };
         Returns: number;
+      };
+      add_wallet_debt: {
+        Args: { _user_id: string; _amount: number };
+        Returns: undefined;
       };
       claim_daily_bibcoins: {
         Args: { _user_id: string };
