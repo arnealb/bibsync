@@ -85,12 +85,12 @@ export async function getStockHistory(limit = 48): Promise<StockTick[]> {
     return [];
   }
   return (data ?? [])
-    .map((r) => ({
-      price: Number(r.price),
-      recordedAt: r.recorded_at,
-      event: (r.event === "crash" || r.event === "rally"
-        ? r.event
-        : null) as "crash" | "rally" | null,
-    }))
+    .map(
+      (r): StockTick => ({
+        price: Number(r.price),
+        recordedAt: r.recorded_at,
+        event: r.event === "crash" || r.event === "rally" ? r.event : null,
+      }),
+    )
     .reverse();
 }
