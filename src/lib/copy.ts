@@ -703,6 +703,10 @@ export const copy = {
     tooLate: "Te laat — je had al iets uitgegeven. De dief houdt de buit.",
     falseClaim: (amount: number) =>
       `Je was niet bestolen. Boete: ${amount} bibcoins naar het casino.`,
+    debtBlocked:
+      "Je staat in het rood — betaal eerst je schuld af voor je weer steelt.",
+    debtHint:
+      "Schuld: de helft van je inkomsten wordt afgeroomd tot dit 0 is.",
   },
   stock: {
     title: "BIB-aandeel",

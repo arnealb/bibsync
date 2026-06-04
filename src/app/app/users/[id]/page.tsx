@@ -6,7 +6,7 @@ import { GiftBibcoins } from "@/components/bibcoins/gift-bibcoins";
 import { StealBibcoins } from "@/components/bibcoins/steal-bibcoins";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
-import { getBibcoins } from "@/lib/bibcoins/queries";
+import { getWallet } from "@/lib/bibcoins/queries";
 import { getAuthContext } from "@/lib/auth";
 import { COSMETIC_BY_ID, type CosmeticItem } from "@/lib/cosmetics/catalog";
 import { effectClassName } from "@/lib/cosmetics/effects";
@@ -71,11 +71,11 @@ export default async function UserProfilePage({
   if (!profile) notFound();
 
   const isSelf = id === ctx.user.id;
-  const [stats, ownedIds, loadoutRow, myBalance] = await Promise.all([
+  const [stats, ownedIds, loadoutRow, myWallet] = await Promise.all([
     getProfileStats(id),
     getOwnedCosmetics(id),
     getLoadout(id),
-    isSelf ? Promise.resolve(0) : getBibcoins(ctx.user.id),
+    isSelf ? Promise.resolve({ bibcoins: 0, debt: 0 }) : getWallet(ctx.user.id),
   ]);
 
   const loadout = resolveLoadout(loadoutRow);
@@ -124,12 +124,13 @@ export default async function UserProfilePage({
             <GiftBibcoins
               recipientId={id}
               recipientName={profile.display_name}
-              myBalance={myBalance}
+              myBalance={myWallet.bibcoins}
             />
             <StealBibcoins
               victimId={id}
               victimName={profile.display_name}
               victimBalance={stats.bibcoins}
+              viewerDebt={myWallet.debt}
             />
           </div>
         )}

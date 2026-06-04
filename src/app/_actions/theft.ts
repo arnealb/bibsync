@@ -49,6 +49,17 @@ export async function stealCoins(input: StealInput): Promise<StealResult> {
     return { ok: false, error: copy.theft.notYourself };
   }
 
+  // A thief in debt can't steal — repayment first. Otherwise stealing while
+  // broke is just a loan at 50% interest (the garnish would take half).
+  const { data: thiefWallet } = await admin
+    .from("wallets")
+    .select("debt")
+    .eq("user_id", thiefId)
+    .maybeSingle();
+  if ((thiefWallet?.debt ?? 0) > 0) {
+    return { ok: false, error: copy.theft.debtBlocked };
+  }
+
   const { data: victim } = await admin
     .from("profiles")
     .select("id")
