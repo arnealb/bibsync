@@ -22,6 +22,7 @@ describe("garnishSplit", () => {
 
   it("is a no-op for a non-positive amount", () => {
     expect(garnishSplit(0, 500)).toEqual({ kept: 0, garnished: 0 });
+    expect(garnishSplit(-5, 100)).toEqual({ kept: -5, garnished: 0 });
   });
 });
 

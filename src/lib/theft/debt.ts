@@ -7,7 +7,9 @@
 /**
  * Split a wallet credit between the user and their outstanding debt: half of
  * every credit (rounded down, capped at the remaining debt) is garnished —
- * burned — until the debt is gone. Mirror of garnish_wallet_credit().
+ * burned — until the debt is gone. Mirror of garnish_wallet_credit(): a
+ * non-positive amount passes through untouched, exactly like the trigger's
+ * `_gain <= 0` early return.
  */
 export function garnishSplit(
   amount: number,
