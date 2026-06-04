@@ -737,8 +737,10 @@ export const copy = {
     sold: (qty: number, proceeds: number) =>
       `${qty} ${qty === 1 ? "aandeel" : "aandelen"} verkocht voor ${proceeds} bibcoins 💰`,
     empty: "Nog geen koersgeschiedenis — wees de eerste die instapt.",
+    crashMark: "📉 Beurscrash",
+    rallyMark: "📈 Rally",
     balance: "Saldo",
-    hint: "De koers volgt de winst van het casino: hoe meer er verloren wordt aan de tafels, hoe meer jouw aandeel waard wordt.",
+    hint: "De koers volgt deels de winst van het casino, maar schommelt elk uur mee met de markt — en af en toe crasht of rallyt hij hard.",
     feeNote: (pct: string) =>
       `Let op: elke dag gaat er ${pct} beheerskost van het fonds af. Je wint dus alleen als het casino sneller wint dan die kost — geen gratis spaarpot.`,
     holdingCapNote: (cap: number) =>

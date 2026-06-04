@@ -149,6 +149,16 @@ teammate merge, so the sequence jumps `0011 → 0014`):
     `wallets_garnish_credit` BEFORE-UPDATE trigger (burns half of every wallet
     credit while `debt > 0`; refund-style awards exempt — mirror
     `isGarnishExempt` in `src/lib/theft/debt.ts`) + `add_wallet_debt` RPC.
+27. `0062_stock_volatility.sql` — **BIB-aandeel volatility**: the hourly
+    `snapshot_casino_stock()` fold now applies a 75% profit skim (only 25% of
+    casino P&L reaches holders), a 2%/day fee, EV-neutral lognormal noise
+    (±1.6%/h, clamped ±7%) and EV-0 crash/rally events (1%/h ×0.55–0.80,
+    2%/h ×1.10–1.225) logged in `casino_stock_history.event` and marked on
+    the chart. The fold is version-guarded like the trade actions (a lost
+    race skips the tick). The skim also lives in the engine's `liveTreasury`,
+    so trade-time folds can't bypass it. Pure mirror + Monte-Carlo EV guards in
+    `src/lib/stock/tick.ts`; constants in `src/lib/stock/config.ts` (SQL
+    authoritative).
 
 **Plinko** (`/games/plinko`) is a **stateless** gok: one `dropPlinko` action
 stakes the bet, rolls the ball server-side and pays out instantly — no table,

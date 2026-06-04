@@ -53,6 +53,24 @@ export function PriceChart({ ticks }: { ticks: StockTick[] }) {
         vectorEffect="non-scaling-stroke"
         className={cn(up ? "text-green-500" : "text-red-500")}
       />
+      {ticks.map((t, i) =>
+        t.event ? (
+          // Zero-length round-capped path = a dot that ignores the
+          // preserveAspectRatio="none" stretch (vectorEffect keeps it round).
+          <path
+            key={i}
+            d={`M ${x(i)} ${y(t.price)} l 0.01 0`}
+            stroke={t.event === "crash" ? "rgb(239,68,68)" : "rgb(34,197,94)"}
+            strokeWidth="7"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          >
+            <title>
+              {t.event === "crash" ? copy.stock.crashMark : copy.stock.rallyMark}
+            </title>
+          </path>
+        ) : null,
+      )}
     </svg>
   );
 }

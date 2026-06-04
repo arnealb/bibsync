@@ -15,9 +15,33 @@ export const MAX_TRADE_QTY = 100_000;
  * down unless house profit refills it faster. This turns the share from a
  * risk-free hoard into a real bet on casino activity, and is a genuine coin
  * sink. Applied hourly in `snapshot_casino_stock()` as the 1/24 root so it
- * compounds to exactly this rate per day. Mirror in 0055_stock_fee.sql.
+ * compounds to exactly this rate per day. Mirror in 0062_stock_volatility.sql.
  */
-export const MANAGEMENT_FEE_DAILY = 0.01;
+export const MANAGEMENT_FEE_DAILY = 0.02;
+
+/**
+ * Volatility knobs — MIRROR of `snapshot_casino_stock()` in
+ * `supabase/migrations/0062_stock_volatility.sql` (SQL is authoritative).
+ * Together they make the long-run EV of holding ~neutral: only a slice of
+ * casino P&L reaches holders (skim), the noise has arithmetic mean exactly 1,
+ * and crash/rally sizes×chances cancel out (EV-0 events).
+ */
+/** Share of casino P&L (both signs) burned at each hourly fold. */
+export const PROFIT_SKIM = 0.75;
+/** Lognormal sigma per hourly tick (≈ ±1.6%/hour, ≈ ±8%/day). */
+export const NOISE_SD_HOURLY = 0.016;
+/** A single noise tick is bounded to ±this fraction. */
+export const NOISE_CLAMP = 0.07;
+/** Chance per hourly tick of a crash. */
+export const CRASH_CHANCE_HOURLY = 0.01;
+/** Crash multiplies the treasury by a uniform draw from this range (−45…−20%). */
+export const CRASH_FACTOR_MIN = 0.55;
+export const CRASH_FACTOR_MAX = 0.8;
+/** Chance per hourly tick of a rally. */
+export const RALLY_CHANCE_HOURLY = 0.02;
+/** Rally multiplies the treasury by a uniform draw from this range (+10…+22.5%). */
+export const RALLY_FACTOR_MIN = 1.1;
+export const RALLY_FACTOR_MAX = 1.225;
 
 /**
  * Anti-whale position limit. A single holder may own at most this fraction of
