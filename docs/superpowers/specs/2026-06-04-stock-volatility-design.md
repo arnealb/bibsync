@@ -47,7 +47,11 @@ when `shares > 0`, in this order:
 1. **Fold + profit skim.** `delta := net - baseline_net;`
    `tre := treasury + delta * (1 - 0.75)` — only 25% of casino P&L (both
    signs, symmetric) reaches holders; the skimmed 75% is burned. This is what
-   makes the long run neutral regardless of activity.
+   makes the long run neutral regardless of activity. The same skim lives in
+   the engine's `liveTreasury` (the fold point used by buy/sell/seizure
+   pricing), so a trade folding the accrued delta skims it identically — you
+   cannot trade just before the tick to capture un-skimmed P&L, and a trade
+   resetting `baseline_net` no longer disables the skim for other holders.
 2. **Management fee.** `tre := tre * power(1 - 0.02, 1.0/24)` — raised from
    1%/day to **2%/day**, same hourly-root compounding as `0055`.
 3. **Noise.** Lognormal hourly factor with arithmetic mean exactly 1:
@@ -153,11 +157,21 @@ Vitest, seeded PRNG (mulberry32-style local helper):
 - Owner's manual price pinning (direct treasury/baseline_net/version update)
   keeps working; the next tick simply continues from the pinned value.
 - Old history rows: `event` is null — chart handles missing field.
+- Fee-dodging by selling at :06 and rebuying at :08 dodges only the fee
+  (~0.084%/hour) — the skim applies at trade time too, and noise/events are
+  EV-0 so sitting them out changes nothing in expectation. Accepted
+  (pre-existing since 0055; needs hourly babysitting for a tiny edge).
+- Crash/rally dots render from fetched history (page load); the live
+  realtime/poll path appends plain ticks (`event: null`), so a dot for an
+  event that happens while watching appears on the next page visit. Accepted
+  (the price move itself is visible live).
 
 ## Rollout
 
-Run `0062_stock_volatility.sql` manually in the Supabase SQL editor. Order
-independent of the app deploy: the app only *reads* `event` (tolerates null /
-missing), and the SQL function change is self-contained. Verify with
+Run the migration BEFORE deploying the app: `getStockHistory` selects the
+`event` column, so the new app against an un-migrated DB logs an error and
+renders an empty chart (graceful, but ugly) until 0062 is applied. The
+migrated DB under the old app is fully compatible (old code never references
+`event`). Verify with
 `pnpm exec tsc --noEmit` + `pnpm lint` + `pnpm test` (local `pnpm build` may
 fail on `next/font`; Vercel does the real build).

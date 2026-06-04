@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { INITIAL_PRICE, MIN_PRICE } from "@/lib/stock/config";
+import { INITIAL_PRICE, MIN_PRICE, PROFIT_SKIM } from "@/lib/stock/config";
 import {
   applyBuy,
   applySell,
@@ -33,14 +33,14 @@ describe("house profit moves the price", () => {
   it("rises when the casino wins (net up)", () => {
     const state: StockState = { shares: 10, treasury: 1000, baselineNet: 0 };
     expect(sharePrice(state, 0)).toBe(100);
-    // Casino nets +500 → +50 per share.
-    expect(sharePrice(state, 500)).toBe(150);
+    // Casino nets +500, skimmed to +125 → +12.5 per share.
+    expect(sharePrice(state, 500)).toBe(112.5);
   });
 
   it("falls when players win (net down)", () => {
     const state: StockState = { shares: 10, treasury: 1000, baselineNet: 1000 };
-    // Net dropped from 1000 → 600: treasury loses 400.
-    expect(sharePrice(state, 600)).toBe(60);
+    // Net dropped from 1000 → 600: −400, damped to −100 by the skim.
+    expect(sharePrice(state, 600)).toBe(90);
   });
 
   it("sell price hits 0 when the fund is underwater", () => {
@@ -88,5 +88,13 @@ describe("trading cannot mint free coins", () => {
     );
     expect(sold.state.shares).toBe(0);
     expect(sold.state.treasury).toBe(0); // fully settled
+  });
+
+  it("a trade-time fold skims the accrued delta too (no skim bypass)", () => {
+    const state: StockState = { shares: 10, treasury: 1000, baselineNet: 0 };
+    const { state: next, cost } = applyBuy(state, 400, 1);
+    // +400 accrued P&L folds in at (1 − PROFIT_SKIM) = 25% → 1100, plus cost.
+    expect(next.treasury).toBe(1000 + 400 * (1 - PROFIT_SKIM) + cost);
+    expect(next.baselineNet).toBe(400);
   });
 });

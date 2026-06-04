@@ -155,7 +155,8 @@ teammate merge, so the sequence jumps `0011 → 0014`):
     (±1.6%/h, clamped ±7%) and EV-0 crash/rally events (1%/h ×0.55–0.80,
     2%/h ×1.10–1.225) logged in `casino_stock_history.event` and marked on
     the chart. The fold is version-guarded like the trade actions (a lost
-    race skips the tick). Pure mirror + Monte-Carlo EV guards in
+    race skips the tick). The skim also lives in the engine's `liveTreasury`,
+    so trade-time folds can't bypass it. Pure mirror + Monte-Carlo EV guards in
     `src/lib/stock/tick.ts`; constants in `src/lib/stock/config.ts` (SQL
     authoritative).
 

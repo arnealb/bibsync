@@ -20,7 +20,7 @@ export interface StockQuote {
   wagered: number;
   /** Largest position the viewer may hold (anti-whale cap). */
   holdingCap: number;
-  /** Daily management fee burned from the fund (e.g. 0.01 = 1%/day). */
+  /** Daily management fee burned from the fund (e.g. 0.02 = 2%/day). */
   feeDaily: number;
 }
 

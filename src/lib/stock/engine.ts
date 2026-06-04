@@ -1,4 +1,4 @@
-import { INITIAL_PRICE, MIN_PRICE } from "@/lib/stock/config";
+import { INITIAL_PRICE, MIN_PRICE, PROFIT_SKIM } from "@/lib/stock/config";
 
 /**
  * Casino stock pricing — a net-asset-value (NAV) fund backed by the casino's
@@ -12,6 +12,10 @@ import { INITIAL_PRICE, MIN_PRICE } from "@/lib/stock/config";
  *   unchanged), so trading alone can't move the price.
  * - The price only moves because the casino wins (players lose → treasury up)
  *   or loses (players win big → treasury down). That's the whole point.
+ * - Since 0062 only a (1 − PROFIT_SKIM) slice of that casino P&L reaches the
+ *   treasury (the rest is burned), applied at every fold so it can't be
+ *   traded around; on top, the hourly tick adds a fee, noise and crash/rally
+ *   events (see lib/stock/tick.ts + migration 0062).
  * - Total payouts are bounded by the treasury, which is bounded by real house
  *   profit — you can never withdraw more than the casino actually earned.
  *
@@ -28,11 +32,17 @@ export interface StockState {
   baselineNet: number;
 }
 
-/** Treasury including house profit earned since the last fold. */
+/**
+ * Treasury including house profit earned since the last fold, after the
+ * profit skim: only (1 − PROFIT_SKIM) of casino P&L (both signs) ever reaches
+ * the fund. The skim lives HERE — the single fold point used by trades, the
+ * hourly tick mirror and seizures — so trading right before the hourly tick
+ * cannot capture the un-skimmed delta or disable the skim for other holders.
+ */
 export function liveTreasury(state: StockState, casinoNet: number): number {
   // No shareholders → house profit has no owner, so it isn't captured.
   if (state.shares <= 0) return 0;
-  return state.treasury + (casinoNet - state.baselineNet);
+  return state.treasury + (casinoNet - state.baselineNet) * (1 - PROFIT_SKIM);
 }
 
 /** Headline / buy price per share — floored so buying always costs something. */
