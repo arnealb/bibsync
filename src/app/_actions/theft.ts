@@ -1,7 +1,7 @@
 "use server";
 
 import { getAuthContext } from "@/lib/auth";
-import { awardBibcoins, spendBibcoins } from "@/lib/bibcoins/award";
+import { addWalletDebt, awardBibcoins, spendBibcoins } from "@/lib/bibcoins/award";
 import { getBibcoins } from "@/lib/bibcoins/queries";
 import { copy } from "@/lib/copy";
 import {
@@ -11,7 +11,10 @@ import {
   STEAL_COOLDOWN_MS,
   THEFT_REASON_PREFIX,
 } from "@/lib/theft/config";
+import { applySell, sellPrice, sharePrice } from "@/lib/stock/engine";
+import { getCasinoStats, getStockState } from "@/lib/stock/queries";
 import type { ClaimResult, StealResult } from "@/lib/theft/types";
+import { sharesToCover } from "@/lib/theft/seizure";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { stealSchema, type StealInput } from "@/lib/validation/theft";
@@ -31,6 +34,84 @@ async function walletBalance(
     .eq("user_id", userId)
     .maybeSingle();
   return data?.bibcoins ?? 0;
+}
+
+/**
+ * Force-sell a caught thief's casino shares to cover what their wallet
+ * couldn't pay of the penalty. Mirrors sellStock's version-guarded fund math;
+ * a lost race recovers nothing and the caller books the full shortfall as
+ * debt instead (the victim's claim must never fail on a busy fund). The gross
+ * proceeds land in the wallet garnish-exempt ('theft_seizure') and the
+ * covered slice immediately leaves again as 'theft_caught', so the ledger
+ * stays balanced and the change from an over-sold share stays with the thief.
+ * Returns the amount actually recovered.
+ */
+async function seizeStockValue(
+  admin: SupabaseClient,
+  thiefId: string,
+  shortfall: number,
+  theftId: string,
+): Promise<number> {
+  const { data: h } = await admin
+    .from("casino_holdings")
+    .select("shares, cost_basis")
+    .eq("user_id", thiefId)
+    .maybeSingle();
+  const held = h?.shares ?? 0;
+  if (held <= 0) return 0;
+
+  const { net } = await getCasinoStats(admin);
+  const state = await getStockState(admin);
+  const qty = sharesToCover(shortfall, sellPrice(state, net), held);
+  if (qty <= 0) return 0;
+
+  const { state: next, proceeds } = applySell(state, net, qty);
+
+  const { data: updated } = await admin
+    .from("casino_stock")
+    .update({
+      shares: next.shares,
+      treasury: next.treasury,
+      baseline_net: net,
+      version: state.version + 1,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", true)
+    .eq("version", state.version)
+    .select("version");
+  if (!updated || updated.length === 0) return 0; // lost the race → all debt
+
+  const oldBasis = Number(h?.cost_basis ?? 0);
+  const newShares = held - qty;
+  const newBasis =
+    newShares <= 0
+      ? 0
+      : Math.max(0, oldBasis - Math.round((oldBasis * qty) / held));
+  await admin.from("casino_holdings").upsert({
+    user_id: thiefId,
+    shares: newShares,
+    cost_basis: newBasis,
+    updated_at: new Date().toISOString(),
+  });
+
+  // Best-effort price tick, like sellStock's recordTick.
+  const { error: tickError } = await admin.from("casino_stock_history").insert({
+    price: sharePrice(next, net),
+    shares: next.shares,
+    net,
+  });
+  if (tickError) console.error("[seizeStockValue] tick", tickError);
+
+  if (proceeds <= 0) return 0;
+  await awardBibcoins(thiefId, proceeds, "theft_seizure", `seizure:${theftId}`);
+  const covered = Math.min(proceeds, shortfall);
+  const taken = await spendBibcoins(
+    thiefId,
+    covered,
+    "theft_caught",
+    `caught:${theftId}:seizure`,
+  );
+  return taken ? covered : 0;
 }
 
 /** Steal coins from another member. The coins move immediately. */
@@ -218,6 +299,15 @@ export async function claimRobbed(): Promise<ClaimResult> {
     const take = Math.min(penalty, thiefBalance);
     if (take > 0) {
       await spendBibcoins(t.thiefId, take, "theft_caught", `caught:${t.id}`);
+    }
+    // Whatever the wallet couldn't cover comes out of their aandelen; the
+    // rest becomes debt that garnishes half of all future income (0061).
+    let shortfall = penalty - take;
+    if (shortfall > 0) {
+      shortfall -= await seizeStockValue(admin, t.thiefId, shortfall, t.id);
+    }
+    if (shortfall > 0) {
+      await addWalletDebt(t.thiefId, shortfall);
     }
     reward += penalty;
   }
