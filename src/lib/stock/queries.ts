@@ -76,7 +76,7 @@ export async function getStockHistory(limit = 48): Promise<StockTick[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("casino_stock_history")
-    .select("price, recorded_at")
+    .select("price, recorded_at, event")
     .order("recorded_at", { ascending: false })
     .limit(limit);
 
@@ -85,6 +85,12 @@ export async function getStockHistory(limit = 48): Promise<StockTick[]> {
     return [];
   }
   return (data ?? [])
-    .map((r) => ({ price: Number(r.price), recordedAt: r.recorded_at }))
+    .map((r) => ({
+      price: Number(r.price),
+      recordedAt: r.recorded_at,
+      event: (r.event === "crash" || r.event === "rally"
+        ? r.event
+        : null) as "crash" | "rally" | null,
+    }))
     .reverse();
 }

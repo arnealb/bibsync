@@ -1128,6 +1128,7 @@ export interface Database {
           price: number;
           shares: number;
           net: number;
+          event: string | null;
           recorded_at: Timestamp;
         };
         Insert: {
@@ -1135,6 +1136,7 @@ export interface Database {
           price: number;
           shares: number;
           net: number;
+          event?: string | null;
           recorded_at?: Timestamp;
         };
         Update: {
@@ -1142,6 +1144,7 @@ export interface Database {
           price?: number;
           shares?: number;
           net?: number;
+          event?: string | null;
           recorded_at?: Timestamp;
         };
         Relationships: [];

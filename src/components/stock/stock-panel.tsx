@@ -41,7 +41,7 @@ export function StockPanel({
     if (price === lastPrice.current) return;
     lastPrice.current = price;
     setTicks((prev) =>
-      [...prev, { price, recordedAt: new Date().toISOString() }].slice(-MAX_TICKS),
+      [...prev, { price, recordedAt: new Date().toISOString(), event: null }].slice(-MAX_TICKS),
     );
   }, []);
 

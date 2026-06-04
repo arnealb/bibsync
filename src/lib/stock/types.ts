@@ -28,6 +28,8 @@ export interface StockQuote {
 export interface StockTick {
   price: number;
   recordedAt: string;
+  /** Hourly tick that was a crash or rally (chart marker), else null. */
+  event: "crash" | "rally" | null;
 }
 
 export type StockTradeResult =
