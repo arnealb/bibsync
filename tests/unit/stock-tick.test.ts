@@ -99,6 +99,9 @@ describe("applyVolatilityTick — deterministic pieces", () => {
 });
 
 describe("applyVolatilityTick — Monte-Carlo EV guards", () => {
+  // Aggregate EV sanity only. The ±0.001 band is too wide to catch a missing
+  // −σ²/2 lognormal mean correction (~1.3e-4 shift) — that is pinned by the
+  // deterministic fee test above via NOISE_AT_ZERO at 6-digit precision.
   it("noise + events are EV-neutral: mean tick factor ≈ fee-only keep", () => {
     const rng = mulberry32(0xb1b);
     const N = 200_000;
