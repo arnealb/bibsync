@@ -54,7 +54,7 @@ export async function spendBibcoins(
 }
 
 /**
- * Put a user in (deeper) debt: half of their future income is garnished until
+ * Add to a user's outstanding theft debt: half of their future income is garnished until
  * the debt is repaid (migration 0061). Used for the uncovered part of a
  * caught-thief penalty.
  */
@@ -69,7 +69,7 @@ export async function addWalletDebt(
     _user_id: userId,
     _amount: amount,
   });
-  if (error) console.error("[addWalletDebt]", error);
+  if (error) console.error("[addWalletDebt]", amount, error);
 }
 
 /**
