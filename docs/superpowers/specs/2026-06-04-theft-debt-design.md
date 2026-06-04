@@ -39,24 +39,30 @@ every uncollectable penalty inflates the economy.
 - `alter table public.wallets add column debt integer not null default 0
   check (debt >= 0);` (wallets is already in the realtime publication, so the
   column rides along in existing wallet events).
-- Replace `award_bibcoins` with a new signature
-  `award_bibcoins(p_user uuid, p_amount int, p_reason text, p_ref text,
-  p_garnish boolean default true)`:
-  - Idempotency check on `p_ref` stays exactly as today, and stays first.
-  - After the check, when `p_garnish` and `debt > 0`:
-    `garnish := least(debt, floor(p_amount / 2.0))` — wallet is credited
-    `p_amount - garnish`, `debt` decreases by `garnish`. The garnished coins
-    are **burned** (no counter-credit anywhere) to offset the minted victim
-    payout.
-  - The garnish is recorded as its own ledger row (`reason 'debt_repayment'`,
-    `ref p_ref || ':garnish'`, in the same transaction as the award row), so
-    the audit trail shows gross award + repayment. Because it runs inside the
-    award's idempotency guard, a retried ref can never double-garnish.
-  - `default true` keeps every existing caller (TS actions, `claim_hourly`,
-    the King crons `0047`/`0051`/`0060`, transfers `0037`) garnishing without
-    edits — SQL is the only choke point that covers cron-side awards.
-- Grants unchanged: revoked from `authenticated`, granted to `service_role`
-  (same as `0019`).
+- **Garnish as a `BEFORE UPDATE OF bibcoins` trigger on `wallets`**
+  (`garnish_wallet_credit()`), NOT inside `award_bibcoins` — six functions
+  credit wallets directly without going through the award RPC
+  (`claim_hourly_bibcoins`, `claim_daily_bibcoins` + quests in `0032`/`0042`,
+  `transfer_bibcoins` in `0037`, the strijder bonus in `0047`,
+  `record_screen_time` in `0057`). The trigger is the only choke point that
+  covers all of them plus anything future:
+  - When `bibcoins` increase on a row with `debt > 0` and the transaction has
+    not flagged itself exempt: `garnish := least(debt, floor(gain / 2.0))` —
+    the credit is reduced by `garnish`, `debt` decreases by `garnish`. The
+    garnished coins are **burned** (no counter-credit anywhere) to offset the
+    minted victim payout.
+  - The garnish is recorded as its own ledger row, reason
+    **`theft_debt_repayment`** — the `theft_` prefix keeps it out of the
+    "did the victim spend since the steal" check in `claimRobbed`, so a
+    debtor's forced repayments never expire their own claim window.
+  - A brand-new wallet starts at `debt = 0`, and a retried award ref
+    short-circuits before touching the wallet, so nothing double-garnishes.
+- `award_bibcoins` keeps its signature; refund-style awards set a
+  transaction-local flag (`set_config('bibsync.skip_garnish', '1', true)`,
+  reset after the wallet update) that the trigger honours.
+- New `add_wallet_debt(_user_id, _amount)` SECURITY DEFINER RPC (atomic
+  `debt = debt + _amount`), revoked from `authenticated`, granted to
+  `service_role` — used by `claimRobbed` for the uncovered remainder.
 
 ### 2. Seizure + debt in `claimRobbed` (`src/app/_actions/theft.ts`)
 
@@ -66,9 +72,10 @@ After the existing wallet drain (`take = min(penalty, thiefBalance)`):
    `casino_holdings`**: sell `sharesToCover(shortfall, sellPrice, heldShares)`
    shares at the normal NAV sell price (same math as `sellStock` in
    `_actions/stock.ts`, `Math.floor` proceeds, version-guarded update on
-   `casino_stock`). Proceeds are awarded with `garnish=false` + reason
-   `theft_seizure`, then immediately spent with reason `theft_caught` — two
-   ledger rows, wallet ends where it started, audit trail intact.
+   `casino_stock`). Proceeds are awarded with reason `theft_seizure`
+   (garnish-exempt by reason), then the covered slice is immediately spent
+   with reason `theft_caught` — two ledger rows, audit trail intact; change
+   from an over-sold share stays with the thief.
 2. If the `casino_stock` version guard loses the race, **skip seizure
    entirely** and let the full shortfall become debt — the victim's claim must
    never fail because the stock fund was busy.
@@ -78,12 +85,17 @@ After the existing wallet drain (`take = min(penalty, thiefBalance)`):
 
 ### 3. Garnish exemptions
 
-Only explicit refunds pass `garnish=false`: the lost-race refund in `buyStock`
-and any other "give the stake back because the action failed" award found
-during implementation (audit all `awardBibcoins` call sites). Everything else
-is garnished — including gok payouts. Consequence (accepted): a blackjack push
-or roulette win returns your stake minus 50% while in debt — "sta je in het
-rood, dan gok je niet."
+Exemption is **by award reason inside `award_bibcoins`** (no TS call-site
+edits): reasons matching `%refund%` plus `crate_dup` and `theft_seizure` set
+the skip flag. That covers every existing refund path (`stock_refund`,
+`blackjack_refund`, `hilo_refund`, `mines_refund`, `crash_refund`,
+`lottery_refund`, `poker_refund`, `pillory_refund`, `pillory_set_refund`,
+`merge_energy_refund`, `name-change-refund`, `theft_loss_refund`,
+`theft_gain_refund`, `crate_refund`). Mirrored as `isGarnishExempt()` in
+`src/lib/theft/debt.ts` (SQL is authoritative). Everything else is garnished —
+including gok payouts. Consequence (accepted): a blackjack push or roulette
+win returns your stake minus 50% while in debt — "sta je in het rood, dan gok
+je niet."
 
 ### 4. Steal blocked while in debt
 
@@ -99,10 +111,9 @@ stealing while in debt would be a 50%-interest loan. The steal UI
   `−1 200`), seeded server-side like the balance and kept live by extending
   `useBibcoinsRealtime` to also hand the row's `debt` to its callback (the
   realtime payload already contains the whole wallet row).
-- `copy.ts`: new Dutch strings — debt label, "Je inkomsten worden voor 50%
-  afgeroomd tot je schuld is afbetaald.", steal-blocked message, and an
-  extended caught-message for the victim (unchanged amount) — all under a
-  `copy.theft.debt*` / `copy.bibcoins` key as fits the existing structure.
+- `copy.ts`: new Dutch strings under `copy.theft` — `debtBlocked` (steal
+  blocked while in debt) and `debtHint` (chip tooltip explaining the 50%
+  garnish). The victim's claim messages are unchanged.
 - `src/types/database.ts`: `wallets.debt` column + the new `award_bibcoins`
   argument.
 
@@ -112,10 +123,10 @@ stealing while in debt would be a 50%-interest loan. The steal UI
   `min(heldShares, ceil(shortfall / sellPrice))`, with guards for
   `sellPrice <= 0` (sell nothing; everything becomes debt) — unit-tested
   (rounding, holdings cap, zero price, zero holdings).
-- `garnishSplit(amount, debt)` mirror of the SQL rule in `src/lib/bibcoins/`
-  (or alongside existing coin helpers) — unit-tested (floor rounding,
-  debt smaller than half, debt 0, amount 1) and used by any TS code that wants
-  to predict the outcome; SQL remains the source of truth.
+- `garnishSplit(amount, debt)` + `isGarnishExempt(reason)` mirrors of the SQL
+  rules in `src/lib/theft/debt.ts` — unit-tested (floor rounding, debt smaller
+  than half, debt 0, amount 1; exempt reason list); SQL remains the source of
+  truth.
 - Existing EV-guard tests untouched.
 
 ## Edge cases
