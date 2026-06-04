@@ -29,8 +29,9 @@ edge is skimmed away).
 ## Non-goals
 
 - No chat messages or news banners for events (chart-only).
-- No change to the engine (`engine.ts`), buy/sell actions, holding cap, or
-  trade-time pricing (between folds the price stays deterministic).
+- No change to the buy/sell actions or holding cap. Noise/events/fee stay
+  fold-only (between folds the price stays deterministic) — the one engine
+  change is the skim inside `liveTreasury`, see Design §1.
 - No mean reversion or predictable patterns (those would create timing
   exploits).
 
