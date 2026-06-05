@@ -1270,6 +1270,7 @@ export const copy = {
       twenty48: "2048 King",
       petconnect: "Pet Connect King",
       usstates: "USA Staten King",
+      minesweeper: "Minesweeper King",
     },
     snake: {
       title: "Snake",
@@ -1320,6 +1321,28 @@ export const copy = {
       right: "Rechts",
       rotate: "Draai",
       drop: "Laten vallen",
+    },
+    minesweeper: {
+      title: "Minesweeper",
+      subtitle: "Klassiek mijnenvegen — coins per veilig vakje",
+      controls:
+        "Klik om te openen, rechtsklik of lang indrukken om te vlaggen. Klik op een cijfer met genoeg vlaggen errond om de rest te openen.",
+      flagMode: "Vlagmodus",
+      difficulty: {
+        easy: "Makkelijk",
+        medium: "Normaal",
+        hard: "Moeilijk",
+      },
+      minesLeft: "Mijnen over",
+      timer: "Tijd",
+      restart: "Opnieuw",
+      won: (s: number) => `Gewonnen in ${s}s! 🎉`,
+      lost: "Boem! 💥 Probeer opnieuw.",
+      newHighScore: "Nieuwe high score!",
+      saved: (n: number) => `${n} vakjes opgeslagen`,
+      cellHidden: "Gesloten vakje",
+      cellFlagged: "Gevlagd vakje",
+      cellMine: "Mijn",
     },
     twenty48: {
       title: "2048",

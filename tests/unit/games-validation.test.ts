@@ -14,7 +14,13 @@ describe("submitScoreSchema", () => {
   });
 
   it("accepts the skill-game keys", () => {
-    for (const gameKey of ["snake", "flappy", "tetris", "2048"] as const) {
+    for (const gameKey of [
+      "snake",
+      "flappy",
+      "tetris",
+      "2048",
+      "minesweeper",
+    ] as const) {
       expect(
         submitScoreSchema.safeParse({ ...baseInput, gameKey }).success,
       ).toBe(true);

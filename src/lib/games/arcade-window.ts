@@ -1,5 +1,11 @@
 /** Per-event skill games that share the hourly cap (also each one's ledger reason). */
-export const ARCADE_REASONS = ["snake", "flappy", "tetris", "2048"] as const;
+export const ARCADE_REASONS = [
+  "snake",
+  "flappy",
+  "tetris",
+  "2048",
+  "minesweeper",
+] as const;
 
 /**
  * All ledger reasons that draw from the shared ARCADE_HOURLY_CAP. Merge Valley

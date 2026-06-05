@@ -53,11 +53,14 @@ export const ARCADE_HOURLY_CAP = 250;
 /**
  * Coins per coin-event, tuned per game so faster/easier points pay less:
  * snake/flappy = per apple/pipe, tetris = per line, 2048 = per new tile
- * (a milestone = log2−1). Shared 250/hour cap bounds the total.
+ * (a milestone = log2−1), minesweeper = per revealed safe cell (flood fills
+ * reveal many at once, hence the low rate). Shared 250/hour cap bounds the
+ * total.
  */
 export const ARCADE_COINS_PER_EVENT = {
   snake: 3,
   flappy: 3,
   tetris: 8,
   "2048": 12,
+  minesweeper: 1,
 } as const;

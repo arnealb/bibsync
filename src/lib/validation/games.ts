@@ -9,6 +9,7 @@ export const GAME_KEYS = [
   "tetris",
   "2048",
   "usstates",
+  "minesweeper",
 ] as const;
 export const gameKeySchema = z.enum(GAME_KEYS);
 export type GameKey = z.infer<typeof gameKeySchema>;
