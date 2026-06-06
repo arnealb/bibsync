@@ -159,6 +159,11 @@ teammate merge, so the sequence jumps `0011 → 0014`):
     so trade-time folds can't bypass it. Pure mirror + Monte-Carlo EV guards in
     `src/lib/stock/tick.ts`; constants in `src/lib/stock/config.ts` (SQL
     authoritative).
+28. `0064_minesweeper_time.sql` — **Minesweeper ranks on time per
+    difficulty**: replaces `award_game_kings()` so the old single
+    `minesweeper` key drops out and `minesweeper_easy/medium/hard` each crown
+    a daily King (fastest honest win). No schema change — the app records
+    wins only, with `duration_seconds` set. See the skill-games bullet below.
 
 **Plinko** (`/games/plinko`) is a **stateless** gok: one `dropPlinko` action
 stakes the bet, rolls the ball server-side and pays out instantly — no table,
@@ -296,13 +301,19 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   Pure coin/window helpers in `src/lib/games/arcade-coins.ts` /
   `arcade-window.ts`. Every skill game has a daily **King** (top honest
   `game_scores` score per room): Snake 1000 (cron `0047`), the others 500
-  (cron `0051_game_kings.sql`; `0060` adds USA Staten, `0063` Minesweeper to
-  the same function); the crown is the generic `KingBadge`. Score ties rank
-  the **fastest run** first (`game_scores.duration_seconds` = seconds to the
-  last correct answer, only USA Staten fills it; pure helpers in
-  `src/lib/games/rank.ts`), then the earliest record holder. Minesweeper
-  (classic dark look, original number colours) scores revealed safe cells;
-  pure engine in `src/lib/games/minesweeper/`.
+  (cron `0051_game_kings.sql`; `0060` adds USA Staten, `0063`/`0064`
+  Minesweeper to the same function); the crown is the generic `KingBadge`.
+  Score ties rank the **fastest run** first (`game_scores.duration_seconds` =
+  seconds to the run's last point; USA Staten and Minesweeper fill it; pure
+  helpers in `src/lib/games/rank.ts`), then the earliest record holder.
+  **Minesweeper ranks on time per difficulty** (migration `0064`): keys
+  `minesweeper_easy/medium/hard` (`src/lib/games/minesweeper/keys.ts`); only
+  WON games insert a row (score = the constant safe-cell count +
+  `duration_seconds`, so score-desc/time-asc ranking ⇒ fastest win first;
+  each difficulty crowns its own daily King); lost games submit with
+  `coinsOnly: true` — coins per revealed cell, no leaderboard row. The three
+  boards render with `Leaderboard timeOnly`. Classic dark look, original
+  number colours; pure engine in `src/lib/games/minesweeper/`.
 - **Leaving a table frees the seat:** blackjack/poker panels use
   `useAutoLeaveTable` — SPA navigation away unmounts the panel and calls the
   (idempotent) leave action after a debounced tick (StrictMode-remount-safe);

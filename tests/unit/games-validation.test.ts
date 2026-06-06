@@ -19,12 +19,31 @@ describe("submitScoreSchema", () => {
       "flappy",
       "tetris",
       "2048",
-      "minesweeper",
+      "minesweeper_easy",
+      "minesweeper_medium",
+      "minesweeper_hard",
     ] as const) {
       expect(
         submitScoreSchema.safeParse({ ...baseInput, gameKey }).success,
       ).toBe(true);
     }
+  });
+
+  it("rejects the retired single minesweeper key", () => {
+    expect(
+      submitScoreSchema.safeParse({ ...baseInput, gameKey: "minesweeper" })
+        .success,
+    ).toBe(false);
+  });
+
+  it("accepts a coins-only run (lost minesweeper game)", () => {
+    expect(
+      submitScoreSchema.safeParse({
+        ...baseInput,
+        gameKey: "minesweeper_hard",
+        coinsOnly: true,
+      }).success,
+    ).toBe(true);
   });
 
   it("rejects a non-uuid roomId", () => {

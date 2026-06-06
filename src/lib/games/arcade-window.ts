@@ -4,7 +4,12 @@ export const ARCADE_REASONS = [
   "flappy",
   "tetris",
   "2048",
+  // "minesweeper" is the pre-split (single-key) reason; keeping it counted
+  // means old payouts in the current hour still draw from the cap.
   "minesweeper",
+  "minesweeper_easy",
+  "minesweeper_medium",
+  "minesweeper_hard",
 ] as const;
 
 /**

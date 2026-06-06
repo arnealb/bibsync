@@ -62,5 +62,7 @@ export const ARCADE_COINS_PER_EVENT = {
   flappy: 3,
   tetris: 8,
   "2048": 12,
-  minesweeper: 1,
+  minesweeper_easy: 1,
+  minesweeper_medium: 1,
+  minesweeper_hard: 1,
 } as const;

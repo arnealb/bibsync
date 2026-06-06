@@ -16,6 +16,8 @@ import {
   type MinesweeperDifficulty,
   type MinesweeperState,
 } from "@/lib/games/minesweeper/engine";
+import { MINESWEEPER_GAME_KEYS } from "@/lib/games/minesweeper/keys";
+import { mmss } from "@/lib/games/rank";
 import { cn } from "@/lib/utils";
 
 const DIFFICULTY_KEYS = Object.keys(
@@ -28,10 +30,11 @@ function makeSeed(): number {
 
 interface MinesweeperGameProps {
   roomId: string;
-  myBest: number | null;
+  /** The player's fastest winning time per difficulty (seconds), if any. */
+  myBestTimes: Record<MinesweeperDifficulty, number | null>;
 }
 
-export function MinesweeperGame({ roomId, myBest }: MinesweeperGameProps) {
+export function MinesweeperGame({ roomId, myBestTimes }: MinesweeperGameProps) {
   const [state, setState] = useState<MinesweeperState>(() =>
     createGame("easy", makeSeed()),
   );
@@ -43,30 +46,55 @@ export function MinesweeperGame({ roomId, myBest }: MinesweeperGameProps) {
 
   useEffect(() => {
     if (state.status !== "playing") return;
-    const id = window.setInterval(
-      () => setSeconds((s) => Math.min(999, s + 1)),
-      1000,
-    );
+    const id = window.setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => window.clearInterval(id);
   }, [state.status]);
 
   useEffect(() => {
     if (!ended || submittedRef.current || state.revealed === 0) return;
     submittedRef.current = true;
-    const score = state.revealed;
-    const beatBest = score > (myBest ?? 0);
-    void submitGameScore({ roomId, gameKey: "minesweeper", score }).then((r) => {
+    const gameKey = MINESWEEPER_GAME_KEYS[state.difficulty];
+
+    if (state.status === "lost") {
+      // Revealed cells still pay coins, but only a completed board ranks.
+      void submitGameScore({
+        roomId,
+        gameKey,
+        score: state.revealed,
+        coinsOnly: true,
+      }).then((r) => {
+        if (!r.ok) toast.error(r.error);
+      });
+      return;
+    }
+
+    const time = Math.min(seconds, 86_400);
+    const best = myBestTimes[state.difficulty];
+    void submitGameScore({
+      roomId,
+      gameKey,
+      score: state.revealed,
+      durationSeconds: time,
+    }).then((r) => {
       if (!r.ok) {
         toast.error(r.error);
         return;
       }
       toast.success(
-        beatBest
-          ? copy.games.minesweeper.newHighScore
-          : copy.games.minesweeper.saved(score),
+        best === null || time < best
+          ? copy.games.minesweeper.newBestTime
+          : copy.games.minesweeper.savedTime(mmss(time)),
       );
     });
-  }, [ended, state.revealed, roomId, myBest]);
+  }, [
+    ended,
+    state.status,
+    state.difficulty,
+    state.revealed,
+    seconds,
+    roomId,
+    myBestTimes,
+  ]);
 
   const restart = useCallback((difficulty: MinesweeperDifficulty) => {
     submittedRef.current = false;
@@ -87,6 +115,7 @@ export function MinesweeperGame({ roomId, myBest }: MinesweeperGameProps) {
 
   const face =
     state.status === "won" ? "😎" : state.status === "lost" ? "😵" : "🙂";
+  const bestTime = myBestTimes[state.difficulty];
 
   return (
     <div className="w-full max-w-105 space-y-3">
@@ -128,7 +157,10 @@ export function MinesweeperGame({ roomId, myBest }: MinesweeperGameProps) {
           >
             {face}
           </button>
-          <LedDisplay value={seconds} label={copy.games.minesweeper.timer} />
+          <LedDisplay
+            value={Math.min(999, seconds)}
+            label={copy.games.minesweeper.timer}
+          />
         </div>
         <MinesweeperBoard state={state} onReveal={onReveal} onFlag={onFlag} />
       </div>
@@ -136,6 +168,11 @@ export function MinesweeperGame({ roomId, myBest }: MinesweeperGameProps) {
       <p className="text-sm text-muted-foreground">
         {copy.games.minesweeper.controls}
       </p>
+      {bestTime !== null && (
+        <p className="text-sm text-muted-foreground">
+          {copy.games.minesweeper.yourBestTime(mmss(bestTime))}
+        </p>
+      )}
       {state.status === "won" && (
         <p className="text-sm font-medium text-emerald-500">
           {copy.games.minesweeper.won(seconds)}

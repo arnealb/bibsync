@@ -22,6 +22,8 @@ interface LeaderboardProps {
   kingReward?: number;
   /** Crown text for the King badge; defaults to "Snake King". */
   kingLabel?: string;
+  /** Time-ranked board (Minesweeper): show the run's time, not its score. */
+  timeOnly?: boolean;
 }
 
 export function Leaderboard({
@@ -32,6 +34,7 @@ export function Leaderboard({
   initialShowCheated,
   kingReward,
   kingLabel,
+  timeOnly = false,
 }: LeaderboardProps) {
   const [showCheated, setShowCheated] = useState(initialShowCheated);
   useLeaderboardSettingsRealtime(roomId, setShowCheated);
@@ -87,11 +90,17 @@ export function Leaderboard({
                 )}
               </span>
               <span className="font-mono tabular-nums text-sm font-semibold">
-                {entry.bestScore}
-                {entry.durationSeconds !== null && (
-                  <span className="ml-1.5 font-normal text-muted-foreground">
-                    {mmss(entry.durationSeconds)}
-                  </span>
+                {timeOnly && entry.durationSeconds !== null ? (
+                  mmss(entry.durationSeconds)
+                ) : (
+                  <>
+                    {entry.bestScore}
+                    {entry.durationSeconds !== null && (
+                      <span className="ml-1.5 font-normal text-muted-foreground">
+                        {mmss(entry.durationSeconds)}
+                      </span>
+                    )}
+                  </>
                 )}
               </span>
             </li>

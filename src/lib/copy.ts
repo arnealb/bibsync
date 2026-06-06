@@ -1324,7 +1324,8 @@ export const copy = {
     },
     minesweeper: {
       title: "Minesweeper",
-      subtitle: "Klassiek mijnenvegen — coins per veilig vakje",
+      subtitle:
+        "Klassiek mijnenvegen — snelste tijd per moeilijkheid, coins per veilig vakje",
       controls:
         "Klik om te openen, rechtsklik of lang indrukken om te vlaggen. Klik op een cijfer met genoeg vlaggen errond om de rest te openen.",
       flagMode: "Vlagmodus",
@@ -1338,8 +1339,10 @@ export const copy = {
       restart: "Opnieuw",
       won: (s: number) => `Gewonnen in ${s}s! 🎉`,
       lost: "Boem! 💥 Probeer opnieuw.",
-      newHighScore: "Nieuwe high score!",
-      saved: (n: number) => `${n} vakjes opgeslagen`,
+      newBestTime: "Nieuwe beste tijd! 🎉",
+      savedTime: (t: string) => `Tijd ${t} opgeslagen`,
+      bestTimes: "Beste tijden",
+      yourBestTime: (t: string) => `Jouw beste tijd: ${t}`,
       cellHidden: "Gesloten vakje",
       cellFlagged: "Gevlagd vakje",
       cellMine: "Mijn",

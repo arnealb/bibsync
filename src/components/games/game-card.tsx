@@ -12,6 +12,8 @@ interface GameCardProps {
   myBest: number | null;
   /** Overrides the "Jouw beste" label (e.g. "Jouw fiches" for poker). */
   statLabel?: string;
+  /** Pre-formatted stat (e.g. Minesweeper best times); wins over `myBest`. */
+  myBestDisplay?: string;
 }
 
 export function GameCard({
@@ -21,6 +23,7 @@ export function GameCard({
   emoji,
   myBest,
   statLabel,
+  myBestDisplay,
 }: GameCardProps) {
   return (
     <Card className="flex flex-col">
@@ -37,7 +40,7 @@ export function GameCard({
         <p className="text-sm text-muted-foreground">
           {statLabel ?? copy.games.yourBest}:{" "}
           <span className="font-medium text-foreground">
-            {myBest ?? copy.games.noBest}
+            {myBestDisplay ?? myBest ?? copy.games.noBest}
           </span>
         </p>
         <Button

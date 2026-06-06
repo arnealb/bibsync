@@ -29,26 +29,29 @@ export async function submitGameScore(
   if (!access) return { ok: false, error: copy.common.notAuthenticated };
   if (access.isPilloried) return { ok: false, error: copy.pillory.frozen };
 
-  const row = {
-    room_id: parsed.data.roomId,
-    user_id: access.userId,
-    game_key: parsed.data.gameKey,
-    score: parsed.data.score,
-    cheated: parsed.data.cheated ?? false,
-  };
-  const supabase = await createClient();
-  let { error } = await supabase.from("game_scores").insert({
-    ...row,
-    duration_seconds: parsed.data.durationSeconds ?? null,
-  });
-  if (isMissingColumn(error)) {
-    // duration_seconds (migration 0060) not applied yet — keep the score.
-    ({ error } = await supabase.from("game_scores").insert(row));
-  }
+  // coinsOnly runs (e.g. a lost Minesweeper game) earn but never rank.
+  if (!parsed.data.coinsOnly) {
+    const row = {
+      room_id: parsed.data.roomId,
+      user_id: access.userId,
+      game_key: parsed.data.gameKey,
+      score: parsed.data.score,
+      cheated: parsed.data.cheated ?? false,
+    };
+    const supabase = await createClient();
+    let { error } = await supabase.from("game_scores").insert({
+      ...row,
+      duration_seconds: parsed.data.durationSeconds ?? null,
+    });
+    if (isMissingColumn(error)) {
+      // duration_seconds (migration 0060) not applied yet — keep the score.
+      ({ error } = await supabase.from("game_scores").insert(row));
+    }
 
-  if (error) {
-    console.error("[submitGameScore]", error);
-    return { ok: false, error: copy.games.submitError };
+    if (error) {
+      console.error("[submitGameScore]", error);
+      return { ok: false, error: copy.games.submitError };
+    }
   }
 
   if (parsed.data.gameKey === "petconnect") {
@@ -62,8 +65,12 @@ export async function submitGameScore(
     );
   }
 
+  // The three minesweeper difficulty keys share one game page.
+  const route = parsed.data.gameKey.startsWith("minesweeper")
+    ? "minesweeper"
+    : parsed.data.gameKey;
   revalidatePath(`/app/rooms/${parsed.data.roomId}/games`);
-  revalidatePath(`/app/rooms/${parsed.data.roomId}/games/${parsed.data.gameKey}`);
+  revalidatePath(`/app/rooms/${parsed.data.roomId}/games/${route}`);
   return { ok: true };
 }
 

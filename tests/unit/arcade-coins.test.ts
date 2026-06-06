@@ -16,6 +16,12 @@ describe("arcadeCoins", () => {
     expect(arcadeCoins("2048", 2048)).toBe(120); // 10 × 12
   });
 
+  it("is 1 per revealed safe cell for every minesweeper difficulty", () => {
+    expect(arcadeCoins("minesweeper_easy", 71)).toBe(71);
+    expect(arcadeCoins("minesweeper_medium", 119)).toBe(119);
+    expect(arcadeCoins("minesweeper_hard", 30)).toBe(30);
+  });
+
   it("never pays for a zero or negative score", () => {
     expect(arcadeCoins("snake", 0)).toBe(0);
     expect(arcadeCoins("flappy", -3)).toBe(0);

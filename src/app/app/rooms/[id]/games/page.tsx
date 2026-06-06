@@ -8,11 +8,14 @@ import { SessionLeaderboard } from "@/components/games/session-leaderboard";
 import { copy } from "@/lib/copy";
 import { getBibcoins, getRoomWealth } from "@/lib/bibcoins/queries";
 import { SNAKE_KING_REWARD } from "@/lib/games/constants";
+import { MINESWEEPER_GAME_KEYS } from "@/lib/games/minesweeper/keys";
 import {
   getMyBestScore,
+  getMyBestTime,
   getRoomLeaderboard,
   getShowCheated,
 } from "@/lib/games/queries";
+import { mmss } from "@/lib/games/rank";
 import { getSessionStandings } from "@/lib/games/session-queries";
 import { requireRoomAccess } from "@/lib/rooms/queries";
 
@@ -47,7 +50,7 @@ export default async function GamesPage({ params }: GamesPageProps) {
     tetrisBest,
     twenty48Best,
     statesBest,
-    minesweeperBest,
+    minesweeperTimes,
   ] = await Promise.all([
     getMyBestScore(id, access.userId, "snake"),
     getRoomLeaderboard(id, "snake"),
@@ -60,8 +63,17 @@ export default async function GamesPage({ params }: GamesPageProps) {
     getMyBestScore(id, access.userId, "tetris"),
     getMyBestScore(id, access.userId, "2048"),
     getMyBestScore(id, access.userId, "usstates"),
-    getMyBestScore(id, access.userId, "minesweeper"),
+    Promise.all(
+      (["easy", "medium", "hard"] as const).map((d) =>
+        getMyBestTime(id, access.userId, MINESWEEPER_GAME_KEYS[d]),
+      ),
+    ),
   ]);
+
+  // "0:45 · 2:10 · —": the fastest win per difficulty (easy/normaal/moeilijk).
+  const minesweeperBestDisplay = minesweeperTimes
+    .map((t) => (t === null ? "—" : mmss(t)))
+    .join(" · ");
 
   return (
     <div className="space-y-6">
@@ -114,7 +126,9 @@ export default async function GamesPage({ params }: GamesPageProps) {
           title={copy.games.minesweeper.title}
           subtitle={copy.games.minesweeper.subtitle}
           emoji="🚩"
-          myBest={minesweeperBest}
+          myBest={null}
+          myBestDisplay={minesweeperBestDisplay}
+          statLabel={copy.games.minesweeper.bestTimes}
         />
         <GameCard
           href={`/app/rooms/${id}/games/poker`}

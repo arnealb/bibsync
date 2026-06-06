@@ -137,6 +137,34 @@ export async function getShowCheated(roomId: string): Promise<boolean> {
   return data?.show_cheated ?? true;
 }
 
+/**
+ * The caller's fastest run in this room for a time-ranked game (Minesweeper:
+ * every recorded row is a win, so the lowest duration is the best time), or
+ * null without any timed run.
+ */
+export async function getMyBestTime(
+  roomId: string,
+  userId: string,
+  gameKey: GameKey,
+): Promise<number | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("game_scores")
+    .select("duration_seconds")
+    .eq("room_id", roomId)
+    .eq("user_id", userId)
+    .eq("game_key", gameKey)
+    .not("duration_seconds", "is", null)
+    .order("duration_seconds", { ascending: true })
+    .limit(1);
+
+  if (error) {
+    console.error("[getMyBestTime]", error);
+    return null;
+  }
+  return data?.[0]?.duration_seconds ?? null;
+}
+
 /** The caller's best score in this room for this game (any run), or null. */
 export async function getMyBestScore(
   roomId: string,
