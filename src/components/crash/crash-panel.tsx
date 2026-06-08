@@ -21,7 +21,7 @@ function fmtBp(bp: number): string {
 }
 
 /** How often we ask the server whether the rocket has crashed. */
-const POLL_MS = 250;
+const POLL_MS = 120;
 
 type Phase = "idle" | "running" | "done";
 
@@ -39,11 +39,14 @@ export function CrashPanel({
   const [result, setResult] = useState<CrashRoundState | null>(null);
   const [recent, setRecent] = useState<{ bp: number; win: boolean }[]>([]);
   const [pending, setPending] = useState(false);
+  const [settling, setSettling] = useState(false);
 
   const raf = useRef<number | null>(null);
   const poll = useRef<number | null>(null);
-  const startedAt = useRef(0);
-  const offset = useRef(0); // server clock − client clock
+  // Local-clock reference for when the rocket started. Derived from the server
+  // timestamps + measured round-trip, NOT from the two machines' wall clocks
+  // agreeing — so client/server clock skew can never desync the display.
+  const anchor = useRef(0);
   const running = useRef(false);
   const cashing = useRef(false);
 
@@ -57,7 +60,23 @@ export function CrashPanel({
   useEffect(() => stopTimers, []);
 
   function elapsedMs(): number {
-    return Date.now() + offset.current - startedAt.current;
+    return Date.now() - anchor.current;
+  }
+
+  /** (Re)start the 60fps climb + the read-only crash poll. */
+  function startAnimation() {
+    const tick = () => {
+      setDisplayBp(crashMultiplierAtMs(elapsedMs()));
+      raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+
+    // Read-only crash poll: when it reports a crash, auto-cash (→ busts).
+    poll.current = window.setInterval(() => {
+      void peekCrash(roomId).then((p) => {
+        if (p.ok && p.crashed) pollBust();
+      });
+    }, POLL_MS);
   }
 
   /** Settle the round in the UI (from the authoritative server result). */
@@ -84,19 +103,40 @@ export function CrashPanel({
     }
   }
 
-  /** Cash out at the multiplier shown the instant of the click (or poll-crash). */
-  function cashOut() {
+  /**
+   * Send a cash-out for `claimedBp` and freeze the rocket on that value right
+   * away — the display no longer keeps climbing during the network round-trip,
+   * so what you settle is exactly what you saw when you clicked.
+   */
+  function submitCashout(claimedBp: number) {
     if (!running.current || cashing.current) return;
     cashing.current = true;
-    const claimedBp = crashMultiplierAtMs(elapsedMs());
+    setSettling(true);
+    stopTimers(); // freeze: stop the climb and the poll while we settle
+    setDisplayBp(claimedBp);
     void cashoutCrash({ roomId, claimedBp }).then((res) => {
       cashing.current = false;
       if (!res.ok) {
-        if (running.current) toast.error(res.error);
+        setSettling(false);
+        if (running.current) {
+          toast.error(res.error);
+          startAnimation(); // transient busy: resume the round
+        }
         return;
       }
+      setSettling(false);
       finish(res.state);
     });
+  }
+
+  /** Manual cash-out: bank exactly the multiplier the player is looking at. */
+  function cashOut() {
+    submitCashout(displayBp);
+  }
+
+  /** Poll said the round crashed: claim the live multiplier → server busts it. */
+  function pollBust() {
+    submitCashout(crashMultiplierAtMs(elapsedMs()));
   }
 
   function onLaunch() {
@@ -107,6 +147,7 @@ export function CrashPanel({
       return;
     }
     setPending(true);
+    const t0 = Date.now();
     void startCrash({ roomId, bet }).then((res) => {
       setPending(false);
       if (!res.ok) {
@@ -115,25 +156,22 @@ export function CrashPanel({
       }
       running.current = true;
       cashing.current = false;
+      setSettling(false);
       setBalance(res.balance);
       setResult(null);
       setDisplayBp(100);
       setPhase("running");
-      startedAt.current = Date.parse(res.state.startedAt);
-      offset.current = Date.parse(res.state.serverNow) - Date.now();
 
-      const tick = () => {
-        setDisplayBp(crashMultiplierAtMs(elapsedMs()));
-        raf.current = requestAnimationFrame(tick);
-      };
-      raf.current = requestAnimationFrame(tick);
+      // Anchor the rocket to our own clock, latency-compensated. The rocket
+      // has already been rising for the server-side processing gap + ~half the
+      // round-trip by the time we render, so back-date the start accordingly.
+      const t1 = Date.now();
+      const serverProcessing =
+        Date.parse(res.state.serverNow) - Date.parse(res.state.startedAt);
+      const elapsedAtResponse = Math.max(0, serverProcessing) + (t1 - t0) / 2;
+      anchor.current = t1 - elapsedAtResponse;
 
-      // Read-only crash poll: when it reports a crash, auto-cash (→ busts).
-      poll.current = window.setInterval(() => {
-        void peekCrash(roomId).then((p) => {
-          if (p.ok && p.crashed) cashOut();
-        });
-      }, POLL_MS);
+      startAnimation();
     });
   }
 
@@ -228,6 +266,7 @@ export function CrashPanel({
         <Button
           className="w-full bg-emerald-600 hover:bg-emerald-500"
           onClick={cashOut}
+          disabled={settling}
         >
           {copy.crash.cashout(fmtBp(displayBp))} ({potential})
         </Button>
