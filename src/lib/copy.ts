@@ -573,6 +573,7 @@ export const copy = {
     noRound: "Geen actieve ronde.",
     betLabel: "Inzet",
     launch: "Lanceer 🚀",
+    launching: "Lanceren…",
     cashout: (m: string) => `Cash uit · ${m}×`,
     potentialLabel: "Nu waard",
     resultWin: (m: string, payout: number) =>

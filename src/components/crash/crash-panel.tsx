@@ -40,6 +40,7 @@ export function CrashPanel({
   const [recent, setRecent] = useState<{ bp: number; win: boolean }[]>([]);
   const [pending, setPending] = useState(false);
   const [settling, setSettling] = useState(false);
+  const [launching, setLaunching] = useState(false);
 
   const raf = useRef<number | null>(null);
   const poll = useRef<number | null>(null);
@@ -146,30 +147,38 @@ export function CrashPanel({
       toast.error(copy.crash.cantAfford);
       return;
     }
+    // Show the rocket idling at 1.00 the instant you click, so the staking
+    // round-trip (a serverless cold start can be ~1s) reads as "lanceren…"
+    // instead of a frozen button. cashOut is gated on running.current, which we
+    // only flip true once the server confirms the round exists.
     setPending(true);
-    const t0 = Date.now();
+    setLaunching(true);
+    setSettling(false);
+    setResult(null);
+    setDisplayBp(100);
+    setPhase("running");
     void startCrash({ roomId, bet }).then((res) => {
       setPending(false);
       if (!res.ok) {
+        setLaunching(false);
+        setPhase("idle");
         toast.error(res.error);
         return;
       }
       running.current = true;
       cashing.current = false;
-      setSettling(false);
+      setLaunching(false);
       setBalance(res.balance);
-      setResult(null);
-      setDisplayBp(100);
-      setPhase("running");
 
-      // Anchor the rocket to our own clock, latency-compensated. The rocket
-      // has already been rising for the server-side processing gap + ~half the
-      // round-trip by the time we render, so back-date the start accordingly.
+      // Anchor to our own clock, skew-free, and start the rocket clean at 1.00.
+      // `started_at` is stamped server-side AFTER any cold start, so the rocket
+      // is only the response leg old (~tens of ms) when we render — NOT half the
+      // round-trip. (Counting RTT/2 would wrongly jump us ahead, because a cold
+      // start inflates the round-trip but happens before the clock even starts.)
       const t1 = Date.now();
       const serverProcessing =
         Date.parse(res.state.serverNow) - Date.parse(res.state.startedAt);
-      const elapsedAtResponse = Math.max(0, serverProcessing) + (t1 - t0) / 2;
-      anchor.current = t1 - elapsedAtResponse;
+      anchor.current = t1 - Math.max(0, serverProcessing);
 
       startAnimation();
     });
@@ -266,9 +275,11 @@ export function CrashPanel({
         <Button
           className="w-full bg-emerald-600 hover:bg-emerald-500"
           onClick={cashOut}
-          disabled={settling}
+          disabled={settling || launching}
         >
-          {copy.crash.cashout(fmtBp(displayBp))} ({potential})
+          {launching
+            ? copy.crash.launching
+            : `${copy.crash.cashout(fmtBp(displayBp))} (${potential})`}
         </Button>
       ) : (
         <>
