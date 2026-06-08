@@ -104,7 +104,13 @@ export async function startCrash(
   if (!paid) return { ok: false, error: copy.crash.cantAfford };
 
   const crashBp = crashPointBp(cryptoRng);
-  const startedAt = new Date().toISOString();
+
+  // Stake + create the round with a placeholder start. The FIRST DB call on a
+  // cold serverless function pays the Supabase connection setup (can be ~1s),
+  // so we stamp the real rocket start AFTER these writes land — otherwise
+  // started_at would already be a second in the past by the time the client can
+  // render, and the rocket would appear at ~1.3x instead of 1.00x.
+  const placeholder = new Date().toISOString();
 
   const [round, priv] = await Promise.all([
     auth.admin.from("crash_rounds").upsert(
@@ -113,12 +119,12 @@ export async function startCrash(
         user_id: auth.userId,
         bet,
         status: "running",
-        started_at: startedAt,
+        started_at: placeholder,
         crash_bp: null,
         cashout_bp: null,
         payout: 0,
         version: 0,
-        updated_at: startedAt,
+        updated_at: placeholder,
       },
       { onConflict: "room_id,user_id" },
     ),
@@ -133,12 +139,23 @@ export async function startCrash(
     return { ok: false, error: copy.crash.busy };
   }
 
+  // The connection is warm now: stamp the real start and persist it, so the
+  // server's crash clock and the client's animation both count from 1.00x.
+  const startedAt = new Date().toISOString();
+  const armed = await auth.admin
+    .from("crash_rounds")
+    .update({ started_at: startedAt, updated_at: startedAt })
+    .eq("room_id", roomId)
+    .eq("user_id", auth.userId);
+  if (armed.error) console.error("[startCrash:arm]", armed.error);
+  const effectiveStart = armed.error ? placeholder : startedAt;
+
   return {
     ok: true,
     state: {
       status: "running",
       bet,
-      startedAt,
+      startedAt: effectiveStart,
       serverNow: new Date().toISOString(),
       crashBp: null,
       cashoutBp: null,
