@@ -45,8 +45,18 @@ export function RoomWealth({ entries }: { entries: WealthEntry[] }) {
                     <UserName name={entry.name} loadout={entry.loadout} />
                   </ProfileLink>
                 </span>
-                <span className="shrink-0 font-mono font-semibold tabular-nums text-amber-500">
-                  {entry.bibcoins}
+                <span className="flex shrink-0 items-center gap-1.5 font-mono tabular-nums">
+                  <span className="font-semibold text-amber-500">
+                    {entry.bibcoins}
+                  </span>
+                  {entry.debt > 0 && (
+                    <span
+                      className="font-semibold text-red-600 dark:text-red-400"
+                      title={copy.theft.debtHint}
+                    >
+                      −{entry.debt}
+                    </span>
+                  )}
                 </span>
               </li>
             ))}

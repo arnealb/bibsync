@@ -12,6 +12,7 @@ export interface WealthEntry {
   avatarUrl: string | null;
   loadout: ResolvedLoadout | null;
   bibcoins: number;
+  debt: number;
 }
 
 /**
@@ -24,15 +25,19 @@ export async function getRoomWealth(roomId: string): Promise<WealthEntry[]> {
 
   const admin = createAdminClient();
   const balances = new Map<string, number>();
+  const debts = new Map<string, number>();
   if (admin) {
     const { data } = await admin
       .from("wallets")
-      .select("user_id, bibcoins")
+      .select("user_id, bibcoins, debt")
       .in(
         "user_id",
         members.map((m) => m.user_id),
       );
-    for (const row of data ?? []) balances.set(row.user_id, row.bibcoins);
+    for (const row of data ?? []) {
+      balances.set(row.user_id, row.bibcoins);
+      debts.set(row.user_id, row.debt ?? 0);
+    }
   }
 
   return members
@@ -42,6 +47,7 @@ export async function getRoomWealth(roomId: string): Promise<WealthEntry[]> {
       avatarUrl: m.profile?.avatar_url ?? null,
       loadout: m.loadout,
       bibcoins: balances.get(m.user_id) ?? BIBCOINS_START,
+      debt: debts.get(m.user_id) ?? 0,
     }))
     .sort((a, b) => b.bibcoins - a.bibcoins);
 }
