@@ -1164,6 +1164,19 @@ export const copy = {
     presentRequired:
       "Check in of deel je locatie om voorstellen te plaatsen, te stemmen en te reageren.",
   },
+  resto: {
+    title: "Menu van de dag",
+    subtitle: "Resto Sterre / De Brug",
+    soup: "Soep",
+    vegetables: "Groenten",
+    closed: "De resto is vandaag gesloten.",
+    kinds: {
+      meat: "🍖 Vlees",
+      fish: "🐟 Vis",
+      vegetarian: "🥕 Vegetarisch",
+      vegan: "🌱 Vegan",
+    } as Record<string, string>,
+  },
   presence: {
     title: "Wie is er?",
     empty: "Nog niemand actief.",

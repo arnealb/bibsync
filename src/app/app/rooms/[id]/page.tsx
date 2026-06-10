@@ -6,7 +6,9 @@ import { PilloryBanner } from "@/components/rooms/pillory-banner";
 import { getRoomPillory } from "@/lib/rooms/pillory-queries";
 import { InstantBreakPanel } from "@/components/instant-break/instant-break-panel";
 import { PresenceSidebar } from "@/components/presence/presence-sidebar";
+import { RestoMenuCard } from "@/components/resto/resto-menu-card";
 import { getStrijderClaimable } from "@/lib/bibcoins/queries";
+import { getRestoMenu } from "@/lib/resto/api";
 import { ProposalsPanel } from "@/components/proposals/proposals-panel";
 import { RoomDashboard } from "@/components/rooms/room-dashboard";
 import { copy } from "@/lib/copy";
@@ -52,6 +54,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
     foodBets,
     strijderClaimable,
     pillory,
+    restoMenu,
   ] = await Promise.all([
     getRoomMembers(id),
     getRoomProposals(id),
@@ -63,6 +66,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
     getFoodBets(id),
     getStrijderClaimable(access.userId),
     getRoomPillory(id),
+    getRestoMenu(today),
   ]);
 
   const memberMap = toMemberMap(members);
@@ -105,15 +109,18 @@ export default async function RoomPage({ params }: RoomPageProps) {
           />
         }
         presenceSlot={
-          <PresenceSidebar
-            roomId={access.room.id}
-            userId={access.userId}
-            members={memberOptions}
-            initialPresence={presenceRows}
-            hasLocation={access.room.lat != null && access.room.lng != null}
-            canManage={access.canManage}
-            today={today}
-          />
+          <>
+            <PresenceSidebar
+              roomId={access.room.id}
+              userId={access.userId}
+              members={memberOptions}
+              initialPresence={presenceRows}
+              hasLocation={access.room.lat != null && access.room.lng != null}
+              canManage={access.canManage}
+              today={today}
+            />
+            <RestoMenuCard menu={restoMenu} />
+          </>
         }
       />
     </div>
