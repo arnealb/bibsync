@@ -32,6 +32,7 @@ interface RaceRow {
   name_seed: number;
   run_seed: number | null;
   winner_idx: number | null;
+  finish_order: number[] | null;
 }
 
 /** Defensive parse of the jsonb horses column — never trust external data. */
@@ -40,20 +41,39 @@ function parseRace(row: RaceRow): HorseRace | null {
   if (!Array.isArray(horses) || horses.length !== HORSE_COUNT) return null;
   const parsed: RaceHorse[] = [];
   for (const h of horses) {
-    const horse = h as Partial<RaceHorse>;
+    // Pre-podium races stored a single win-only `multBp`.
+    const horse = h as Partial<RaceHorse> & { multBp?: number };
+    const mult1Bp = horse.mult1Bp ?? horse.multBp;
     if (
       typeof horse.color !== "string" ||
       typeof horse.speed !== "number" ||
       typeof horse.stamina !== "number" ||
       typeof horse.sprint !== "number" ||
       typeof horse.winBp !== "number" ||
-      typeof horse.multBp !== "number"
+      typeof mult1Bp !== "number"
     ) {
       return null;
     }
-    parsed.push(horse as RaceHorse);
+    parsed.push({
+      color: horse.color as RaceHorse["color"],
+      speed: horse.speed,
+      stamina: horse.stamina,
+      sprint: horse.sprint,
+      winBp: horse.winBp,
+      mult1Bp,
+      mult2Bp: typeof horse.mult2Bp === "number" ? horse.mult2Bp : 0,
+      mult3Bp: typeof horse.mult3Bp === "number" ? horse.mult3Bp : 0,
+    });
   }
   if (row.status !== "open" && row.status !== "resolved") return null;
+  const order = row.finish_order;
+  const finishOrder =
+    Array.isArray(order) &&
+    order.length === HORSE_COUNT &&
+    new Set(order).size === HORSE_COUNT &&
+    order.every((i) => Number.isInteger(i) && i >= 0 && i < HORSE_COUNT)
+      ? order
+      : null;
   return {
     id: row.id,
     runsAt: row.runs_at,
@@ -62,6 +82,7 @@ function parseRace(row: RaceRow): HorseRace | null {
     nameSeed: row.name_seed,
     runSeed: row.run_seed,
     winnerIdx: row.winner_idx,
+    finishOrder,
   };
 }
 

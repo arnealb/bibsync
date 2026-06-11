@@ -170,14 +170,20 @@ teammate merge, so the sequence jumps `0011 → 0014`):
 30. `0066_horse_races.sql` — **Paardenraces**: one GLOBAL race per clock
     hour (`horse_races` + `horse_race_bets`, both authenticated-readable +
     realtime). Six horses with random stats; win chance ∝ strength⁴ (floored
-    at 2% from the favourite), fixed odds = 95%/chance, payouts floored.
+    at 2% from the favourite), fixed odds, payouts floored.
     `place_horse_bet()` locks the race row (serialises with the resolver);
-    `run_horse_races()` (pg_cron `0 * * * *`) draws the winner weighted by
-    the stored `winBp`, pays idempotently per bet id, and opens the next
-    race. Also redefines `casino_stats()` (supersedes 0052) with
-    `horses_bet`/`horses_payout`, so the racebook moves the BIB-aandeel.
-    Odds + replay MIRRORED in `src/lib/horses/` (EV-guard tests) — SQL
-    authoritative.
+    `run_horse_races()` (pg_cron `0 * * * *`) resolves due races, pays
+    idempotently per bet id, and opens the next race. Also redefines
+    `casino_stats()` (supersedes 0052) with `horses_bet`/`horses_payout`,
+    so the racebook moves the BIB-aandeel. Odds + replay MIRRORED in
+    `src/lib/horses/` (EV-guard tests) — SQL authoritative.
+31. `0067_horse_podium.sql` — **Paardenraces v2 (podium)**: adds
+    `horse_races.finish_order`; the resolver now draws the FULL finishing
+    order (Plackett–Luce: sequential weighted draws on `winBp`) and 1st/2nd/
+    3rd pay out. Odds per spot fixed at creation: `mult_k = α_k / P(k-th)`
+    with α = 70/15/10% (Σ = 95%), P(2nd)/P(3rd) the exact Plackett–Luce
+    place probabilities → EV is exactly 95% of the stake per horse. Legacy
+    (pre-0067) races resolve with their stored win-only `multBp` (places 0).
 
 **Plinko** (`/games/plinko`) is a **stateless** gok: one `dropPlinko` action
 stakes the bet, rolls the ball server-side and pays out instantly — no table,
@@ -189,15 +195,19 @@ rolls 0.00–99.99 and pays out. Pick a target (2.00–98.00) and over/under;
 multiplier = `(1 − houseEdge) / winChance` from the *actual* discrete chance.
 Pure engine in `src/lib/dice/`.
 
-**Paardenraces** (`/games/horses`, migration `0066`) is the **hourly global
-race**: betting all hour, the pg_cron resolver draws the winner at :00 and a
-fresh field (new stats/odds/names) opens. The client replays the result from
-`run_seed` (`raceScript` in `src/lib/horses/engine.ts` — deterministic, the
-stored winner always finishes first; pure cosmetics). Horse names derive from
-`name_seed` (`src/lib/horses/names.ts`), so all clients see the same line-up.
-The panel refetches the whole snapshot (`getHorsesView`) on any realtime
-event instead of patching rows, with a 5s poll fallback while a due race
-waits for the cron.
+**Paardenraces** (`/games/horses`, migrations `0066`+`0067`) is the **hourly
+global race**: betting all hour (multiple bets/horses per user allowed), the
+pg_cron resolver draws the full finishing order at :00 and a fresh field (new
+stats/odds/names) opens; **1st/2nd/3rd pay out** at per-spot odds. The race
+then plays **LIVE for one minute**, anchored to `runs_at` wall clock — every
+client renders the same deterministic animation from `run_seed` (`raceScript`
+in `src/lib/horses/engine.ts`; the stored order always plays out, pure
+cosmetics since betting closed at the draw). The panel hides the results
+(payout chips, winner strip) until the live minute has passed. Horse names
+derive from `name_seed` (`src/lib/horses/names.ts`), so all clients see the
+same line-up. The panel refetches the whole snapshot (`getHorsesView`) on any
+realtime event instead of patching rows, with a 5s poll fallback while a due
+race waits for the cron.
 
 All gok payouts use **`Math.floor`** (never `round`) so they can't exceed
 bet × multiplier — `round` is exploitable (pick a bet where it rounds up on a

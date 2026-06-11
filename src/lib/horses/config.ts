@@ -20,6 +20,13 @@ export type HorseColor = (typeof HORSE_COLORS)[number];
 /** Uniform house edge baked into every horse's odds (basis points). */
 export const HORSES_EDGE_BP = 500;
 
+/**
+ * How the returned 95% splits across the podium (basis points, summing to
+ * 10000 − edge): a bet pays α_k / P(finish k-th) on each podium spot, so the
+ * total EV is exactly 95% of the stake for every horse.
+ */
+export const PODIUM_SPLIT_BP = { win: 7000, second: 1500, third: 1000 } as const;
+
 /** Win chances are floored here (taken from the favourite) so longshot odds
  *  keep the same edge instead of silently worsening. */
 export const HORSES_MIN_WIN_BP = 200;
@@ -39,5 +46,15 @@ export const HORSES_MIN_BET = 10;
 export const HORSES_MAX_BET = 5000;
 export const HORSES_CHIPS = [25, 100, 250, 1000] as const;
 
-/** Replay animation length (cosmetic only — the winner is already drawn). */
-export const RACE_REPLAY_MS = 13_000;
+/**
+ * The live race runs exactly one minute, anchored to the race's `runs_at`
+ * wall clock — every client sees the same race at the same moment. Cosmetic
+ * only: the finish order is already drawn at :00 (betting is closed by then).
+ */
+export const RACE_DURATION_MS = 60_000;
+
+/** Manual replays run faster than the live minute. */
+export const RACE_REPLAY_MS = 15_000;
+
+/** How long the finished live track lingers before giving way to results. */
+export const LIVE_LINGER_MS = 8_000;

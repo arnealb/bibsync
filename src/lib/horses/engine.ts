@@ -1,8 +1,8 @@
 import {
   HORSE_COUNT,
-  HORSES_EDGE_BP,
   HORSES_MIN_WIN_BP,
   HORSES_MULT_CAP_BP,
+  PODIUM_SPLIT_BP,
   STRENGTH_WEIGHTS,
   WEIGHT_EXPONENT,
   type HorseColor,
@@ -25,7 +25,12 @@ export interface HorseStats {
 export interface RaceHorse extends HorseStats {
   color: HorseColor;
   winBp: number;
-  multBp: number;
+  /** Payout odds (bp) for finishing 1st / 2nd / 3rd. Races opened before the
+   *  podium migration have their legacy win-only odds in mult1Bp and 0 for
+   *  the places. */
+  mult1Bp: number;
+  mult2Bp: number;
+  mult3Bp: number;
 }
 
 export interface HorseRace {
@@ -36,6 +41,21 @@ export interface HorseRace {
   nameSeed: number;
   runSeed: number | null;
   winnerIdx: number | null;
+  /** Full finishing order (horse indexes, winner first); null pre-podium. */
+  finishOrder: number[] | null;
+}
+
+/** Cosmetic order for legacy races that only stored a winner. */
+export function legacyFinishOrder(
+  winnerIdx: number,
+  count = HORSE_COUNT,
+): number[] {
+  return [
+    winnerIdx,
+    ...Array.from({ length: count }, (_, i) => i).filter(
+      (i) => i !== winnerIdx,
+    ),
+  ];
 }
 
 export function horseStrength(h: HorseStats): number {
@@ -73,12 +93,81 @@ export function winBpsFromStrengths(strengths: number[]): number[] {
   return floored.map((bp, i) => (i === maxIdx ? bp - short : bp));
 }
 
-/** Fixed-odds multiplier (bp) for a win chance — mirror of the SQL. */
-export function multBpFromWinBp(winBp: number): number {
-  return Math.min(
-    Math.floor(((10000 - HORSES_EDGE_BP) * 10000) / winBp),
-    HORSES_MULT_CAP_BP,
-  );
+export interface PlaceProbs {
+  p1: number;
+  p2: number;
+  p3: number;
+}
+
+/**
+ * Exact podium probabilities per horse under the Plackett–Luce model the
+ * resolver samples from (sequential weighted draws without replacement, with
+ * the stored winBp as weights) — mirror of `open_horse_race()`.
+ */
+export function placeProbabilities(winBps: number[]): PlaceProbs[] {
+  const W = 10000;
+  return winBps.map((wi, i) => {
+    const p1 = wi / W;
+    let p2 = 0;
+    let p3 = 0;
+    for (let j = 0; j < winBps.length; j++) {
+      if (j === i) continue;
+      const wj = winBps[j];
+      p2 += (wj / W) * (wi / (W - wj));
+      for (let k = 0; k < winBps.length; k++) {
+        if (k === i || k === j) continue;
+        const wk = winBps[k];
+        p3 += (wj / W) * (wk / (W - wj)) * (wi / (W - wj - wk));
+      }
+    }
+    return { p1, p2, p3 };
+  });
+}
+
+export interface PodiumMults {
+  mult1Bp: number;
+  mult2Bp: number;
+  mult3Bp: number;
+}
+
+/**
+ * Fixed odds per podium spot (bp) — mirror of the SQL: α_k / P(k-th), floored
+ * and capped, so EV = Σ α_k = 95% of the stake exactly (before flooring).
+ */
+export function podiumMultBps(winBps: number[]): PodiumMults[] {
+  const cap = (x: number) => Math.min(Math.floor(x), HORSES_MULT_CAP_BP);
+  return placeProbabilities(winBps).map(({ p1, p2, p3 }) => ({
+    mult1Bp: cap(PODIUM_SPLIT_BP.win / p1),
+    mult2Bp: cap(PODIUM_SPLIT_BP.second / p2),
+    mult3Bp: cap(PODIUM_SPLIT_BP.third / p3),
+  }));
+}
+
+/**
+ * Full finishing order via sequential weighted draws without replacement —
+ * mirror of the resolver in `run_horse_races()`. Used by the EV tests to
+ * prove the sampler matches {@link placeProbabilities}.
+ */
+export function drawFinishOrder(
+  rng: () => number,
+  winBps: number[],
+): number[] {
+  const remaining = winBps.map((_, i) => i);
+  const order: number[] = [];
+  while (remaining.length > 0) {
+    const total = remaining.reduce((sum, i) => sum + winBps[i], 0);
+    const pick = rng() * total;
+    let acc = 0;
+    for (let j = 0; j < remaining.length; j++) {
+      acc += winBps[remaining[j]];
+      if (pick < acc) {
+        order.push(remaining[j]);
+        remaining.splice(j, 1);
+        break;
+      }
+    }
+  }
+  return order;
 }
 
 /** Floored payout — can never exceed amount × multiplier. */
@@ -125,19 +214,19 @@ export interface RaceScript {
 }
 
 const SCRIPT_STEPS = 96;
-/** The winner crosses the line at this fraction of the replay. */
-const WINNER_FINISH_AT = 0.88;
+/** The winner crosses the line at this fraction of the race. */
+const WINNER_FINISH_AT = 0.8;
 
 /**
- * Deterministic replay: per-horse speed noise (early segments lean on speed,
- * the middle on stamina, the end on sprint — flavour only) is normalised so
- * the drawn winner finishes first, with losers a seeded margin behind
- * (squared draw → photo finishes are common).
+ * Deterministic race animation: per-horse speed noise (early segments lean on
+ * speed, the middle on stamina, the end on sprint — flavour only) is
+ * normalised so the horses cross the line in exactly the drawn finishing
+ * order, with seeded gaps (squared draw → photo finishes are common).
  */
 export function raceScript(
   runSeed: number,
   horses: HorseStats[],
-  winnerIdx: number,
+  finishOrder: number[],
 ): RaceScript {
   const rng = mulberry32(runSeed);
   const last = SCRIPT_STEPS - 1;
@@ -153,11 +242,13 @@ export function raceScript(
     return cum;
   });
 
-  // Step at which each horse crosses the line; the winner's is strictly first.
-  const targets = horses.map((_, i) => {
-    if (i === winnerIdx) return Math.round(WINNER_FINISH_AT * last);
-    const margin = 0.02 + 0.24 * Math.pow(rng(), 2);
-    return Math.min(last, Math.round(WINNER_FINISH_AT * (1 + margin) * last));
+  // Crossing step per horse, walking the stored order with seeded gaps. The
+  // podium gaps stay small enough that 1st–3rd never clamp into a tie.
+  const targets = horses.map(() => last);
+  let step = Math.round(WINNER_FINISH_AT * last);
+  finishOrder.forEach((horseIdx, pos) => {
+    if (pos > 0) step += 2 + Math.round(4 * Math.pow(rng(), 2));
+    targets[horseIdx] = Math.min(step, last);
   });
 
   const frames: number[][] = [];
@@ -166,12 +257,6 @@ export function raceScript(
       horses.map((_, i) => Math.min(1, cums[i][t] / cums[i][targets[i]])),
     );
   }
-
-  const finishOrder = horses
-    .map((_, i) => i)
-    .sort((a, b) =>
-      a === winnerIdx ? -1 : b === winnerIdx ? 1 : targets[a] - targets[b],
-    );
 
   return { frames, finishOrder };
 }

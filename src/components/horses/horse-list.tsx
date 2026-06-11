@@ -74,12 +74,21 @@ export function HorseList({
                 </span>
               </span>
               <span className={cn("text-sm font-bold tabular-nums", ui.text)}>
-                {copy.horses.odds(multLabel(h.multBp))}
+                {copy.horses.odds(multLabel(h.mult1Bp))}
               </span>
             </div>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               {copy.horses.colors[h.color]} ·{" "}
               {copy.horses.winChance((h.winBp / 100).toFixed(1))}
+              {h.mult2Bp > 0 && (
+                <>
+                  {" · "}
+                  {copy.horses.oddsPlaces(
+                    multLabel(h.mult2Bp),
+                    multLabel(h.mult3Bp),
+                  )}
+                </>
+              )}
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2">
               <StatBar

@@ -23,15 +23,20 @@ import {
   HORSE_COUNT,
   HORSES_MAX_BET,
   HORSES_MIN_BET,
+  LIVE_LINGER_MS,
+  RACE_DURATION_MS,
 } from "@/lib/horses/config";
 import {
   horseNames,
   horsePayout,
+  legacyFinishOrder,
   multLabel,
   type HorseRace,
 } from "@/lib/horses/engine";
 import type { HorsesState } from "@/lib/horses/queries";
 import { cn } from "@/lib/utils";
+
+const MEDALS = ["🥇", "🥈", "🥉"];
 
 export function HorsesPanel({
   roomId,
@@ -43,15 +48,20 @@ export function HorsesPanel({
   initial: HorsesState;
 }) {
   const [state, setState] = useState(initial);
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selection, setSelection] = useState<{
+    raceId: number;
+    idx: number;
+  } | null>(null);
   const [amount, setAmount] = useState(100);
-  const [replay, setReplay] = useState<{ race: HorseRace; live: boolean } | null>(
-    null,
-  );
+  const [replayRace, setReplayRace] = useState<HorseRace | null>(null);
+  const [dismissedLiveId, setDismissedLiveId] = useState<number | null>(null);
   const [pending, startTransition] = useTransition();
   const [now, setNow] = useState(() => Date.now());
+  const toastedRef = useRef<number | null>(null);
 
   const { race, lastRace } = state;
+  const selected =
+    selection && race && selection.raceId === race.id ? selection.idx : null;
   const raceNames = useMemo(
     () => (race ? horseNames(race.nameSeed) : []),
     [race],
@@ -61,8 +71,8 @@ export function HorsesPanel({
     [lastRace],
   );
   const replayNames = useMemo(
-    () => (replay ? horseNames(replay.race.nameSeed) : []),
-    [replay],
+    () => (replayRace ? horseNames(replayRace.nameSeed) : []),
+    [replayRace],
   );
 
   const refetch = useCallback(() => {
@@ -74,23 +84,33 @@ export function HorsesPanel({
 
   useHorsesRealtime(refetch);
 
-  // The race we were betting on just resolved → play the replay live.
-  const prevOpenRef = useRef<number | null>(initial.race?.id ?? null);
-  useEffect(() => {
-    if (lastRace && prevOpenRef.current === lastRace.id) {
-      setReplay({ race: lastRace, live: true });
-      setSelected(null);
-    }
-    prevOpenRef.current = race?.id ?? null;
-  }, [race, lastRace]);
-
-  // 1s countdown tick; refetch fallback while a due race awaits the cron.
+  // 1s tick drives the countdown and the live-race window.
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
   const msLeft = race ? new Date(race.runsAt).getTime() - now : 0;
   const bettingClosed = !race || msLeft <= 0;
+
+  // The most recent resolved race is LIVE during its one-minute run (+ a
+  // short linger with the winner banner); results stay hidden until then.
+  const liveInfo = useMemo(() => {
+    if (!lastRace) return null;
+    const startMs = new Date(lastRace.runsAt).getTime();
+    if (now < startMs || now >= startMs + RACE_DURATION_MS + LIVE_LINGER_MS) {
+      return null;
+    }
+    return {
+      race: lastRace,
+      startMs,
+      finished: now >= startMs + RACE_DURATION_MS,
+    };
+  }, [lastRace, now]);
+  const revealed = !liveInfo || liveInfo.finished;
+  const liveVisible = liveInfo !== null && dismissedLiveId !== liveInfo.race.id;
+
+  // A due race awaiting the cron: poll as a realtime fallback.
   const awaitingResult = race !== null && msLeft <= 0;
   useEffect(() => {
     if (!awaitingResult) return;
@@ -112,6 +132,15 @@ export function HorsesPanel({
     .filter((b) => b.userId === userId)
     .reduce((sum, b) => sum + (b.payout ?? 0), 0);
   const iBetLastRace = state.lastBets.some((b) => b.userId === userId);
+
+  function onLiveFinished() {
+    const raceId = liveInfo?.race.id;
+    if (raceId === undefined || toastedRef.current === raceId) return;
+    toastedRef.current = raceId;
+    if (!iBetLastRace) return;
+    if (myLastPayout > 0) toast.success(copy.horses.youWon(myLastPayout));
+    else toast.error(copy.horses.youLost);
+  }
 
   function submit() {
     if (!race || selected === null) {
@@ -146,14 +175,20 @@ export function HorsesPanel({
     selected !== null && race ? race.horses[selected] : null;
   const potentialText =
     selectedHorse && amount > 0
-      ? `${raceNames[selected as number]} ${copy.horses.potential(
-          horsePayout(amount, selectedHorse.multBp),
-        )}`
+      ? selectedHorse.mult2Bp > 0
+        ? copy.horses.potentialPodium(
+            horsePayout(amount, selectedHorse.mult1Bp),
+            horsePayout(amount, selectedHorse.mult2Bp),
+            horsePayout(amount, selectedHorse.mult3Bp),
+          )
+        : copy.horses.potential(horsePayout(amount, selectedHorse.mult1Bp))
       : null;
-  const lastWinner =
-    lastRace && lastRace.winnerIdx !== null
-      ? lastRace.horses[lastRace.winnerIdx]
-      : null;
+  const lastOrder = lastRace
+    ? (lastRace.finishOrder ?? legacyFinishOrder(lastRace.winnerIdx ?? 0))
+    : null;
+  const winnersStrip = revealed
+    ? state.recentWinners
+    : state.recentWinners.filter((w) => w.raceId !== lastRace?.id);
 
   return (
     <div className="space-y-4">
@@ -173,23 +208,22 @@ export function HorsesPanel({
           ))}
       </div>
 
-      {replay && (
+      {liveVisible && liveInfo && (
         <RaceTrack
-          key={replay.race.id}
-          race={replay.race}
+          key={`live-${liveInfo.race.id}`}
+          race={liveInfo.race}
+          names={lastNames}
+          liveStartsAtMs={liveInfo.startMs}
+          onFinished={onLiveFinished}
+          onClose={() => setDismissedLiveId(liveInfo.race.id)}
+        />
+      )}
+      {!liveVisible && replayRace && (
+        <RaceTrack
+          key={`replay-${replayRace.id}`}
+          race={replayRace}
           names={replayNames}
-          onFinished={
-            replay.live && iBetLastRace
-              ? () => {
-                  if (myLastPayout > 0) {
-                    toast.success(copy.horses.youWon(myLastPayout));
-                  } else {
-                    toast.error(copy.horses.youLost);
-                  }
-                }
-              : undefined
-          }
-          onClose={() => setReplay(null)}
+          onClose={() => setReplayRace(null)}
         />
       )}
 
@@ -200,7 +234,7 @@ export function HorsesPanel({
             names={raceNames}
             pools={pools}
             selected={selected}
-            onSelect={(i) => setSelected(i)}
+            onSelect={(i) => setSelection({ raceId: race.id, idx: i })}
             disabled={bettingClosed}
           />
           <BetForm
@@ -211,6 +245,9 @@ export function HorsesPanel({
             disabled={bettingClosed || selected === null}
             potentialText={potentialText}
           />
+          <p className="text-[11px] text-muted-foreground">
+            {copy.horses.multiHint}
+          </p>
           <section className="space-y-2">
             <h3 className="text-sm font-semibold">{copy.horses.betsTitle}</h3>
             <BetsFeed
@@ -225,29 +262,41 @@ export function HorsesPanel({
         <p className="text-sm text-muted-foreground">{copy.horses.noRace}</p>
       )}
 
-      {lastRace && lastWinner && (
+      {lastRace && lastOrder && revealed && (
         <section className="space-y-2 border-t pt-3">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold">{copy.horses.lastRace}</h3>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setReplay({ race: lastRace, live: false })}
+              onClick={() => setReplayRace(lastRace)}
             >
               {copy.horses.replay}
             </Button>
           </div>
-          <p className="text-sm">
-            🏆{" "}
-            <span
-              className={cn("font-semibold", HORSE_COLOR_UI[lastWinner.color].text)}
-            >
-              {lastNames[lastRace.winnerIdx as number]}
-            </span>{" "}
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             <span className="text-muted-foreground">
-              ({copy.horses.colors[lastWinner.color]} ·{" "}
-              {copy.horses.odds(multLabel(lastWinner.multBp))})
+              {copy.horses.finishOrder}:
             </span>
+            {lastOrder.slice(0, 3).map((horseIdx, pos) => (
+              <span key={horseIdx} className="whitespace-nowrap">
+                {MEDALS[pos]}{" "}
+                <span
+                  className={cn(
+                    "font-semibold",
+                    HORSE_COLOR_UI[lastRace.horses[horseIdx].color].text,
+                  )}
+                >
+                  {lastNames[horseIdx]}
+                </span>
+                {pos === 0 && (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    ({copy.horses.odds(multLabel(lastRace.horses[horseIdx].mult1Bp))})
+                  </span>
+                )}
+              </span>
+            ))}
           </p>
           <BetsFeed
             bets={state.lastBets}
@@ -255,10 +304,10 @@ export function HorsesPanel({
             names={lastNames}
             myUserId={userId}
           />
-          {state.recentWinners.length > 1 && (
+          {winnersStrip.length > 1 && (
             <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               {copy.horses.recentWinners}:
-              {state.recentWinners.map((w) => (
+              {winnersStrip.map((w) => (
                 <span
                   key={w.raceId}
                   className={cn(

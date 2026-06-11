@@ -393,7 +393,7 @@ export const copy = {
   horses: {
     title: "Paardenraces",
     subtitle:
-      "Elk uur om :00 een race tussen zes paarden — bekijk de stats en zet in op je favoriet.",
+      "Elk uur om :00 racen zes paarden een minuut lang — de top 3 betaalt uit. Zet gerust op meerdere paarden in.",
     stat: "Jouw bibcoins",
     cantAfford: "Niet genoeg bibcoins voor deze inzet.",
     unavailable: "De renbaan is even niet beschikbaar.",
@@ -403,14 +403,19 @@ export const copy = {
     countdown: (m: number, s: number) =>
       `Start over ${m}:${s.toString().padStart(2, "0")}`,
     startingSoon: "Inzetten gesloten — de race start zo!",
+    live: "🔴 LIVE",
     betLabel: "Inzet",
     placeBet: "Plaats inzet",
     betting: "Inzetten…",
     pickHorse: "Kies eerst een paard.",
+    multiHint: "Tip: je mag op meerdere paarden tegelijk inzetten.",
     betPlaced: (name: string) => `Inzet geplaatst op ${name}! 🐎`,
     odds: (m: string) => `×${m}`,
+    oddsPlaces: (m2: string, m3: string) => `2e ×${m2} · 3e ×${m3}`,
     winChance: (pct: string) => `${pct}% winkans`,
     potential: (n: number) => `→ ${n} bij winst`,
+    potentialPodium: (a: number, b: number, c: number) =>
+      `Bij 1e +${a} · 2e +${b} · 3e +${c}`,
     stats: {
       speed: "Snelheid",
       stamina: "Uithouding",
@@ -426,8 +431,8 @@ export const copy = {
     lostBadge: "verloren",
     replay: "Bekijk herhaling",
     skip: "Sla over",
-    youWon: (n: number) => `Je paard wint — +${n} bibcoins! 🏆`,
-    youLost: "Helaas, je paard haalde het niet. 🥲",
+    youWon: (n: number) => `In de prijzen — +${n} bibcoins! 🏆`,
+    youLost: "Helaas, geen van je paarden haalde de top 3. 🥲",
     recentWinners: "Vorige winnaars",
     commentary: {
       start: "Daar gaan ze! 🏇",

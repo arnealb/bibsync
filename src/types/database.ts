@@ -1158,6 +1158,7 @@ export interface Database {
           name_seed: number;
           run_seed: number | null;
           winner_idx: number | null;
+          finish_order: number[] | null;
           created_at: Timestamp;
         };
         Insert: {
@@ -1168,6 +1169,7 @@ export interface Database {
           name_seed: number;
           run_seed?: number | null;
           winner_idx?: number | null;
+          finish_order?: number[] | null;
           created_at?: Timestamp;
         };
         Update: {
@@ -1178,6 +1180,7 @@ export interface Database {
           name_seed?: number;
           run_seed?: number | null;
           winner_idx?: number | null;
+          finish_order?: number[] | null;
           created_at?: Timestamp;
         };
         Relationships: [];

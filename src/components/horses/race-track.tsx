@@ -5,27 +5,35 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { HORSE_COLOR_UI } from "@/components/horses/colors";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
-import { RACE_REPLAY_MS } from "@/lib/horses/config";
+import { RACE_DURATION_MS, RACE_REPLAY_MS } from "@/lib/horses/config";
 import {
   leaderAt,
+  legacyFinishOrder,
   raceScript,
   scriptProgressAt,
   type HorseRace,
 } from "@/lib/horses/engine";
 import { cn } from "@/lib/utils";
 
+const MEDALS = ["🥇", "🥈", "🥉"];
+
 /**
- * Replays a resolved race from its server seed — pure animation, every client
- * sees the same run and the stored winner always crosses the line first.
+ * Animates a resolved race from its server seed — pure cosmetics, the stored
+ * finishing order always plays out. With `liveStartsAtMs` set, progress is
+ * anchored to the wall clock over the one-minute race window, so every client
+ * watches the same race at the same moment; otherwise it's a fast replay.
+ * Render with key={race.id} so a new race remounts (and so resets) the track.
  */
 export function RaceTrack({
   race,
   names,
+  liveStartsAtMs,
   onFinished,
   onClose,
 }: {
   race: HorseRace;
   names: string[];
+  liveStartsAtMs?: number;
   onFinished?: () => void;
   onClose: () => void;
 }) {
@@ -37,21 +45,27 @@ export function RaceTrack({
     onFinishedRef.current = onFinished;
   });
 
-  const winnerIdx = race.winnerIdx ?? 0;
+  const order = useMemo(
+    () => race.finishOrder ?? legacyFinishOrder(race.winnerIdx ?? 0),
+    [race.finishOrder, race.winnerIdx],
+  );
   const script = useMemo(
-    () => raceScript(race.runSeed ?? 1, race.horses, winnerIdx),
-    [race.runSeed, race.horses, winnerIdx],
+    () => raceScript(race.runSeed ?? 1, race.horses, order),
+    [race.runSeed, race.horses, order],
   );
 
-  // The replay starts on mount — render with key={race.id} so a new race
-  // remounts (and so resets) the track.
   useEffect(() => {
     let raf = 0;
-    const startedAt = performance.now();
-    const step = (now: number) => {
+    const replayStartedAt = performance.now();
+    const step = (frameNow: number) => {
       const p = skipRef.current
         ? 1
-        : Math.min((now - startedAt) / RACE_REPLAY_MS, 1);
+        : liveStartsAtMs !== undefined
+          ? Math.min(
+              Math.max((Date.now() - liveStartsAtMs) / RACE_DURATION_MS, 0),
+              1,
+            )
+          : Math.min((frameNow - replayStartedAt) / RACE_REPLAY_MS, 1);
       setT(p);
       if (p < 1) {
         raf = requestAnimationFrame(step);
@@ -62,8 +76,9 @@ export function RaceTrack({
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [liveStartsAtMs]);
 
+  const winnerIdx = order[0];
   const done = t >= 1;
   const commentary = done
     ? copy.horses.commentary.wins(names[winnerIdx])
@@ -81,6 +96,10 @@ export function RaceTrack({
           <Button variant="outline" size="sm" onClick={onClose}>
             ✕
           </Button>
+        ) : liveStartsAtMs !== undefined ? (
+          <span className="shrink-0 animate-pulse text-xs font-bold text-red-500">
+            {copy.horses.live}
+          </span>
         ) : (
           <Button
             variant="ghost"
@@ -97,9 +116,14 @@ export function RaceTrack({
         {race.horses.map((h, i) => {
           const p = scriptProgressAt(script, i, t);
           const ui = HORSE_COLOR_UI[h.color];
+          const podiumPos = order.indexOf(i);
+          const crossed = p >= 1;
           const isWinner = done && i === winnerIdx;
           return (
-            <div key={h.color} className="grid grid-cols-[5.5rem_1fr] items-center gap-2">
+            <div
+              key={h.color}
+              className="grid grid-cols-[5.5rem_1fr] items-center gap-2"
+            >
               <span
                 className={cn(
                   "flex items-center gap-1 truncate text-[11px]",
@@ -124,9 +148,9 @@ export function RaceTrack({
                     {isWinner ? "🏇" : "🐎"}
                   </span>
                 </span>
-                {isWinner && (
+                {crossed && podiumPos < 3 && (
                   <span className="absolute right-1 top-1/2 -translate-y-1/2 text-sm">
-                    🏆
+                    {MEDALS[podiumPos]}
                   </span>
                 )}
               </div>
