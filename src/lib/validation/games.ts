@@ -6,6 +6,7 @@ export const GAME_KEYS = [
   "snake",
   "petconnect",
   "flappy",
+  "dino",
   "tetris",
   "2048",
   "usstates",

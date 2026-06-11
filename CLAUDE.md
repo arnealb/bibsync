@@ -164,6 +164,9 @@ teammate merge, so the sequence jumps `0011 → 0014`):
     `minesweeper` key drops out and `minesweeper_easy/medium/hard` each crown
     a daily King (fastest honest win). No schema change — the app records
     wins only, with `duration_seconds` set. See the skill-games bullet below.
+29. `0065_dino_king.sql` — **Dino Runner King**: the Chrome offline T-Rex
+    game joins the arcade (`dino` key, score = obstacles dodged, 3 coins
+    each); replaces `award_game_kings()` with `dino` added. No schema change.
 
 **Plinko** (`/games/plinko`) is a **stateless** gok: one `dropPlinko` action
 stakes the bet, rolls the ball server-side and pays out instantly — no table,
@@ -292,9 +295,9 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   "busy" error and the client does not advance). Hidden state (decks, hole/
   dealer cards) lives in service-only `*_private` tables with RLS and no
   policies. Pure, unit-tested engines in `src/lib/<game>/`.
-- **Skill games earn coins per event:** Snake/Flappy/Tetris/2048/Minesweeper
-  pay a per-game rate (`ARCADE_COINS_PER_EVENT` = 3/3/8/12/1) per
-  apple/pipe/line/new-tile/safe-cell via
+- **Skill games earn coins per event:** Snake/Flappy/Dino/Tetris/2048/
+  Minesweeper pay a per-game rate (`ARCADE_COINS_PER_EVENT` = 3/3/3/8/12/1)
+  per apple/pipe/obstacle/line/new-tile/safe-cell via
   `earnFromArcade` (fresh server-side ref, so every run pays), clamped to a
   shared **250 bibcoins/clock-hour** cap (`ARCADE_HOURLY_CAP`); the
   `ArcadeCapBar` on each game page shows usage + a countdown to the next `:00`.
@@ -302,7 +305,8 @@ Hooks in `src/hooks/use-*-realtime.ts`:
   `arcade-window.ts`. Every skill game has a daily **King** (top honest
   `game_scores` score per room): Snake 1000 (cron `0047`), the others 500
   (cron `0051_game_kings.sql`; `0060` adds USA Staten, `0063`/`0064`
-  Minesweeper to the same function); the crown is the generic `KingBadge`.
+  Minesweeper, `0065` Dino to the same function); the crown is the generic
+  `KingBadge`.
   Score ties rank the **fastest run** first (`game_scores.duration_seconds` =
   seconds to the run's last point; USA Staten and Minesweeper fill it; pure
   helpers in `src/lib/games/rank.ts`), then the earliest record holder.

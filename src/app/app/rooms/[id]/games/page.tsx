@@ -47,6 +47,7 @@ export default async function GamesPage({ params }: GamesPageProps) {
     sessions,
     wealth,
     flappyBest,
+    dinoBest,
     tetrisBest,
     twenty48Best,
     statesBest,
@@ -60,6 +61,7 @@ export default async function GamesPage({ params }: GamesPageProps) {
     getSessionStandings(id),
     getRoomWealth(id),
     getMyBestScore(id, access.userId, "flappy"),
+    getMyBestScore(id, access.userId, "dino"),
     getMyBestScore(id, access.userId, "tetris"),
     getMyBestScore(id, access.userId, "2048"),
     getMyBestScore(id, access.userId, "usstates"),
@@ -98,6 +100,13 @@ export default async function GamesPage({ params }: GamesPageProps) {
           subtitle={copy.games.flappy.subtitle}
           emoji="🐤"
           myBest={flappyBest}
+        />
+        <GameCard
+          href={`/app/rooms/${id}/games/dino`}
+          title={copy.games.dino.title}
+          subtitle={copy.games.dino.subtitle}
+          emoji="🦖"
+          myBest={dinoBest}
         />
         <GameCard
           href={`/app/rooms/${id}/games/tetris`}

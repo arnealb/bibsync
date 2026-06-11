@@ -2,6 +2,7 @@
 export const ARCADE_REASONS = [
   "snake",
   "flappy",
+  "dino",
   "tetris",
   "2048",
   // "minesweeper" is the pre-split (single-key) reason; keeping it counted

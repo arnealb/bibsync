@@ -17,6 +17,7 @@ describe("submitScoreSchema", () => {
     for (const gameKey of [
       "snake",
       "flappy",
+      "dino",
       "tetris",
       "2048",
       "minesweeper_easy",

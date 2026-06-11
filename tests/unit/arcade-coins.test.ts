@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import { arcadeCoins, cappedCoins } from "@/lib/games/arcade-coins";
 
 describe("arcadeCoins", () => {
-  it("applies the per-game rate per event (snake/flappy 3, tetris 8)", () => {
+  it("applies the per-game rate per event (snake/flappy/dino 3, tetris 8)", () => {
     expect(arcadeCoins("snake", 17)).toBe(51); // 17 × 3
     expect(arcadeCoins("flappy", 4)).toBe(12); // 4 × 3
+    expect(arcadeCoins("dino", 7)).toBe(21); // 7 × 3
     expect(arcadeCoins("tetris", 9)).toBe(72); // 9 × 8
   });
 

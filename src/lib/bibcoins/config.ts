@@ -60,6 +60,7 @@ export const ARCADE_HOURLY_CAP = 250;
 export const ARCADE_COINS_PER_EVENT = {
   snake: 3,
   flappy: 3,
+  dino: 3,
   tetris: 8,
   "2048": 12,
   minesweeper_easy: 1,
