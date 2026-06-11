@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { submitGameScore } from "@/app/_actions/games";
+import { ShameModal, pickShameMsg } from "@/components/games/shame-modal";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
 import {
@@ -46,6 +47,7 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
   );
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const submittedRef = useRef(false);
+  const [shameMsg, setShameMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (state.gameOver) return;
@@ -84,6 +86,7 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
       toast.success(
         beatBest ? copy.games.tetris.newHighScore : copy.games.tetris.saved(score),
       );
+      if (!beatBest) setShameMsg(pickShameMsg());
     });
   }, [state.gameOver, state.lines, roomId, myBest]);
 
@@ -125,6 +128,9 @@ export function TetrisGame({ roomId, myBest }: TetrisGameProps) {
 
   return (
     <div className="space-y-3">
+      {shameMsg && (
+        <ShameModal message={shameMsg} onDone={() => setShameMsg(null)} />
+      )}
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm">
           <span className="text-muted-foreground">

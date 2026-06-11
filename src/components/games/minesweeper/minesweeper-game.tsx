@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { submitGameScore } from "@/app/_actions/games";
+import { ShameModal, pickShameMsg } from "@/components/games/shame-modal";
 import { LedDisplay } from "@/components/games/minesweeper/led-display";
 import { MinesweeperBoard } from "@/components/games/minesweeper/minesweeper-board";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ export function MinesweeperGame({ roomId, myBestTimes }: MinesweeperGameProps) {
   );
   const [seconds, setSeconds] = useState(0);
   const [flagMode, setFlagMode] = useState(false);
+  const [shameMsg, setShameMsg] = useState<string | null>(null);
   const submittedRef = useRef(false);
 
   const ended = state.status === "won" || state.status === "lost";
@@ -80,11 +82,13 @@ export function MinesweeperGame({ roomId, myBestTimes }: MinesweeperGameProps) {
         toast.error(r.error);
         return;
       }
+      const newBest = best === null || time < best;
       toast.success(
-        best === null || time < best
+        newBest
           ? copy.games.minesweeper.newBestTime
           : copy.games.minesweeper.savedTime(mmss(time)),
       );
+      if (!newBest) setShameMsg(pickShameMsg());
     });
   }, [
     ended,
@@ -119,6 +123,9 @@ export function MinesweeperGame({ roomId, myBestTimes }: MinesweeperGameProps) {
 
   return (
     <div className="w-full max-w-105 space-y-3">
+      {shameMsg && (
+        <ShameModal message={shameMsg} onDone={() => setShameMsg(null)} />
+      )}
       <div className="flex flex-wrap items-center gap-2">
         {DIFFICULTY_KEYS.map((key) => (
           <Button

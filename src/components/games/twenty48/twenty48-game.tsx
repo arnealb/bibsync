@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { submitGameScore } from "@/app/_actions/games";
+import { ShameModal, pickShameMsg } from "@/components/games/shame-modal";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
 import {
@@ -52,6 +53,7 @@ export function Game2048({ roomId, myBest }: Game2048Props) {
   );
   const submittedRef = useRef(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const [shameMsg, setShameMsg] = useState<string | null>(null);
 
   const doMove = useCallback((dir: Direction) => {
     setState((s) => move(s, dir));
@@ -81,6 +83,7 @@ export function Game2048({ roomId, myBest }: Game2048Props) {
       toast.success(
         beatBest ? copy.games.twenty48.newHighScore : copy.games.twenty48.saved(score),
       );
+      if (!beatBest) setShameMsg(pickShameMsg());
     });
   }, [state.gameOver, state.highestTile, roomId, myBest]);
 
@@ -91,6 +94,9 @@ export function Game2048({ roomId, myBest }: Game2048Props) {
 
   return (
     <div className="space-y-3">
+      {shameMsg && (
+        <ShameModal message={shameMsg} onDone={() => setShameMsg(null)} />
+      )}
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm">
           <span className="text-muted-foreground">

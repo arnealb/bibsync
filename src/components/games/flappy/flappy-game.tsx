@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { submitGameScore } from "@/app/_actions/games";
+import { ShameModal, pickShameMsg } from "@/components/games/shame-modal";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
 
@@ -53,6 +54,7 @@ export function FlappyGame({
   const [phase, setPhase] = useState<Phase>("idle");
   const [score, setScore] = useState(0);
   const [best, setBest] = useState(myBest ?? 0);
+  const [shameMsg, setShameMsg] = useState<string | null>(null);
 
   function flap() {
     const g = game.current;
@@ -86,6 +88,8 @@ export function FlappyGame({
         if (final > best) {
           setBest(final);
           if (final > 0) toast.success(copy.games.flappy.newBest);
+        } else if (final > 0 && best > 0) {
+          setShameMsg(pickShameMsg());
         }
       },
     );
@@ -161,6 +165,9 @@ export function FlappyGame({
 
   return (
     <div className="space-y-2">
+      {shameMsg && (
+        <ShameModal message={shameMsg} onDone={() => setShameMsg(null)} />
+      )}
       <div className="flex items-center justify-between text-sm">
         <span className="font-mono tabular-nums">
           {copy.games.flappy.score}: <b>{score}</b>
