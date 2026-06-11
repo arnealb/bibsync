@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { toast } from "sonner";
 
 import { submitGameScore } from "@/app/_actions/games";
+import { ShameModal, pickShameMsg } from "@/components/games/shame-modal";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
 import { isAutopilot, SNAKE_BOT_EVENT } from "@/lib/games/snake/autopilot";
@@ -94,6 +95,7 @@ export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
   const submittedRef = useRef(false);
   // True once the autopilot has driven at least one tick this game.
   const cheatedRef = useRef(false);
+  const [shameMsg, setShameMsg] = useState<string | null>(null);
 
   // Keyboard input (desktop)
   useEffect(() => {
@@ -177,6 +179,7 @@ export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
             ? copy.games.snake.newHighScore
             : copy.games.snake.saved(finalScore),
         );
+        if (!beatBest) setShameMsg(pickShameMsg());
       },
     );
   }, [state.gameOver, state.score, roomId, myBest]);
@@ -239,6 +242,9 @@ export function SnakeGame({ roomId, myBest }: SnakeGameProps) {
 
   return (
     <div className="space-y-3">
+      {shameMsg && (
+        <ShameModal message={shameMsg} onDone={() => setShameMsg(null)} />
+      )}
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm">
           <span className="text-muted-foreground">

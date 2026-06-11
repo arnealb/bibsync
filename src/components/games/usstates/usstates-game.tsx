@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { submitGameScore } from "@/app/_actions/games";
 import { claimStateCoin } from "@/app/_actions/usstates";
+import { ShameModal, pickShameMsg } from "@/components/games/shame-modal";
 import { UsStatesMap } from "@/components/games/usstates/usstates-map";
 import { UsStatesSummary } from "@/components/games/usstates/usstates-summary";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export function UsStatesGame({
   const [value, setValue] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(USSTATES_DURATION_SECONDS);
   const [balance, setBalance] = useState(initialBalance);
+  const [shameMsg, setShameMsg] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const endedRef = useRef(false);
   // Elapsed seconds at the last correct guess — the leaderboard tie-breaker.
@@ -54,6 +56,8 @@ export function UsStatesGame({
         if (!res.ok) toast.error(res.error);
         else if (myBest === null || score > myBest) {
           toast.success(copy.usstates.newBest(score));
+        } else if (score > 0) {
+          setShameMsg(pickShameMsg());
         }
       })();
     },
@@ -108,6 +112,9 @@ export function UsStatesGame({
 
   return (
     <div className="space-y-4">
+      {shameMsg && (
+        <ShameModal message={shameMsg} onDone={() => setShameMsg(null)} />
+      )}
       {/* Status bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className="font-mono tabular-nums">
