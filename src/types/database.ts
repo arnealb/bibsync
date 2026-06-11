@@ -1149,6 +1149,69 @@ export interface Database {
         };
         Relationships: [];
       };
+      horse_races: {
+        Row: {
+          id: number;
+          runs_at: Timestamp;
+          status: string;
+          horses: Record<string, unknown>[];
+          name_seed: number;
+          run_seed: number | null;
+          winner_idx: number | null;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: number;
+          runs_at: Timestamp;
+          status?: string;
+          horses: Record<string, unknown>[];
+          name_seed: number;
+          run_seed?: number | null;
+          winner_idx?: number | null;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: number;
+          runs_at?: Timestamp;
+          status?: string;
+          horses?: Record<string, unknown>[];
+          name_seed?: number;
+          run_seed?: number | null;
+          winner_idx?: number | null;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      horse_race_bets: {
+        Row: {
+          id: string;
+          race_id: number;
+          user_id: string;
+          horse_idx: number;
+          amount: number;
+          payout: number | null;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          race_id: number;
+          user_id: string;
+          horse_idx: number;
+          amount: number;
+          payout?: number | null;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          race_id?: number;
+          user_id?: string;
+          horse_idx?: number;
+          amount?: number;
+          payout?: number | null;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
       thefts: {
         Row: {
           id: string;
@@ -1252,6 +1315,15 @@ export interface Database {
       shares_room: {
         Args: { _a: string; _b: string };
         Returns: boolean;
+      };
+      place_horse_bet: {
+        Args: {
+          _user_id: string;
+          _race_id: number;
+          _horse_idx: number;
+          _amount: number;
+        };
+        Returns: string;
       };
     };
     Enums: Record<never, never>;

@@ -64,7 +64,7 @@ export function holdingCap(sharesOutstanding: number): number {
  * the share price). Player-vs-player games (poker, lottery) are excluded — the
  * house keeps no edge there, so they shouldn't swing the stock.
  *
- * MIRROR of `casino_stats()` in `supabase/migrations/0050_casino_stock.sql` —
+ * MIRROR of `casino_stats()` (last redefined in the horse-races migration) —
  * keep both lists in sync.
  */
 export const CASINO_STAKE_REASONS = [
@@ -77,6 +77,7 @@ export const CASINO_STAKE_REASONS = [
   "blackjack_bet",
   "roulette_bet",
   "crash_bet",
+  "horses_bet",
 ] as const;
 
 export const CASINO_PAYOUT_REASONS = [
@@ -91,6 +92,7 @@ export const CASINO_PAYOUT_REASONS = [
   "roulette_payout",
   "roulette_win",
   "crash_payout",
+  "horses_payout",
   "hilo_refund",
   "mines_refund",
   "blackjack_refund",
